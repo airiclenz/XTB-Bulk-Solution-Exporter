@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <!-- Required elements-->
+        <id>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</id>
+        <version>2024.10.07.09</version>
+        <description>A Bulk-Solution-Export tool for the XrmToolBox</description>
+        <authors>Airic Lenz</authors>
+
+        <!-- Optional elements -->
+		<projectUrl>https://github.com/airiclenz/XTB-Bulk-Solution-Exporter</projectUrl>
+		<icon>images\icon.png</icon>
+    </metadata>
+	<files>
+		<file src="bin\Release\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll" target="lib\net48\Plugins" />
+		<file src="..\Images\bulk solution exporter.80px.png" target="images\icon.png" />
+	</files>
+</package>
