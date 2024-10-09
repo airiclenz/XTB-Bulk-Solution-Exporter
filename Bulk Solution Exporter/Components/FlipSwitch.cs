@@ -97,9 +97,18 @@ namespace Com.AiricLenz.XTB.Components
             }
         }
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsOff
+		{
+			get
+			{
+				return !_isChecked;
+			}
+		}
 
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        [Browsable(false)]
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public new Size Size
         {

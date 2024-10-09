@@ -24,7 +24,7 @@ namespace Com.AiricLenz.XTB.Plugin
 	public partial class BulkSolutionExporter_PluginControl : PluginControlBase
 	{
 		private Settings _settings;
-		private bool _isLoad = true;
+		private bool _codeUpdate = true;
 		private Guid _currentConnectionGuid;
 		private SolutionConfiguration _currentSolutionConfig;
 
@@ -81,74 +81,55 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		private void PublishAll()
+		{
+			Log("");
+			Log("Publishing All now...");
+
+			PublishAllXmlRequest publishRequest = 
+				new PublishAllXmlRequest();
+
+			Service.Execute(publishRequest);
+
+			Log("Publish All was completed.");
+		}
+
+
+		// ============================================================================
 		private void ExportAllSolutions()
 		{
-			textBox_log.Text = string.Empty;
-
-			WorkAsync(new WorkAsyncInfo
+			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
 			{
-				Message = "Exporting Solutions",
-				Work = (worker, args) =>
+
+				var listItem = listSolutions.CheckedItems[i] as Solution;
+				var solution = listItem;
+
+				var solutionConfig =
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier,
+						out bool isNew);
+
+				if (isNew)
 				{
-					int progress = 0;
-					worker.WorkerReportsProgress = true;
-
-					for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
-					{
-
-						var listItem = listSolutions.CheckedItems[i] as Solution;
-						var solution = listItem;
-
-						var solutionConfig =
-							_settings.GetSolutionConfiguration(
-								solution.SolutionIdentifier,
-								out bool isNew);
-
-						if (isNew)
-						{
-							continue;
-						}
-
-						Log("");
-						Log("Exporting solution '" + solution.FriendlyName + "'");
-						worker.ReportProgress(progress, "Exporting solution " + solution.FriendlyName);
-
-						var exportResult =
-							ExportSolution(
-								solution,
-								solutionConfig);
-
-						if (!exportResult)
-						{
-							Log("");
-							Log("Export aborted due to an error.");
-							break;
-						}
-
-						progress = (int) (i / (float) listSolutions.CheckedItems.Count * 100f);
-						worker.ReportProgress(progress);
-
-					}
-
-					args.Result = null;
-				},
-				PostWorkCallBack = (args) =>
-				{
-					if (args.Error != null)
-					{
-						MessageBox.Show(
-							args.Error.ToString(),
-							"Error",
-							MessageBoxButtons.OK,
-							MessageBoxIcon.Error);
-					}
-
-					LoadAllSolutions();
-					Log("");
-					Log("Done.");
+					continue;
 				}
-			});
 
+				Log("");
+				Log("Exporting solution '" + solution.FriendlyName + "'");
+				
+				var exportResult =
+					ExportSolution(
+						solution,
+						solutionConfig);
+
+				if (!exportResult)
+				{
+					Log("");
+					Log("Export aborted due to an error.");
+					break;
+				}
+
+			}
 		}
 
 
@@ -165,7 +146,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
-			if (flipSwitch_managed.IsOn)
+			if (flipSwitch_exportManaged.IsOn)
 			{
 				ExportToFile(
 					solution,
@@ -173,7 +154,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					true);
 			}
 
-			if (flipSwitch_unmanaged.IsOn)
+			if (flipSwitch_exportUnmanaged.IsOn)
 			{
 				ExportToFile(
 					solution,
@@ -335,8 +316,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			var exportEnabled =
 				(listSolutions.CheckedItems.Count > 0) &&
 				(
-					flipSwitch_managed.IsOn ||
-					flipSwitch_unmanaged.IsOn ||
+					flipSwitch_exportManaged.IsOn ||
+					flipSwitch_exportUnmanaged.IsOn ||
 					flipSwitch_updateVersion.IsOn
 				);
 
@@ -387,7 +368,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void SaveSettings()
 		{
-			if (!_isLoad)
+			if (!_codeUpdate)
 			{
 				SettingsManager.Instance.Save(GetType(), _settings);
 			}
@@ -439,7 +420,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
 			{
 				_settings = new Settings();
-				_isLoad = false;
+				_codeUpdate = false;
 
 				SaveSettings();
 
@@ -449,9 +430,27 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				LogInfo("Settings found and loaded");
 
-				flipSwitch_managed.IsOn = _settings.ExportManaged;
-				flipSwitch_unmanaged.IsOn = _settings.ExportUnmanaged;
+				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
+				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
+
+				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
+				flipSwitch_importUnmanaged.IsOn = _settings.ImportUnmanaged;
+
+				if (flipSwitch_exportManaged.IsOff)
+				{
+					flipSwitch_importManaged.Enabled = false;
+					flipSwitch_importManaged.IsOn = false;
+				}
+
+				if (flipSwitch_exportUnmanaged.IsOff)
+				{
+					flipSwitch_importUnmanaged.Enabled = false;
+					flipSwitch_importUnmanaged.IsOn = false;
+				}
+
+				flipSwitch_publish.IsOn = _settings.PublishAllPreExport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
+				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
 
 				textBox_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
 				label_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
@@ -459,7 +458,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				textBox_versionFormat.Text = _settings.VersionFormat;
 
-				_isLoad = false;
+				_codeUpdate = false;
 
 				ExportButtonSetState();
 			}
@@ -521,25 +520,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 		// ============================================================================
-		private void checkBox_managed_CheckedChanged(object sender, EventArgs e)
+		private void flipSwitch_publish_Toggled(object sender, EventArgs e)
 		{
-			_settings.ExportManaged = flipSwitch_managed.IsOn;
+			_settings.PublishAllPreExport = flipSwitch_publish.IsOn;
 
 			SaveSettings();
 			ExportButtonSetState();
 		}
 
-		// ============================================================================
-		private void checkBox_unmanaged_CheckedChanged(object sender, EventArgs e)
-		{
-			_settings.ExportUnmanaged = flipSwitch_managed.IsOn;
-
-			SaveSettings();
-			ExportButtonSetState();
-		}
 
 		// ============================================================================
-		private void checkBox_updateVersion_CheckedChanged(object sender, EventArgs e)
+		private void flipSwitch_updateVersion_Toggled(object sender, EventArgs e)
 		{
 			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
 			textBox_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
@@ -552,6 +543,89 @@ namespace Com.AiricLenz.XTB.Plugin
 			ExportButtonSetState();
 		}
 
+
+		// ============================================================================
+		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
+		{
+			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
+
+			if (flipSwitch_exportManaged.IsOff &&
+				flipSwitch_importManaged.IsOn)
+			{
+				flipSwitch_importManaged.IsOn = false; 
+			}
+
+			flipSwitch_importManaged.Enabled = flipSwitch_exportManaged.IsOn;
+
+			SaveSettings();
+			ExportButtonSetState();
+		}
+
+		// ============================================================================
+		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
+		{
+			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
+
+			if (flipSwitch_exportUnmanaged.IsOff &&
+				flipSwitch_importUnmanaged.IsOn)
+			{
+				flipSwitch_importUnmanaged.IsOn = false;
+				flipSwitch_importUnmanaged.Enabled = false;
+			}
+
+			flipSwitch_importUnmanaged.Enabled = flipSwitch_exportUnmanaged.IsOn;
+			
+			SaveSettings();
+			ExportButtonSetState();
+		}
+			
+
+		// ============================================================================
+		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
+		{
+			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
+
+			SaveSettings();
+			ExportButtonSetState();
+		}
+
+		// ============================================================================
+		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
+		{
+			_settings.ImportManaged = flipSwitch_importManaged.IsOn;
+			
+			if (flipSwitch_importManaged.IsOn &&
+				flipSwitch_importUnmanaged.IsOn &&
+				!_codeUpdate)
+			{
+				_codeUpdate = true;
+				flipSwitch_importUnmanaged.IsOn = false;
+				_settings.ImportUnmanaged = false;
+				_codeUpdate = false;
+			}
+			
+			SaveSettings();
+			ExportButtonSetState();
+		}
+
+		// ============================================================================
+		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
+		{
+			_settings.ImportUnmanaged = flipSwitch_importUnmanaged.IsOn;
+
+			if (flipSwitch_importManaged.IsOn &&
+				flipSwitch_importUnmanaged.IsOn &&
+				!_codeUpdate)
+			{
+				_codeUpdate = true;
+				flipSwitch_importManaged.IsOn = false;
+				_settings.ImportManaged = false;
+				_codeUpdate = false;
+			}
+
+			SaveSettings();
+			ExportButtonSetState();
+		}
 
 		// ============================================================================
 		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
@@ -681,7 +755,38 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
-			ExportAllSolutions();
+			
+			WorkAsync(new WorkAsyncInfo
+			{
+				Message = "Exporting Solutions",
+				Work = (worker, args) =>
+				{
+					textBox_log.Text = string.Empty;
+
+					PublishAll();
+					ExportAllSolutions();
+
+					args.Result = null;
+				},
+				PostWorkCallBack = (args) =>
+				{
+					if (args.Error != null)
+					{
+						MessageBox.Show(
+							args.Error.ToString(),
+							"Error",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Error);
+					}
+
+					LoadAllSolutions();
+					Log("");
+					Log("Done.");
+				}
+			});
+
+
+
 		}
 
 
@@ -692,10 +797,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+
+
+
 		#endregion
 
-
-
-
+		
 	}
 }
