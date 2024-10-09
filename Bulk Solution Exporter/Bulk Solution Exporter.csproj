@@ -262,7 +262,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Scripts\Start XrmToolBox.bat" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="BulkSolutionExporter_PluginControl.resx">
