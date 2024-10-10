@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Web.Services.Description;
 using System.Windows.Forms;
+using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
+using LibGit2Sharp;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
@@ -28,6 +30,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private Guid _currentConnectionGuid;
 		private SolutionConfiguration _currentSolutionConfig;
 
+		private List<string> _sessionFiles = new List<string>();
 		private List<Solution> _solutions = new List<Solution>();
 
 		private Solution _currentSolution;
@@ -86,7 +89,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("");
 			Log("Publishing All now...");
 
-			PublishAllXmlRequest publishRequest = 
+			PublishAllXmlRequest publishRequest =
 				new PublishAllXmlRequest();
 
 			Service.Execute(publishRequest);
@@ -116,7 +119,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("");
 				Log("Exporting solution '" + solution.FriendlyName + "'");
-				
+
 				var exportResult =
 					ExportSolution(
 						solution,
@@ -197,6 +200,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				filePath,
 				exportSolutionResponse.ExportSolutionFile);
 
+			_sessionFiles.Add(filePath);
+
 			if (isManaged)
 			{
 				Log("|   Exported the solution as a managed to: " + filePath);
@@ -239,6 +244,51 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			Log("|   Updated the version number: " + oldVersionString + " --> " + solution.Version);
 			return true;
+		}
+
+
+		// ============================================================================
+		private void CommitToGit()
+		{
+			Log("");
+			Log("Now commiting the new files to Git");
+
+			if (_sessionFiles.Count == 0)
+			{
+				Log("|   No files need to be committed.");
+				return;
+			}
+
+			var gitRootPath =
+				FileAndFolderHelper.FindRepositoryRootPath(_sessionFiles.First());
+
+			if (gitRootPath == string.Empty)
+			{
+				Log("|   No GIT repository was found where the files were saved.");
+				return;
+			}
+
+			var repo = new Repository(gitRootPath);
+
+			foreach (var file in _sessionFiles)
+			{
+				Commands.Stage(repo, file);
+			}
+
+			var config = repo.Config;
+			string name = config.Get<string>("user.name").Value;
+			string email = config.Get<string>("user.email").Value;
+
+			Signature author = new Signature(name, email, DateTime.Now);
+			Signature committer = author;
+
+			var message = "Bulk Solution Exporter Commit at " + DateTime.Now.ToString("yyyy-MM-dd");
+
+			Commit commit =
+				repo.Commit(message, author, committer);
+
+			Log("|   " + _sessionFiles.Count + " File(s) was/weres commited: " + message + " - [" + commit.Sha + "]");
+
 		}
 
 
@@ -552,7 +602,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (flipSwitch_exportManaged.IsOff &&
 				flipSwitch_importManaged.IsOn)
 			{
-				flipSwitch_importManaged.IsOn = false; 
+				flipSwitch_importManaged.IsOn = false;
 			}
 
 			flipSwitch_importManaged.Enabled = flipSwitch_exportManaged.IsOn;
@@ -574,11 +624,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			flipSwitch_importUnmanaged.Enabled = flipSwitch_exportUnmanaged.IsOn;
-			
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
-			
+
 
 		// ============================================================================
 		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
@@ -593,7 +643,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ImportManaged = flipSwitch_importManaged.IsOn;
-			
+
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
 				!_codeUpdate)
@@ -603,7 +653,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.ImportUnmanaged = false;
 				_codeUpdate = false;
 			}
-			
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -755,16 +805,18 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
-			
+
+			textBox_log.Text = string.Empty;
+			_sessionFiles.Clear();
+
 			WorkAsync(new WorkAsyncInfo
 			{
 				Message = "Exporting Solutions",
 				Work = (worker, args) =>
 				{
-					textBox_log.Text = string.Empty;
-
 					PublishAll();
 					ExportAllSolutions();
+					CommitToGit();
 
 					args.Result = null;
 				},
@@ -802,6 +854,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		#endregion
 
-		
+
 	}
 }
