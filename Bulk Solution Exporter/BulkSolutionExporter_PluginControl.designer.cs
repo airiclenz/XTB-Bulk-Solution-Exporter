@@ -64,6 +64,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.flipSwitch_pushCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -282,8 +283,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_Export.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_Export.Margin = new System.Windows.Forms.Padding(10, 1, 0, 2);
             this.button_Export.Name = "button_Export";
-            this.button_Export.Size = new System.Drawing.Size(167, 39);
-            this.button_Export.Text = "  Export / Download";
+            this.button_Export.Size = new System.Drawing.Size(99, 39);
+            this.button_Export.Text = " Execute ";
             this.button_Export.ToolTipText = "Export the Solutions";
             this.button_Export.Click += new System.EventHandler(this.button_Export_Click);
             // 
@@ -454,10 +455,28 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_importUnmanaged.Title = "Import Unmanaged";
             this.flipSwitch_importUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_importUnmanaged_Toggled);
             // 
+            // flipSwitch_pushCommit
+            // 
+            this.flipSwitch_pushCommit.AutoSize = true;
+            this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_pushCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_pushCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_pushCommit.IsOn = false;
+            this.flipSwitch_pushCommit.Location = new System.Drawing.Point(300, 80);
+            this.flipSwitch_pushCommit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_pushCommit.Name = "flipSwitch_pushCommit";
+            this.flipSwitch_pushCommit.Size = new System.Drawing.Size(126, 20);
+            this.flipSwitch_pushCommit.SwitchHeight = 18;
+            this.flipSwitch_pushCommit.SwitchWidth = 30;
+            this.flipSwitch_pushCommit.TabIndex = 19;
+            this.flipSwitch_pushCommit.Title = "Push Commit";
+            this.flipSwitch_pushCommit.Toggled += new System.EventHandler(this.flipSwitch_pushCommit_Toggled);
+            // 
             // BulkSolutionExporter_PluginControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.flipSwitch_pushCommit);
             this.Controls.Add(this.flipSwitch_importUnmanaged);
             this.Controls.Add(this.flipSwitch_importManaged);
             this.Controls.Add(this.pictureBox1);
@@ -522,5 +541,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.PictureBox pictureBox1;
 		private FlipSwitch flipSwitch_importManaged;
 		private FlipSwitch flipSwitch_importUnmanaged;
+		private FlipSwitch flipSwitch_pushCommit;
 	}
 }

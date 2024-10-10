@@ -33,6 +33,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool ExportManaged { get; set; }
         public bool ExportUnmanaged { get; set; }
 		public bool GitCommit { get; set; }
+		public bool PushCommit { get; set; }
 		public bool ImportManaged { get; set; }
 		public bool ImportUnmanaged	{ get; set; }
 

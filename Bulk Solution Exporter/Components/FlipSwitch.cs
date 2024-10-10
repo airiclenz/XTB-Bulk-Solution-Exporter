@@ -24,7 +24,7 @@ namespace Com.AiricLenz.XTB.Components
     public partial class FlipSwitch : UserControl
     {
 
-        private bool _isChecked;
+        private bool _isOn;
         private string _title;
         private int _switchWidth;
         private int _switchHeight;
@@ -44,7 +44,7 @@ namespace Com.AiricLenz.XTB.Components
             this.DoubleBuffered = true;
 
             //this.Size = new Size(50, 25);
-            this._isChecked = false;
+            this._isOn = false;
             this._isEnabled = true;
             this._switchWidth = 40;
             this._switchHeight = 20;
@@ -85,12 +85,12 @@ namespace Com.AiricLenz.XTB.Components
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         public bool IsOn
         {
-            get { return _isChecked; }
+            get { return _isOn; }
             set
             {
-                if (value !=  _isChecked)
+                if (value !=  _isOn)
                 {
-                    _isChecked = value;
+                    _isOn = value;
                     Invalidate();
                     OnToggled();
                 }
@@ -102,7 +102,7 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			get
 			{
-				return !_isChecked;
+				return !_isOn;
 			}
 		}
 
@@ -140,6 +140,12 @@ namespace Com.AiricLenz.XTB.Components
             set
             {
                 _isEnabled = value;
+
+				if (_isEnabled == false)
+				{
+					_isOn = false;
+				}
+
                 Invalidate();
             }
         }

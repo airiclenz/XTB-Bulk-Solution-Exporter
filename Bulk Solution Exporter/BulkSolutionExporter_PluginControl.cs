@@ -86,6 +86,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void PublishAll()
 		{
+			if (flipSwitch_publish.IsOff)
+			{
+				return;
+			}
+
 			Log("");
 			Log("Publishing All now...");
 
@@ -103,7 +108,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
 			{
-
 				var listItem = listSolutions.CheckedItems[i] as Solution;
 				var solution = listItem;
 
@@ -248,8 +252,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void CommitToGit()
+		private void HandleGit()
 		{
+			if (flipSwitch_gitCommit.IsOff)
+			{
+				return;
+			}
+
 			Log("");
 			Log("Now commiting the new files to Git");
 
@@ -289,6 +298,24 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			Log("|   " + _sessionFiles.Count + " File(s) was/weres commited: " + message + " - [" + commit.Sha + "]");
 
+			if (flipSwitch_pushCommit.IsOff)
+			{
+				return;
+			}
+
+			Remote remote = repo.Network.Remotes["origin"];
+
+			if (remote == null)
+			{
+				Log("|   No remote 'origin' was found - could not push the commit.");
+				return;
+			}
+			
+			var options = new PushOptions();
+			repo.Network.Push(remote, @"refs/heads/main", options);
+						
+			Log("|   The commit has been pushed to the remote origin.");
+			
 		}
 
 
@@ -501,6 +528,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_publish.IsOn = _settings.PublishAllPreExport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
 				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
+				flipSwitch_pushCommit.IsOn = _settings.PushCommit;
 
 				textBox_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
 				label_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
@@ -598,13 +626,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
-
-			if (flipSwitch_exportManaged.IsOff &&
-				flipSwitch_importManaged.IsOn)
-			{
-				flipSwitch_importManaged.IsOn = false;
-			}
-
 			flipSwitch_importManaged.Enabled = flipSwitch_exportManaged.IsOn;
 
 			SaveSettings();
@@ -615,14 +636,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
-
-			if (flipSwitch_exportUnmanaged.IsOff &&
-				flipSwitch_importUnmanaged.IsOn)
-			{
-				flipSwitch_importUnmanaged.IsOn = false;
-				flipSwitch_importUnmanaged.Enabled = false;
-			}
-
 			flipSwitch_importUnmanaged.Enabled = flipSwitch_exportUnmanaged.IsOn;
 
 			SaveSettings();
@@ -634,10 +647,22 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
 		{
 			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
+			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
 
 			SaveSettings();
 			ExportButtonSetState();
 		}
+
+		// ============================================================================
+		private void flipSwitch_pushCommit_Toggled(object sender, EventArgs e)
+		{
+			_settings.PushCommit = flipSwitch_pushCommit.IsOn;
+
+			SaveSettings();
+			ExportButtonSetState();
+
+		}
+
 
 		// ============================================================================
 		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
@@ -816,7 +841,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					PublishAll();
 					ExportAllSolutions();
-					CommitToGit();
+					HandleGit();
 
 					args.Result = null;
 				},
@@ -852,8 +877,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 
-		#endregion
 
+
+		#endregion
 
 	}
 }
