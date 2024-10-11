@@ -207,7 +207,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_unmanaged.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_unmanaged.Location = new System.Drawing.Point(17, 101);
             this.textBox_unmanaged.Name = "textBox_unmanaged";
-            this.textBox_unmanaged.ReadOnly = true;
             this.textBox_unmanaged.Size = new System.Drawing.Size(548, 23);
             this.textBox_unmanaged.TabIndex = 1;
             this.textBox_unmanaged.Click += new System.EventHandler(this.button_browseUnmananged_Click);
@@ -221,7 +220,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_managed.Location = new System.Drawing.Point(17, 53);
             this.textBox_managed.Name = "textBox_managed";
-            this.textBox_managed.ReadOnly = true;
             this.textBox_managed.Size = new System.Drawing.Size(548, 23);
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.Click += new System.EventHandler(this.button_browseManaged_Click);

@@ -310,12 +310,12 @@ namespace Com.AiricLenz.XTB.Plugin
 				Log("|   No remote 'origin' was found - could not push the commit.");
 				return;
 			}
-			
+
 			var options = new PushOptions();
 			repo.Network.Push(remote, @"refs/heads/main", options);
-						
+
 			Log("|   The commit has been pushed to the remote origin.");
-			
+
 		}
 
 
@@ -368,12 +368,26 @@ namespace Com.AiricLenz.XTB.Plugin
 					{
 						_solutions.Clear();
 
-						//MessageBox.Show($"Found {result.Entities.Count} solutions");
+						var maxNameLength = 0;
+
+						foreach (var entity in result.Entities)
+						{
+							var solutionFrinedlyName =
+								entity.GetAttributeValue<string>(
+									"friendlyname");
+
+							maxNameLength =
+								solutionFrinedlyName.Length > maxNameLength ?
+								solutionFrinedlyName.Length :
+								maxNameLength;
+						}
+
+						maxNameLength += 3;
 
 						foreach (var entity in result.Entities)
 						{
 							_solutions.Add(
-								Solution.ConvertFrom(entity, _currentConnectionGuid));
+								Solution.ConvertFrom(entity, _currentConnectionGuid, maxNameLength));
 
 						}
 
