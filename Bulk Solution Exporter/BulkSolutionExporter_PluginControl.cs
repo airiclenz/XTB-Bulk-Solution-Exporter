@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Web.Services.Description;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
@@ -13,6 +12,9 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
+using XrmToolBox.Extensibility.Args;
+using XrmToolBox.Extensibility.Interfaces;
+
 
 // ============================================================================
 // ============================================================================
@@ -23,8 +25,10 @@ namespace Com.AiricLenz.XTB.Plugin
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	public partial class BulkSolutionExporter_PluginControl : PluginControlBase
+	public partial class BulkSolutionExporter_PluginControl : MultipleConnectionsPluginControlBase
 	{
+		private IOrganizationService _targetServiceClient = null;
+
 		private Settings _settings;
 		private bool _codeUpdate = true;
 		private Guid _currentConnectionGuid;
@@ -382,8 +386,6 @@ namespace Com.AiricLenz.XTB.Plugin
 								maxNameLength;
 						}
 
-						maxNameLength += 3;
-
 						foreach (var entity in result.Entities)
 						{
 							_solutions.Add(
@@ -524,8 +526,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
 				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
 
-				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
-				flipSwitch_importUnmanaged.IsOn = _settings.ImportUnmanaged;
+				flipSwitch_importManaged.IsOn = _settings.ImportManaged && (_targetServiceClient != null);
+				flipSwitch_importUnmanaged.IsOn = _settings.ImportUnmanaged && (_targetServiceClient != null);
 
 				if (flipSwitch_exportManaged.IsOff)
 				{
@@ -558,6 +560,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_loadSolutions.Enabled = Service != null;
 		}
 
+
+		// ============================================================================
+		public override void ClosingPlugin(PluginCloseInfo info)
+		{
+			base.ClosingPlugin(info);
+			SaveSettings();
+		}
 
 		// ============================================================================
 		/// <summary>
@@ -640,7 +649,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
-			flipSwitch_importManaged.Enabled = flipSwitch_exportManaged.IsOn;
+			flipSwitch_importManaged.Enabled = 
+				flipSwitch_exportManaged.IsOn && 
+				_targetServiceClient != null;
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -650,7 +661,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
-			flipSwitch_importUnmanaged.Enabled = flipSwitch_exportUnmanaged.IsOn;
+			flipSwitch_importUnmanaged.Enabled =
+				flipSwitch_exportUnmanaged.IsOn &&
+				_targetServiceClient != null;
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -888,12 +901,36 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
-
+		// ============================================================================
+		private void button_addAdditionalConnection_Click(object sender, EventArgs e)
+		{
+			AddAdditionalOrganization();
+		}
 
 
 
 
 		#endregion
 
+
+		// ============================================================================
+		protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+		{
+			if (e.Action.Equals(NotifyCollectionChangedAction.Add))
+			{
+				var detail = (ConnectionDetail) e.NewItems[0];
+				_targetServiceClient = detail.ServiceClient;
+
+				flipSwitch_importManaged.Enabled =
+					flipSwitch_exportUnmanaged.IsOn &&
+					_targetServiceClient != null;
+
+				flipSwitch_importUnmanaged.Enabled =
+					flipSwitch_exportUnmanaged.IsOn &&
+					_targetServiceClient != null;
+
+
+			}
+		}
 	}
 }

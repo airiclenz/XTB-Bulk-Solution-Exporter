@@ -53,6 +53,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_Export = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripMenu = new System.Windows.Forms.ToolStrip();
+            this.button_addAdditionalConnection = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.flipSwitch_updateVersion = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
@@ -298,6 +300,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.button_loadSolutions,
             this.tssSeparator1,
+            this.button_addAdditionalConnection,
+            this.toolStripSeparator2,
             this.button_Export,
             this.toolStripSeparator1});
             this.toolStripMenu.Location = new System.Drawing.Point(0, 0);
@@ -306,6 +310,22 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu.Size = new System.Drawing.Size(1000, 42);
             this.toolStripMenu.TabIndex = 4;
             this.toolStripMenu.Text = "toolStrip1";
+            // 
+            // button_addAdditionalConnection
+            // 
+            this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_addAdditionalConnection.Image = ((System.Drawing.Image)(resources.GetObject("button_addAdditionalConnection.Image")));
+            this.button_addAdditionalConnection.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_addAdditionalConnection.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_addAdditionalConnection.Name = "button_addAdditionalConnection";
+            this.button_addAdditionalConnection.Size = new System.Drawing.Size(165, 39);
+            this.button_addAdditionalConnection.Text = "  Connec to Target";
+            this.button_addAdditionalConnection.Click += new System.EventHandler(this.button_addAdditionalConnection_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 42);
             // 
             // flipSwitch_updateVersion
             // 
@@ -490,7 +510,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.toolStripMenu);
             this.Name = "BulkSolutionExporter_PluginControl";
             this.Size = new System.Drawing.Size(1000, 800);
-            this.OnCloseTool += new System.EventHandler(this.MyPluginControl_OnCloseTool);
             this.Load += new System.EventHandler(this.OnPluginControl_Load);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
@@ -540,5 +559,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private FlipSwitch flipSwitch_importManaged;
 		private FlipSwitch flipSwitch_importUnmanaged;
 		private FlipSwitch flipSwitch_pushCommit;
+		private System.Windows.Forms.ToolStripButton button_addAdditionalConnection;
+		private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
 	}
 }
