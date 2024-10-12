@@ -342,7 +342,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			foreach (var file in _sessionFiles)
 			{
-				var fileShortened = file.Substring(gitRootPath.Length + 1);
+				var fileShortened = file.Replace(gitRootPath, "");
+
+				if (fileShortened.StartsWith("\\"))
+				{
+					// remove the first backslash
+					fileShortened = fileShortened.Substring(1);
+				}
+
 				if (!gitHelper.ExecuteCommand("add \"" + fileShortened + "\"", out errorMessage))
 				{
 					Log("|   Error staging: " + errorMessage);
