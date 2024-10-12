@@ -62,7 +62,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_info = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
-            this.flipSwitch_publish = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.flipSwitch_publishSource = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
@@ -318,8 +318,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_addAdditionalConnection.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_addAdditionalConnection.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
             this.button_addAdditionalConnection.Name = "button_addAdditionalConnection";
-            this.button_addAdditionalConnection.Size = new System.Drawing.Size(165, 39);
-            this.button_addAdditionalConnection.Text = "  Connec to Target";
+            this.button_addAdditionalConnection.Size = new System.Drawing.Size(170, 39);
+            this.button_addAdditionalConnection.Text = "  Connect to Target";
+            this.button_addAdditionalConnection.ToolTipText = "  Connect to Target";
             this.button_addAdditionalConnection.Click += new System.EventHandler(this.button_addAdditionalConnection_Click);
             // 
             // toolStripSeparator2
@@ -405,22 +406,22 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolTip1.SetToolTip(this.pictureBox1, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
         "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
-            // flipSwitch_publish
+            // flipSwitch_publishSource
             // 
-            this.flipSwitch_publish.AutoSize = true;
-            this.flipSwitch_publish.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-            this.flipSwitch_publish.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_publish.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_publish.IsOn = false;
-            this.flipSwitch_publish.Location = new System.Drawing.Point(15, 55);
-            this.flipSwitch_publish.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.flipSwitch_publish.Name = "flipSwitch_publish";
-            this.flipSwitch_publish.Size = new System.Drawing.Size(174, 20);
-            this.flipSwitch_publish.SwitchHeight = 18;
-            this.flipSwitch_publish.SwitchWidth = 30;
-            this.flipSwitch_publish.TabIndex = 14;
-            this.flipSwitch_publish.Title = "Publish All pre Export";
-            this.flipSwitch_publish.Toggled += new System.EventHandler(this.flipSwitch_publish_Toggled);
+            this.flipSwitch_publishSource.AutoSize = true;
+            this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_publishSource.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_publishSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_publishSource.IsOn = false;
+            this.flipSwitch_publishSource.Location = new System.Drawing.Point(15, 55);
+            this.flipSwitch_publishSource.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_publishSource.Name = "flipSwitch_publishSource";
+            this.flipSwitch_publishSource.Size = new System.Drawing.Size(163, 20);
+            this.flipSwitch_publishSource.SwitchHeight = 18;
+            this.flipSwitch_publishSource.SwitchWidth = 30;
+            this.flipSwitch_publishSource.TabIndex = 14;
+            this.flipSwitch_publishSource.Title = "Publish All (Source)";
+            this.flipSwitch_publishSource.Toggled += new System.EventHandler(this.flipSwitch_publish_Toggled);
             // 
             // flipSwitch_gitCommit
             // 
@@ -499,7 +500,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.flipSwitch_importManaged);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.flipSwitch_gitCommit);
-            this.Controls.Add(this.flipSwitch_publish);
+            this.Controls.Add(this.flipSwitch_publishSource);
             this.Controls.Add(this.pictureBox_info);
             this.Controls.Add(this.label_versionFormat);
             this.Controls.Add(this.flipSwitch_updateVersion);
@@ -554,7 +555,7 @@ namespace Com.AiricLenz.XTB.Plugin
         private System.Windows.Forms.ToolTip toolTip2;
         private System.Windows.Forms.Label label_title;
 		private FlipSwitch flipSwitch_gitCommit;
-		private FlipSwitch flipSwitch_publish;
+		private FlipSwitch flipSwitch_publishSource;
 		private System.Windows.Forms.PictureBox pictureBox1;
 		private FlipSwitch flipSwitch_importManaged;
 		private FlipSwitch flipSwitch_importUnmanaged;

@@ -1,19 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.ServiceModel;
+using System.Web.Services.Description;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
 using LibGit2Sharp;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Rest;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
-using XrmToolBox.Extensibility.Args;
-using XrmToolBox.Extensibility.Interfaces;
 
 
 // ============================================================================
@@ -88,9 +91,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void PublishAll()
+		private void PublishAll(
+			IOrganizationService organizationService)
 		{
-			if (flipSwitch_publish.IsOff)
+			if (flipSwitch_publishSource.IsOff)
 			{
 				return;
 			}
@@ -101,7 +105,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			PublishAllXmlRequest publishRequest =
 				new PublishAllXmlRequest();
 
-			Service.Execute(publishRequest);
+			organizationService.Execute(publishRequest);
 
 			Log("Publish All was completed.");
 		}
@@ -110,6 +114,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ExportAllSolutions()
 		{
+			if (flipSwitch_exportManaged.IsOff &&
+				flipSwitch_exportUnmanaged.IsOff)
+			{
+				return;
+			}
+
 			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
 			{
 				var listItem = listSolutions.CheckedItems[i] as Solution;
@@ -142,6 +152,52 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			}
 		}
+
+		// ============================================================================
+		private void ImportAllSolutions()
+		{
+			if (_targetServiceClient == null ||
+				(
+					flipSwitch_importManaged.IsOff &&
+					flipSwitch_importUnmanaged.IsOff
+				))
+			{ 
+				return; 
+			}
+
+			bool importManagd = flipSwitch_importManaged.IsOn;
+
+			Log("");
+			Log("Importing solutions now");
+
+			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
+			{
+				var listItem = listSolutions.CheckedItems[i] as Solution;
+				var solution = listItem;
+
+				var solutionConfig =
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier,
+						out bool isNew);
+
+				if (isNew)
+				{
+					continue;
+				}
+
+				var solutionFile =
+					importManagd ? solutionConfig.FileNameManaged : solutionConfig.FileNameUnmanaged;
+
+				if (ImportSolution(solutionFile, importManagd))
+				{
+					Log(
+						"|   Imported the " + 
+						(importManagd ? "managed" : "unmanaged") + 
+						" solution: " + solution.FriendlyName);
+				}
+			}
+		}
+
 
 
 		// ============================================================================
@@ -281,47 +337,103 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			var repo = new Repository(gitRootPath);
+			GitHelper gitHelper = new GitHelper(gitRootPath);
+			string errorMessage;
 
 			foreach (var file in _sessionFiles)
 			{
-				Commands.Stage(repo, file);
+				var fileShortened = file.Substring(gitRootPath.Length + 1);
+				if (!gitHelper.ExecuteCommand("add \"" + fileShortened + "\"", out errorMessage))
+				{
+					Log("|   Error staging: " + errorMessage);
+				}
 			}
+			
+			var message = "Bulk Solution Exporter Commit on " + DateTime.Now.ToString("yyyy-MM-dd / hh:mm");
 
-			var config = repo.Config;
-			string name = config.Get<string>("user.name").Value;
-			string email = config.Get<string>("user.email").Value;
-
-			Signature author = new Signature(name, email, DateTime.Now);
-			Signature committer = author;
-
-			var message = "Bulk Solution Exporter Commit at " + DateTime.Now.ToString("yyyy-MM-dd");
-
-			Commit commit =
-				repo.Commit(message, author, committer);
-
-			Log("|   " + _sessionFiles.Count + " File(s) was/weres commited: " + message + " - [" + commit.Sha + "]");
+			if (!gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out errorMessage))
+			{
+				Log("|   Error commiting: " + errorMessage);
+			}
+			else
+			{
+				Log("|   " + _sessionFiles.Count + " File(s) was/weres commited: " + message);
+			}
+			
 
 			if (flipSwitch_pushCommit.IsOff)
 			{
 				return;
 			}
 
-			Remote remote = repo.Network.Remotes["origin"];
-
-			if (remote == null)
+			if (!gitHelper.ExecuteCommand("push", out errorMessage))
 			{
-				Log("|   No remote 'origin' was found - could not push the commit.");
-				return;
+				Log("|   Error pushing: " + errorMessage);
 			}
-
-			var options = new PushOptions();
-			repo.Network.Push(remote, @"refs/heads/main", options);
-
-			Log("|   The commit has been pushed to the remote origin.");
+			else
+			{
+				Log("|   The commit has been pushed to the remote origin.");
+			}
+			
 
 		}
 
+
+		// ============================================================================
+		private bool ImportSolution(
+			string solutionPath,
+			bool isManaged = true)
+		{
+			if (!File.Exists(solutionPath))
+			{
+				Log("|   The files does not exist.");
+				return false;
+			}
+
+			byte[] solutionBytes = File.ReadAllBytes(solutionPath);
+
+			// Create import request
+			var importRequest = new ImportSolutionRequest()
+			{
+				CustomizationFile = solutionBytes,
+				//ImportJobId = Guid.NewGuid(), // Optional: Track the import job
+				ConvertToManaged = isManaged // Set to true if importing as managed
+			};
+
+			// Execute import request
+			try
+			{
+				IncreaseServiceTimeout();
+				_targetServiceClient.Execute(importRequest);
+			}
+			catch (FaultException ex)
+			{
+				Log("|   Error during import: " + ex.Message);
+				return false;
+			}
+			catch (Exception ex)
+			{
+				Log("|   Error during import: " + ex.Message);
+				return false;
+			}
+			
+			return true;
+		}
+
+		// ============================================================================
+		private void IncreaseServiceTimeout()
+		{
+			if (Service is OrganizationServiceProxy serviceProxy)
+			{
+				serviceProxy.Timeout = new TimeSpan(0, 15, 0); // Set to 15 minutes
+			}
+			/*
+			else if (Service is ServiceClient serviceClient)
+			{
+				serviceClient.ClientCredentials.ServiceTimeout = TimeSpan.FromMinutes(5); // Set to 5 minutes
+			}
+			*/
+		}
 
 
 		// ============================================================================
@@ -411,7 +523,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				(
 					flipSwitch_exportManaged.IsOn ||
 					flipSwitch_exportUnmanaged.IsOn ||
-					flipSwitch_updateVersion.IsOn
+					flipSwitch_updateVersion.IsOn ||
+					flipSwitch_importManaged.IsOn ||
+					flipSwitch_importUnmanaged.IsOn
 				);
 
 			button_Export.Enabled = exportEnabled;
@@ -526,25 +640,21 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
 				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
 
-				flipSwitch_importManaged.IsOn = _settings.ImportManaged && (_targetServiceClient != null);
-				flipSwitch_importUnmanaged.IsOn = _settings.ImportUnmanaged && (_targetServiceClient != null);
+				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
+				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
 
-				if (flipSwitch_exportManaged.IsOff)
-				{
-					flipSwitch_importManaged.Enabled = false;
-					flipSwitch_importManaged.IsOn = false;
-				}
-
-				if (flipSwitch_exportUnmanaged.IsOff)
-				{
-					flipSwitch_importUnmanaged.Enabled = false;
-					flipSwitch_importUnmanaged.IsOn = false;
-				}
-
-				flipSwitch_publish.IsOn = _settings.PublishAllPreExport;
+				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
+				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+				
+				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
+				
 				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
+				flipSwitch_gitCommit.Enabled =
+					flipSwitch_exportManaged.IsOn ||
+					flipSwitch_exportUnmanaged.IsOn;
 				flipSwitch_pushCommit.IsOn = _settings.PushCommit;
+				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
 
 				textBox_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
 				label_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
@@ -614,6 +724,22 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+		{
+			if (e.Action.Equals(NotifyCollectionChangedAction.Add))
+			{
+				var detail = (ConnectionDetail) e.NewItems[0];
+				_targetServiceClient = detail.ServiceClient;
+
+				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
+				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+
+
+			}
+		}
+
+
+		// ============================================================================
 		private void button_loadSolutions_Click(object sender, EventArgs e)
 		{
 			LoadAllSolutions();
@@ -623,7 +749,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_publish_Toggled(object sender, EventArgs e)
 		{
-			_settings.PublishAllPreExport = flipSwitch_publish.IsOn;
+			_settings.PublishAllPreExport = flipSwitch_publishSource.IsOn;
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -649,9 +775,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
-			flipSwitch_importManaged.Enabled = 
-				flipSwitch_exportManaged.IsOn && 
-				_targetServiceClient != null;
+
+			_codeUpdate = true;
+
+			var gitEnabeld =
+				flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn;
+
+			flipSwitch_gitCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld;
+				
+			_codeUpdate = false;
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -661,9 +795,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
 		{
 			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
-			flipSwitch_importUnmanaged.Enabled =
-				flipSwitch_exportUnmanaged.IsOn &&
-				_targetServiceClient != null;
+
+			_codeUpdate = true;
+
+			var gitEnabeld =
+				flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn;
+
+			flipSwitch_gitCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld;
+
+			_codeUpdate = false;
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -694,8 +836,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
 		{
-			_settings.ImportManaged = flipSwitch_importManaged.IsOn;
-
+			_settings.ImportManaged = 
+				flipSwitch_importManaged.IsOn &&
+				_targetServiceClient != null;
+						
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
 				!_codeUpdate)
@@ -705,7 +849,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.ImportUnmanaged = false;
 				_codeUpdate = false;
 			}
-
+			
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -713,8 +857,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
 		{
-			_settings.ImportUnmanaged = flipSwitch_importUnmanaged.IsOn;
-
+			_settings.ImportUnmanaged = 
+				flipSwitch_importUnmanaged.IsOn &&
+				_targetServiceClient != null;
+						
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
 				!_codeUpdate)
@@ -724,7 +870,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.ImportManaged = false;
 				_codeUpdate = false;
 			}
-
+			
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -861,14 +1007,36 @@ namespace Com.AiricLenz.XTB.Plugin
 			textBox_log.Text = string.Empty;
 			_sessionFiles.Clear();
 
+			var actions = new List<string>();
+
+			if (flipSwitch_updateVersion.IsOn)
+			{
+				actions.Add("Updating Version of");
+			}
+
+			if (flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn)
+			{
+				actions.Add("Exporting");
+			}
+
+			if (flipSwitch_importManaged.IsOn ||
+				flipSwitch_importUnmanaged.IsOn)
+			{
+				actions.Add("Importing");
+			}
+
+			var message = string.Join(" / ", actions) + " Solutions...";
+				
 			WorkAsync(new WorkAsyncInfo
 			{
-				Message = "Exporting Solutions",
+				Message = message,
 				Work = (worker, args) =>
 				{
-					PublishAll();
+					PublishAll(Service);	// Source environment
 					ExportAllSolutions();
 					HandleGit();
+					ImportAllSolutions();
 
 					args.Result = null;
 				},
@@ -913,24 +1081,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		#endregion
 
 
-		// ============================================================================
-		protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
-		{
-			if (e.Action.Equals(NotifyCollectionChangedAction.Add))
-			{
-				var detail = (ConnectionDetail) e.NewItems[0];
-				_targetServiceClient = detail.ServiceClient;
-
-				flipSwitch_importManaged.Enabled =
-					flipSwitch_exportUnmanaged.IsOn &&
-					_targetServiceClient != null;
-
-				flipSwitch_importUnmanaged.Enabled =
-					flipSwitch_exportUnmanaged.IsOn &&
-					_targetServiceClient != null;
-
-
-			}
-		}
+		
 	}
 }
