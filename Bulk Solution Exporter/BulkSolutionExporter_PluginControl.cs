@@ -712,22 +712,25 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			base.UpdateConnection(newService, detail, actionName, parameter);
 
-			_currentConnectionGuid = detail.ConnectionId.Value;
-
-			if (_settings != null && detail != null)
+			if (actionName != "AdditionalOrganization")
 			{
-				_settings.LastUsedOrganizationWebappUrl = detail.WebApplicationUrl;
-				LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
+
+				_currentConnectionGuid = detail.ConnectionId.Value;
+
+				if (_settings != null && detail != null)
+				{
+					_settings.LastUsedOrganizationWebappUrl = detail.WebApplicationUrl;
+					LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
+				}
+
+				if (Service != null)
+				{
+					LoadAllSolutions();
+				}
+
+				button_loadSolutions.Enabled = Service != null;
 			}
-
-			if (Service != null)
-			{
-				LoadAllSolutions();
-			}
-
-			button_loadSolutions.Enabled = Service != null;
-
-		}
+	}
 
 
 		// ============================================================================
@@ -740,8 +743,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
-
-
 			}
 		}
 
