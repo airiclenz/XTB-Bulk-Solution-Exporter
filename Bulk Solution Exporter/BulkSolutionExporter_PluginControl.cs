@@ -415,8 +415,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			var importRequest = new ImportSolutionRequest()
 			{
 				CustomizationFile = solutionBytes,
-				PublishWorkflows = true,
-				OverwriteUnmanagedCustomizations = false,
+				PublishWorkflows = flipSwitch_enableAutomation.IsOn,
+				OverwriteUnmanagedCustomizations = flipSwitch_overwrite.IsOn,
 				ConvertToManaged = isManaged,
 				ImportJobId = Guid.NewGuid(), // Optional: Track the import job
 			};
