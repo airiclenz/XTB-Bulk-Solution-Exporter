@@ -161,8 +161,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					flipSwitch_importManaged.IsOff &&
 					flipSwitch_importUnmanaged.IsOff
 				))
-			{ 
-				return; 
+			{
+				return;
 			}
 
 			bool importManagd = flipSwitch_importManaged.IsOn;
@@ -191,8 +191,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				if (ImportSolution(solutionFile, importManagd))
 				{
 					Log(
-						"|   Imported the " + 
-						(importManagd ? "managed" : "unmanaged") + 
+						"|   Imported the " +
+						(importManagd ? "managed" : "unmanaged") +
 						" solution: " + solution.FriendlyName);
 				}
 			}
@@ -355,7 +355,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log("|   Error staging: " + errorMessage);
 				}
 			}
-			
+
 			var message = "Bulk Solution Exporter Commit on " + DateTime.Now.ToString("yyyy-MM-dd / hh:mm");
 
 			if (!gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out errorMessage))
@@ -366,7 +366,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				Log("|   " + _sessionFiles.Count + " File(s) was/weres commited: " + message);
 			}
-			
+
 
 			if (flipSwitch_pushCommit.IsOff)
 			{
@@ -381,7 +381,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				Log("|   The commit has been pushed to the remote origin.");
 			}
-			
+
 
 		}
 
@@ -403,6 +403,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			var importRequest = new ImportSolutionRequest()
 			{
 				CustomizationFile = solutionBytes,
+				PublishWorkflows = true,
 				//ImportJobId = Guid.NewGuid(), // Optional: Track the import job
 				ConvertToManaged = isManaged // Set to true if importing as managed
 			};
@@ -423,7 +424,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Log("|   Error during import: " + ex.Message);
 				return false;
 			}
-			
+
 			return true;
 		}
 
@@ -652,10 +653,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
-				
+
 				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
-				
+
 				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
 				flipSwitch_gitCommit.Enabled =
 					flipSwitch_exportManaged.IsOn ||
@@ -730,7 +731,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				button_loadSolutions.Enabled = Service != null;
 			}
-	}
+		}
 
 
 		// ============================================================================
@@ -792,7 +793,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			flipSwitch_gitCommit.Enabled = gitEnabeld;
 			flipSwitch_pushCommit.Enabled = gitEnabeld;
-				
+
 			_codeUpdate = false;
 
 			SaveSettings();
@@ -844,10 +845,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
 		{
-			_settings.ImportManaged = 
+			_settings.ImportManaged =
 				flipSwitch_importManaged.IsOn &&
 				_targetServiceClient != null;
-						
+
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
 				!_codeUpdate)
@@ -857,7 +858,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.ImportUnmanaged = false;
 				_codeUpdate = false;
 			}
-			
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -865,10 +866,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
 		{
-			_settings.ImportUnmanaged = 
+			_settings.ImportUnmanaged =
 				flipSwitch_importUnmanaged.IsOn &&
 				_targetServiceClient != null;
-						
+
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
 				!_codeUpdate)
@@ -878,7 +879,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.ImportManaged = false;
 				_codeUpdate = false;
 			}
-			
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -1035,13 +1036,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			var message = string.Join(" / ", actions) + " Solutions...";
-				
+
 			WorkAsync(new WorkAsyncInfo
 			{
 				Message = message,
 				Work = (worker, args) =>
 				{
-					PublishAll(Service);	// Source environment
+					PublishAll(Service);    // Source environment
 					ExportAllSolutions();
 					HandleGit();
 					ImportAllSolutions();
@@ -1089,6 +1090,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		#endregion
 
 
-		
+
 	}
 }
