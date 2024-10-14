@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.ServiceModel;
 using System.Web.Services.Description;
 using System.Windows.Forms;
@@ -91,7 +93,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void PublishAll(
+		private void PublishAllInSource(
 			IOrganizationService organizationService)
 		{
 			if (flipSwitch_publishSource.IsOff)
@@ -259,6 +261,15 @@ namespace Com.AiricLenz.XTB.Plugin
 			var filePath =
 				isManaged ? solutionConfiguration.FileNameManaged : solutionConfiguration.FileNameUnmanaged;
 
+			string directoryPath = Path.GetDirectoryName(filePath);
+
+			// Check if the directory exists
+			if (!Directory.Exists(directoryPath))
+			{
+				// Create the directory
+				Directory.CreateDirectory(directoryPath);
+			}
+
 			// Save the exported solution to a file
 			File.WriteAllBytes(
 				filePath,
@@ -356,7 +367,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
-			var message = "Bulk Solution Exporter Commit on " + DateTime.Now.ToString("yyyy-MM-dd / hh:mm");
+			var message = textBox_commitMessage.Text;
+
 
 			if (!gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out errorMessage))
 			{
@@ -651,12 +663,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
 				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
-
 				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+				flipSwitch_enableAutomation.IsOn = _settings.EnableAutomation;
+				flipSwitch_overwrite.IsOn = _settings.OverwriteCustomizations;
+				UpdateImportOptionsVisibility();
 
 				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
+				textBox_versionFormat.Text = _settings.VersionFormat;
+				UpdateVersionOptionsVisibility();
 
 				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
 				flipSwitch_gitCommit.Enabled =
@@ -664,13 +680,9 @@ namespace Com.AiricLenz.XTB.Plugin
 					flipSwitch_exportUnmanaged.IsOn;
 				flipSwitch_pushCommit.IsOn = _settings.PushCommit;
 				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
-
-				textBox_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
-				label_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
-				pictureBox_info.Visible = flipSwitch_updateVersion.IsOn;
-
-				textBox_versionFormat.Text = _settings.VersionFormat;
-
+				textBox_commitMessage.Text = _settings.CommitMessage;
+				UpdateGitOptionsVisibility();
+								
 				_codeUpdate = false;
 
 				ExportButtonSetState();
@@ -679,6 +691,54 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_loadSolutions.Enabled = Service != null;
 		}
 
+
+		// ============================================================================
+		private void UpdateGitOptionsVisibility()
+		{
+			textBox_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
+			textBox_commitMessage.BackColor = (
+				flipSwitch_gitCommit.IsOn ?
+				SystemColors.ControlLightLight :
+				SystemColors.Control);
+
+			label_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
+			label_commitMessage.ForeColor = (
+				flipSwitch_gitCommit.IsOn ?
+				SystemColors.ControlText :
+				SystemColors.ControlDarkDark);
+
+			pictureBox_infoCommit.Visible = flipSwitch_gitCommit.IsOn;
+		}
+
+		// ============================================================================
+		private void UpdateVersionOptionsVisibility()
+		{
+			textBox_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
+			textBox_versionFormat.BackColor = (
+				flipSwitch_updateVersion.IsOn ?
+				SystemColors.ControlLightLight :
+				SystemColors.Control);
+
+			label_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
+			label_versionFormat.ForeColor = (
+				flipSwitch_updateVersion.IsOn ?
+				SystemColors.ControlText :
+				SystemColors.ControlDarkDark);
+
+			pictureBox_infoVersion.Visible = flipSwitch_updateVersion.IsOn;
+
+		}
+
+		// ============================================================================
+		private void UpdateImportOptionsVisibility()
+		{
+			var optionEnabled =
+				flipSwitch_importManaged.IsOn ||
+				flipSwitch_importUnmanaged.IsOn;
+
+			flipSwitch_enableAutomation.Enabled = optionEnabled;
+			flipSwitch_overwrite.Enabled = optionEnabled;
+		}
 
 		// ============================================================================
 		public override void ClosingPlugin(PluginCloseInfo info)
@@ -745,6 +805,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+
+				UpdateImportOptionsVisibility();
 			}
 		}
 
@@ -770,11 +832,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void flipSwitch_updateVersion_Toggled(object sender, EventArgs e)
 		{
 			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
-			textBox_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
 
-			textBox_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
-			label_versionFormat.Visible = flipSwitch_updateVersion.IsOn;
-			pictureBox_info.Visible = flipSwitch_updateVersion.IsOn;
+			UpdateVersionOptionsVisibility();			
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -796,7 +855,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_pushCommit.Enabled = gitEnabeld;
 
 			_codeUpdate = false;
-
+			
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -827,6 +886,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
 			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
+
+			UpdateGitOptionsVisibility();
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -860,6 +921,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				_codeUpdate = false;
 			}
 
+			UpdateImportOptionsVisibility();
+
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -881,15 +945,41 @@ namespace Com.AiricLenz.XTB.Plugin
 				_codeUpdate = false;
 			}
 
+			UpdateImportOptionsVisibility();
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
+
+
+		// ============================================================================
+		private void textBox_commitMessage_TextChanged(object sender, EventArgs e)
+		{
+			_settings.CommitMessage = textBox_commitMessage.Text;
+			SaveSettings();
+		}
+
 
 		// ============================================================================
 		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
 		{
 			_settings.VersionFormat = textBox_versionFormat.Text;
 			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_enableAutomation_Toggled(object sender, EventArgs e)
+		{
+			_settings.EnableAutomation = flipSwitch_enableAutomation.IsOn;
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_overwrite_Toggled(object sender, EventArgs e)
+		{
+			_settings.OverwriteCustomizations = flipSwitch_overwrite.IsOn;
+			SaveSettings();
+
 		}
 
 
@@ -1043,7 +1133,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Message = message,
 				Work = (worker, args) =>
 				{
-					PublishAll(Service);    // Source environment
+					PublishAllInSource(Service);    // Source environment
 					ExportAllSolutions();
 					HandleGit();
 					ImportAllSolutions();
@@ -1088,9 +1178,15 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 
+
+
+
+
 		#endregion
 
 
+		
 
+		
 	}
 }

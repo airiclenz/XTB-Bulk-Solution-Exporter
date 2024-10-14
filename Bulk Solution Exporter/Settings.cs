@@ -38,7 +38,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool ImportUnmanaged	{ get; set; }
 
 
+		public string CommitMessage { get; set; }
 		public string VersionFormat { get; set; }
+		public bool EnableAutomation { get; set; }
+		public bool OverwriteCustomizations { get; set; }
+
+
         public List<string> SolutionConfigurations { get; set; }
 
 
@@ -47,12 +52,22 @@ namespace Com.AiricLenz.XTB.Plugin
         public Settings()
         {
             LastUsedOrganizationWebappUrl = string.Empty;
-            ExportManaged = false;
-            ExportUnmanaged = false;
-            UpdateVersion = false;
-            VersionFormat = "YYYY.MM.DD.+";
 
-            SolutionConfigurations = new List<string>();
+			PublishAllPreExport = false;
+			UpdateVersion = false;
+			ExportManaged = false;
+            ExportUnmanaged = false;
+			GitCommit = false;
+			PushCommit = false;
+            ImportManaged = false;
+			ImportUnmanaged = false;
+			            
+			VersionFormat = "YYYY.MM.DD.+";
+			CommitMessage = "XTB Commit - YYYY.MM.DD";
+			EnableAutomation = true;
+			OverwriteCustomizations = false;
+
+			SolutionConfigurations = new List<string>();
         }
 
 
