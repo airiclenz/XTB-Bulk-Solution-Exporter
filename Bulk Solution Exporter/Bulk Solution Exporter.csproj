@@ -283,6 +283,12 @@
     <Compile Include="Components\FlipSwitch.Designer.cs">
       <DependentUpon>FlipSwitch.cs</DependentUpon>
     </Compile>
+    <Compile Include="Components\Shader.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Shader.Designer.cs">
+      <DependentUpon>Shader.cs</DependentUpon>
+    </Compile>
     <Compile Include="Extentions\StringExtention.cs" />
     <Compile Include="Helpers\FileAndFolderHelper.cs" />
     <Compile Include="Helpers\GitHelper.cs" />

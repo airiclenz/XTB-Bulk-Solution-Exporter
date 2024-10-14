@@ -60,7 +60,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.pictureBox_info = new System.Windows.Forms.PictureBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.flipSwitch_publishSource = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
@@ -74,7 +74,7 @@ namespace Com.AiricLenz.XTB.Plugin
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_info)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -392,18 +392,18 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolTip1.SetToolTip(this.pictureBox_info, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
         "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
-            // pictureBox1
+            // pictureBox_arrow
             // 
-            this.pictureBox1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox1.BackgroundImage")));
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox1.ErrorImage = null;
-            this.pictureBox1.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox1.InitialImage")));
-            this.pictureBox1.Location = new System.Drawing.Point(210, 77);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(48, 48);
-            this.pictureBox1.TabIndex = 16;
-            this.pictureBox1.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox1, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
+            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox_arrow.ErrorImage = null;
+            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
+            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
+            this.pictureBox_arrow.Name = "pictureBox_arrow";
+            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
+            this.pictureBox_arrow.TabIndex = 16;
+            this.pictureBox_arrow.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
         "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
             // flipSwitch_publishSource
@@ -498,7 +498,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.flipSwitch_pushCommit);
             this.Controls.Add(this.flipSwitch_importUnmanaged);
             this.Controls.Add(this.flipSwitch_importManaged);
-            this.Controls.Add(this.pictureBox1);
+            this.Controls.Add(this.pictureBox_arrow);
             this.Controls.Add(this.flipSwitch_gitCommit);
             this.Controls.Add(this.flipSwitch_publishSource);
             this.Controls.Add(this.pictureBox_info);
@@ -521,7 +521,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu.ResumeLayout(false);
             this.toolStripMenu.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_info)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -556,7 +556,7 @@ namespace Com.AiricLenz.XTB.Plugin
         private System.Windows.Forms.Label label_title;
 		private FlipSwitch flipSwitch_gitCommit;
 		private FlipSwitch flipSwitch_publishSource;
-		private System.Windows.Forms.PictureBox pictureBox1;
+		private System.Windows.Forms.PictureBox pictureBox_arrow;
 		private FlipSwitch flipSwitch_importManaged;
 		private FlipSwitch flipSwitch_importUnmanaged;
 		private FlipSwitch flipSwitch_pushCommit;

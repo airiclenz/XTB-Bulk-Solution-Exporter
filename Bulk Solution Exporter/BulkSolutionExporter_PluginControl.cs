@@ -404,8 +404,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				CustomizationFile = solutionBytes,
 				PublishWorkflows = true,
-				//ImportJobId = Guid.NewGuid(), // Optional: Track the import job
-				ConvertToManaged = isManaged // Set to true if importing as managed
+				OverwriteUnmanagedCustomizations = false,
+				ConvertToManaged = isManaged,
+				ImportJobId = Guid.NewGuid(), // Optional: Track the import job
 			};
 
 			// Execute import request
