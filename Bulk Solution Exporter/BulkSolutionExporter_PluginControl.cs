@@ -111,7 +111,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ExportAllSolutions()
 		{
-			if (flipSwitch_exportManaged.IsOff &&
+			if (flipSwitch_updateVersion.IsOff &&
+				flipSwitch_exportManaged.IsOff &&
 				flipSwitch_exportUnmanaged.IsOff)
 			{
 				return;
@@ -736,8 +737,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_gitCommit.IsOn ?
 				SystemColors.ControlText :
 				SystemColors.ControlDarkDark);
-
-			pictureBox_infoCommit.Visible = flipSwitch_gitCommit.IsOn;
 		}
 
 		// ============================================================================
@@ -754,9 +753,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_updateVersion.IsOn ?
 				SystemColors.ControlText :
 				SystemColors.ControlDarkDark);
-
-			pictureBox_infoVersion.Visible = flipSwitch_updateVersion.IsOn;
-
 		}
 
 		// ============================================================================
@@ -835,6 +831,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+
+				button_addAdditionalConnection.Enabled = false;
 
 				UpdateImportOptionsVisibility();
 			}

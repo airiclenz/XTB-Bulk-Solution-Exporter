@@ -56,9 +56,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_addAdditionalConnection = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.pictureBox_infoVersion = new System.Windows.Forms.PictureBox();
             this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
-            this.pictureBox_infoCommit = new System.Windows.Forms.PictureBox();
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
@@ -78,9 +76,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_infoVersion)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_infoCommit)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -241,15 +237,15 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // textBox_versionFormat
             // 
-            this.textBox_versionFormat.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox_versionFormat.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.textBox_versionFormat.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_versionFormat.Location = new System.Drawing.Point(696, 77);
             this.textBox_versionFormat.Name = "textBox_versionFormat";
-            this.textBox_versionFormat.Size = new System.Drawing.Size(270, 23);
+            this.textBox_versionFormat.Size = new System.Drawing.Size(150, 23);
             this.textBox_versionFormat.TabIndex = 8;
             this.textBox_versionFormat.Text = "YYYY.MM.DD.+";
+            this.toolTip1.SetToolTip(this.textBox_versionFormat, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day\r\n");
             this.textBox_versionFormat.TextChanged += new System.EventHandler(this.textBox_versionFormat_TextChanged);
             this.textBox_versionFormat.Leave += new System.EventHandler(this.textBox_versionFormat_Leave);
             // 
@@ -333,20 +329,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 42);
             // 
-            // pictureBox_infoVersion
-            // 
-            this.pictureBox_infoVersion.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_infoVersion.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_infoVersion.BackgroundImage")));
-            this.pictureBox_infoVersion.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox_infoVersion.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_infoVersion.InitialImage")));
-            this.pictureBox_infoVersion.Location = new System.Drawing.Point(972, 79);
-            this.pictureBox_infoVersion.Name = "pictureBox_infoVersion";
-            this.pictureBox_infoVersion.Size = new System.Drawing.Size(18, 18);
-            this.pictureBox_infoVersion.TabIndex = 13;
-            this.pictureBox_infoVersion.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_infoVersion, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
-            // 
             // pictureBox_arrow
             // 
             this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
@@ -361,20 +343,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
         "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
-            // pictureBox_infoCommit
-            // 
-            this.pictureBox_infoCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_infoCommit.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_infoCommit.BackgroundImage")));
-            this.pictureBox_infoCommit.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox_infoCommit.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_infoCommit.InitialImage")));
-            this.pictureBox_infoCommit.Location = new System.Drawing.Point(972, 54);
-            this.pictureBox_infoCommit.Name = "pictureBox_infoCommit";
-            this.pictureBox_infoCommit.Size = new System.Drawing.Size(18, 18);
-            this.pictureBox_infoCommit.TabIndex = 21;
-            this.pictureBox_infoCommit.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_infoCommit, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
-            // 
             // textBox_commitMessage
             // 
             this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -383,7 +351,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_commitMessage.Location = new System.Drawing.Point(696, 52);
             this.textBox_commitMessage.Name = "textBox_commitMessage";
-            this.textBox_commitMessage.Size = new System.Drawing.Size(270, 23);
+            this.textBox_commitMessage.Size = new System.Drawing.Size(294, 23);
             this.textBox_commitMessage.TabIndex = 20;
             this.textBox_commitMessage.Text = "XTB Commit";
             this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
@@ -599,7 +567,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.flipSwitch_overwrite);
             this.Controls.Add(this.flipSwitch_enableAutomation);
             this.Controls.Add(this.label_commitMessage);
-            this.Controls.Add(this.pictureBox_infoCommit);
             this.Controls.Add(this.textBox_commitMessage);
             this.Controls.Add(this.flipSwitch_pushCommit);
             this.Controls.Add(this.flipSwitch_importUnmanaged);
@@ -607,7 +574,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.pictureBox_arrow);
             this.Controls.Add(this.flipSwitch_gitCommit);
             this.Controls.Add(this.flipSwitch_publishSource);
-            this.Controls.Add(this.pictureBox_infoVersion);
             this.Controls.Add(this.label_versionFormat);
             this.Controls.Add(this.flipSwitch_updateVersion);
             this.Controls.Add(this.textBox_versionFormat);
@@ -626,9 +592,7 @@ namespace Com.AiricLenz.XTB.Plugin
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).EndInit();
             this.toolStripMenu.ResumeLayout(false);
             this.toolStripMenu.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_infoVersion)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_infoCommit)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -657,7 +621,6 @@ namespace Com.AiricLenz.XTB.Plugin
         private System.Windows.Forms.ToolStripSeparator tssSeparator1;
         private System.Windows.Forms.ToolStripButton button_Export;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.PictureBox pictureBox_infoVersion;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.ToolTip toolTip2;
         private System.Windows.Forms.Label label_title;
@@ -670,7 +633,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripButton button_addAdditionalConnection;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
 		private System.Windows.Forms.Label label_commitMessage;
-		private System.Windows.Forms.PictureBox pictureBox_infoCommit;
 		private System.Windows.Forms.TextBox textBox_commitMessage;
 		private FlipSwitch flipSwitch_enableAutomation;
 		private FlipSwitch flipSwitch_overwrite;
