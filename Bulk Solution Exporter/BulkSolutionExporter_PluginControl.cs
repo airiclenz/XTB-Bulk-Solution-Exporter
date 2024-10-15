@@ -1,20 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.ServiceModel;
-using System.Web.Services.Description;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
-using LibGit2Sharp;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Rest;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
@@ -539,8 +534,14 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ExportButtonSetState()
 		{
+			var versionIsInvalid =
+				!Com.AiricLenz.XTB.Plugin.Schema.Version.ValidateFormat(
+					textBox_versionFormat.Text);
+
 			var exportEnabled =
 				(listSolutions.CheckedItems.Count > 0) &&
+				!(flipSwitch_gitCommit.IsOn && (textBox_commitMessage.Text.Length < 5)) &&
+				!(flipSwitch_updateVersion.IsOn && versionIsInvalid) &&
 				(
 					flipSwitch_exportManaged.IsOn ||
 					flipSwitch_exportUnmanaged.IsOn ||
@@ -550,6 +551,35 @@ namespace Com.AiricLenz.XTB.Plugin
 				);
 
 			button_Export.Enabled = exportEnabled;
+
+
+			// Version Format
+			if (flipSwitch_updateVersion.IsOn &&
+				versionIsInvalid)
+			{
+				label_versionFormat.ForeColor = Color.Red;
+				label_versionFormat.Font = new Font(label_commitMessage.Font, FontStyle.Bold);
+			}
+			else
+			{
+				label_versionFormat.ForeColor = SystemColors.ControlText;
+				label_versionFormat.Font = new Font(label_commitMessage.Font, FontStyle.Regular);
+			}
+
+			// Commit Message Text
+			if (flipSwitch_gitCommit.IsOn &&
+				textBox_commitMessage.Text.Length < 5)
+			{
+				label_commitMessage.ForeColor = Color.Red;
+				label_commitMessage.Font = new Font(label_commitMessage.Font, FontStyle.Bold);
+			}
+			else
+			{
+				label_commitMessage.ForeColor = SystemColors.ControlText;
+				label_commitMessage.Font = new Font(label_commitMessage.Font, FontStyle.Regular);
+			}
+
+			
 
 		}
 
@@ -956,16 +986,32 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void textBox_commitMessage_TextChanged(object sender, EventArgs e)
 		{
 			_settings.CommitMessage = textBox_commitMessage.Text;
-			SaveSettings();
+			ExportButtonSetState();
 		}
 
+
+		// ============================================================================
+		private void textBox_commitMessage_Leave(object sender, EventArgs e)
+		{
+			_settings.CommitMessage = textBox_commitMessage.Text;
+			SaveSettings();
+		}
+		
 
 		// ============================================================================
 		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
 		{
 			_settings.VersionFormat = textBox_versionFormat.Text;
+			ExportButtonSetState();
+		}
+
+		// ============================================================================
+		private void textBox_versionFormat_Leave(object sender, EventArgs e)
+		{
+			_settings.VersionFormat = textBox_versionFormat.Text;
 			SaveSettings();
 		}
+
 
 		// ============================================================================
 		private void flipSwitch_enableAutomation_Toggled(object sender, EventArgs e)
@@ -1033,7 +1079,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.AddSolutionConfiguration(_currentSolutionConfig);
 			SaveSettings();
 		}
-
 
 		// ============================================================================
 		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
@@ -1178,15 +1223,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 
-
-
-
-
 		#endregion
 
 
-		
-
-		
 	}
 }

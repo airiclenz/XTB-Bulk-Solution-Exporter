@@ -231,13 +231,13 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // label_versionFormat
             // 
-            this.label_versionFormat.AutoSize = true;
             this.label_versionFormat.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_versionFormat.Location = new System.Drawing.Point(591, 81);
+            this.label_versionFormat.Location = new System.Drawing.Point(490, 79);
             this.label_versionFormat.Name = "label_versionFormat";
-            this.label_versionFormat.Size = new System.Drawing.Size(98, 16);
+            this.label_versionFormat.Size = new System.Drawing.Size(200, 16);
             this.label_versionFormat.TabIndex = 9;
             this.label_versionFormat.Text = "Version Format";
+            this.label_versionFormat.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // textBox_versionFormat
             // 
@@ -251,6 +251,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_versionFormat.TabIndex = 8;
             this.textBox_versionFormat.Text = "YYYY.MM.DD.+";
             this.textBox_versionFormat.TextChanged += new System.EventHandler(this.textBox_versionFormat_TextChanged);
+            this.textBox_versionFormat.Leave += new System.EventHandler(this.textBox_versionFormat_Leave);
             // 
             // saveFileDialog1
             // 
@@ -386,16 +387,17 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_commitMessage.TabIndex = 20;
             this.textBox_commitMessage.Text = "XTB Commit";
             this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
+            this.textBox_commitMessage.Leave += new System.EventHandler(this.textBox_commitMessage_Leave);
             // 
             // label_commitMessage
             // 
-            this.label_commitMessage.AutoSize = true;
             this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_commitMessage.Location = new System.Drawing.Point(577, 56);
+            this.label_commitMessage.Location = new System.Drawing.Point(490, 56);
             this.label_commitMessage.Name = "label_commitMessage";
-            this.label_commitMessage.Size = new System.Drawing.Size(112, 16);
+            this.label_commitMessage.Size = new System.Drawing.Size(200, 16);
             this.label_commitMessage.TabIndex = 22;
             this.label_commitMessage.Text = "Commit Message";
+            this.label_commitMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // flipSwitch_overwrite
             // 
