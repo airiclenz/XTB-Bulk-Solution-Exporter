@@ -57,11 +57,11 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
+            this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
-            this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_pushCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
@@ -343,30 +343,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
         "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
-            // textBox_commitMessage
-            // 
-            this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_commitMessage.Location = new System.Drawing.Point(696, 52);
-            this.textBox_commitMessage.Name = "textBox_commitMessage";
-            this.textBox_commitMessage.Size = new System.Drawing.Size(294, 23);
-            this.textBox_commitMessage.TabIndex = 20;
-            this.textBox_commitMessage.Text = "XTB Commit";
-            this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
-            this.textBox_commitMessage.Leave += new System.EventHandler(this.textBox_commitMessage_Leave);
-            // 
-            // label_commitMessage
-            // 
-            this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_commitMessage.Location = new System.Drawing.Point(490, 56);
-            this.label_commitMessage.Name = "label_commitMessage";
-            this.label_commitMessage.Size = new System.Drawing.Size(200, 16);
-            this.label_commitMessage.TabIndex = 22;
-            this.label_commitMessage.Text = "Commit Message";
-            this.label_commitMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
             // flipSwitch_overwrite
             // 
             this.flipSwitch_overwrite.AutoSize = true;
@@ -407,6 +383,30 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_enableAutomation.Title = "Enable Automation";
             this.toolTip1.SetToolTip(this.flipSwitch_enableAutomation, "Enable Workflows and Plugin-Steps after import of the solution.");
             this.flipSwitch_enableAutomation.Toggled += new System.EventHandler(this.flipSwitch_enableAutomation_Toggled);
+            // 
+            // textBox_commitMessage
+            // 
+            this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_commitMessage.Location = new System.Drawing.Point(696, 52);
+            this.textBox_commitMessage.Name = "textBox_commitMessage";
+            this.textBox_commitMessage.Size = new System.Drawing.Size(294, 23);
+            this.textBox_commitMessage.TabIndex = 20;
+            this.textBox_commitMessage.Text = "XTB Commit";
+            this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
+            this.textBox_commitMessage.Leave += new System.EventHandler(this.textBox_commitMessage_Leave);
+            // 
+            // label_commitMessage
+            // 
+            this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_commitMessage.Location = new System.Drawing.Point(490, 56);
+            this.label_commitMessage.Name = "label_commitMessage";
+            this.label_commitMessage.Size = new System.Drawing.Size(200, 16);
+            this.label_commitMessage.TabIndex = 22;
+            this.label_commitMessage.Text = "Commit Message";
+            this.label_commitMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // flipSwitch_pushCommit
             // 

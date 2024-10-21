@@ -4,7 +4,7 @@
         <!-- Required elements-->
         <id>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</id>
 		<title>Bulk Solution Manager</title>
-        <version>2024.10.14.14</version>
+        <version>2024.10.21.15</version>
         <authors>Airic Lenz</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>A Bulk-Solution-Manager tool for the XrmToolBox that can automatically export and import multiple solutions at a time. The tool supports manged- and unmanaged solution where each file is saved in its specific target location. Before updating, the solution's version number(s) can be updated according to a custom version format. Downloaded files can automatically be commited to a git repository.</description>

@@ -1,12 +1,12 @@
 ﻿
-
-// ============================================================================
-// ============================================================================
-// ============================================================================
 using System.Drawing.Drawing2D;
 using System.Drawing;
 using System.Windows.Forms;
 
+
+// ============================================================================
+// ============================================================================
+// ============================================================================
 namespace Com.AiricLenz.XTB.Components
 {
 
@@ -15,16 +15,20 @@ namespace Com.AiricLenz.XTB.Components
     // ============================================================================
     partial class FlipSwitch
     {
-        /// <summary> 
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
+		// ============================================================================
+		/// <summary> 
+		/// Required designer variable.
+		/// </summary>
+		private System.ComponentModel.IContainer components = null;
+
+
+		// ============================================================================
+		/// <summary> 
+		/// Clean up any resources being used.
+		/// </summary>
+		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+		protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
             {
@@ -33,21 +37,23 @@ namespace Com.AiricLenz.XTB.Components
             base.Dispose(disposing);
         }
 
-        #region Component Designer generated code
 
-        /// <summary> 
-        /// Required method for Designer support - do not modify 
-        /// the contents of this method with the code editor.
-        /// </summary>
-        private void InitializeComponent()
+		// ============================================================================
+		/// <summary> 
+		/// Required method for Designer support - do not modify 
+		/// the contents of this method with the code editor.
+		/// </summary>
+		private void InitializeComponent()
         {
             this.SuspendLayout();
             // 
             // FlipSwitch
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "FlipSwitch";
+            
+			//this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            //this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			this.Size = new System.Drawing.Size(6, 13);
+			this.Name = "FlipSwitch";
             this.ResumeLayout(false);
 
         }
@@ -114,6 +120,6 @@ namespace Com.AiricLenz.XTB.Components
 			}
 		}
 
-		#endregion
+
 	}
 }

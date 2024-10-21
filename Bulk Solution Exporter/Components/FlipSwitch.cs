@@ -1,16 +1,7 @@
-﻿using Microsoft.Xrm.Sdk.Metadata;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.UI.Design;
 using System.Windows.Forms;
-using static ScintillaNET.Style;
 
 
 // ============================================================================
@@ -22,7 +13,7 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	public partial class FlipSwitch : UserControl
+	public partial class FlipSwitch : Control
     {
 
         private bool _isOn;
@@ -266,19 +257,7 @@ namespace Com.AiricLenz.XTB.Components
             }
         }
 
-		/*
-		// ============================================================================
-		protected override void OnInvalidated(
-			InvalidateEventArgs e)
-		{
-			base.OnInvalidated(e);
-			// Trigger a repaint when invalidated
-			Invalidate();
-		}
-		*/
-
-
-		
+	
 
         // ============================================================================
         private void AdjustWidth()

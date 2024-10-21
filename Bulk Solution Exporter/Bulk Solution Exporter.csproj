@@ -222,6 +222,7 @@
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp">
@@ -257,6 +258,7 @@
       <HintPath>..\packages\DockPanelSuite.ThemeVS2015.3.1.1\lib\net40\WeifenLuo.WinFormsUI.Docking.ThemeVS2015.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="WindowsBase" />
     <Reference Include="XrmToolBox, Version=1.2023.10.67, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\XrmToolBoxPackage.1.2023.10.67\lib\net462\XrmToolBox.exe</HintPath>
       <Private>True</Private>
@@ -278,8 +280,14 @@
     <Compile Include="BulkSolutionExporter_PluginControl.designer.cs">
       <DependentUpon>BulkSolutionExporter_PluginControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Components\SortableCheckList.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\SortableCheckList.Designer.cs">
+      <DependentUpon>SortableCheckList.cs</DependentUpon>
+    </Compile>
     <Compile Include="Components\FlipSwitch.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\FlipSwitch.Designer.cs">
       <DependentUpon>FlipSwitch.cs</DependentUpon>
