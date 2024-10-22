@@ -589,10 +589,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void UpdateSolutionList()
 		{
 			listSolutions.Items.Clear();
+			listSolutions2.Items.Clear();
 
 			foreach (var solution in _solutions)
 			{
 				listSolutions.Items.Add(solution);
+				listSolutions2.Items.Add(solution);
 			}
 
 			// select the item in the list that were selected before

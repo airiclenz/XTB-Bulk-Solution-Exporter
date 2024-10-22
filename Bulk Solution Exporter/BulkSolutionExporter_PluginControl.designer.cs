@@ -34,6 +34,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BulkSolutionExporter_PluginControl));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.listSolutions2 = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.listSolutions = new System.Windows.Forms.CheckedListBox();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
@@ -89,6 +90,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.listSolutions2);
             this.splitContainer1.Panel1.Controls.Add(this.listSolutions);
             // 
             // splitContainer1.Panel2
@@ -105,6 +107,21 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Size = new System.Drawing.Size(994, 625);
             this.splitContainer1.SplitterDistance = 328;
             this.splitContainer1.TabIndex = 6;
+            // 
+            // listSolutions2
+            // 
+            this.listSolutions2.BackColor = System.Drawing.SystemColors.Window;
+            this.listSolutions2.BorderColor = System.Drawing.SystemColors.ControlDark;
+            this.listSolutions2.BorderThickness = 1F;
+            this.listSolutions2.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listSolutions2.ItemHeigth = 20;
+            this.listSolutions2.Items = ((System.Collections.Generic.List<object>)(resources.GetObject("listSolutions2.Items")));
+            this.listSolutions2.Location = new System.Drawing.Point(12, 182);
+            this.listSolutions2.Name = "listSolutions2";
+            this.listSolutions2.ScrollOffset = 0;
+            this.listSolutions2.Size = new System.Drawing.Size(289, 249);
+            this.listSolutions2.TabIndex = 7;
+            this.listSolutions2.Text = "sortableCheckList1";
             // 
             // listSolutions
             // 
@@ -345,13 +362,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_overwrite
             // 
-            this.flipSwitch_overwrite.AutoSize = true;
             this.flipSwitch_overwrite.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_overwrite.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_overwrite.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_overwrite.IsOn = false;
             this.flipSwitch_overwrite.Location = new System.Drawing.Point(535, 130);
-            this.flipSwitch_overwrite.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_overwrite.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_overwrite.MarginText = 2;
             this.flipSwitch_overwrite.Name = "flipSwitch_overwrite";
             this.flipSwitch_overwrite.Size = new System.Drawing.Size(193, 20);
@@ -366,13 +382,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_enableAutomation
             // 
-            this.flipSwitch_enableAutomation.AutoSize = true;
             this.flipSwitch_enableAutomation.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_enableAutomation.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_enableAutomation.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_enableAutomation.IsOn = true;
             this.flipSwitch_enableAutomation.Location = new System.Drawing.Point(574, 105);
-            this.flipSwitch_enableAutomation.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_enableAutomation.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_enableAutomation.MarginText = 2;
             this.flipSwitch_enableAutomation.Name = "flipSwitch_enableAutomation";
             this.flipSwitch_enableAutomation.Size = new System.Drawing.Size(154, 20);
@@ -410,13 +425,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_pushCommit
             // 
-            this.flipSwitch_pushCommit.AutoSize = true;
             this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_pushCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_pushCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_pushCommit.IsOn = false;
             this.flipSwitch_pushCommit.Location = new System.Drawing.Point(300, 80);
-            this.flipSwitch_pushCommit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_pushCommit.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_pushCommit.MarginText = 7;
             this.flipSwitch_pushCommit.Name = "flipSwitch_pushCommit";
             this.flipSwitch_pushCommit.Size = new System.Drawing.Size(126, 20);
@@ -429,13 +443,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_importUnmanaged
             // 
-            this.flipSwitch_importUnmanaged.AutoSize = true;
             this.flipSwitch_importUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_importUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_importUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_importUnmanaged.IsOn = false;
             this.flipSwitch_importUnmanaged.Location = new System.Drawing.Point(300, 130);
-            this.flipSwitch_importUnmanaged.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_importUnmanaged.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_importUnmanaged.MarginText = 7;
             this.flipSwitch_importUnmanaged.Name = "flipSwitch_importUnmanaged";
             this.flipSwitch_importUnmanaged.Size = new System.Drawing.Size(160, 20);
@@ -448,13 +461,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_importManaged
             // 
-            this.flipSwitch_importManaged.AutoSize = true;
             this.flipSwitch_importManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_importManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_importManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_importManaged.IsOn = false;
             this.flipSwitch_importManaged.Location = new System.Drawing.Point(300, 105);
-            this.flipSwitch_importManaged.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_importManaged.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_importManaged.MarginText = 7;
             this.flipSwitch_importManaged.Name = "flipSwitch_importManaged";
             this.flipSwitch_importManaged.Size = new System.Drawing.Size(143, 20);
@@ -467,13 +479,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_gitCommit
             // 
-            this.flipSwitch_gitCommit.AutoSize = true;
             this.flipSwitch_gitCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_gitCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_gitCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_gitCommit.IsOn = false;
             this.flipSwitch_gitCommit.Location = new System.Drawing.Point(300, 55);
-            this.flipSwitch_gitCommit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_gitCommit.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_gitCommit.MarginText = 7;
             this.flipSwitch_gitCommit.Name = "flipSwitch_gitCommit";
             this.flipSwitch_gitCommit.Size = new System.Drawing.Size(157, 20);
@@ -486,13 +497,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_publishSource
             // 
-            this.flipSwitch_publishSource.AutoSize = true;
             this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_publishSource.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_publishSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_publishSource.IsOn = false;
             this.flipSwitch_publishSource.Location = new System.Drawing.Point(15, 55);
-            this.flipSwitch_publishSource.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_publishSource.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_publishSource.MarginText = 7;
             this.flipSwitch_publishSource.Name = "flipSwitch_publishSource";
             this.flipSwitch_publishSource.Size = new System.Drawing.Size(163, 20);
@@ -505,13 +515,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_updateVersion
             // 
-            this.flipSwitch_updateVersion.AutoSize = true;
             this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_updateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_updateVersion.IsOn = false;
             this.flipSwitch_updateVersion.Location = new System.Drawing.Point(15, 80);
-            this.flipSwitch_updateVersion.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_updateVersion.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_updateVersion.MarginText = 7;
             this.flipSwitch_updateVersion.Name = "flipSwitch_updateVersion";
             this.flipSwitch_updateVersion.Size = new System.Drawing.Size(154, 20);
@@ -524,13 +533,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_exportUnmanaged
             // 
-            this.flipSwitch_exportUnmanaged.AutoSize = true;
             this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_exportUnmanaged.IsOn = false;
             this.flipSwitch_exportUnmanaged.Location = new System.Drawing.Point(15, 130);
-            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_exportUnmanaged.MarginText = 7;
             this.flipSwitch_exportUnmanaged.Name = "flipSwitch_exportUnmanaged";
             this.flipSwitch_exportUnmanaged.Size = new System.Drawing.Size(161, 20);
@@ -543,13 +551,12 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_exportManaged
             // 
-            this.flipSwitch_exportManaged.AutoSize = true;
             this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
             this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_exportManaged.IsOn = false;
             this.flipSwitch_exportManaged.Location = new System.Drawing.Point(15, 105);
-            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_exportManaged.MarginText = 7;
             this.flipSwitch_exportManaged.Name = "flipSwitch_exportManaged";
             this.flipSwitch_exportManaged.Size = new System.Drawing.Size(144, 20);
@@ -636,5 +643,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.TextBox textBox_commitMessage;
 		private FlipSwitch flipSwitch_enableAutomation;
 		private FlipSwitch flipSwitch_overwrite;
+		private SortableCheckList listSolutions2;
 	}
 }
