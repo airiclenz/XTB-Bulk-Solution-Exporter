@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using Com.AiricLenz.Extentions;
+using Com.AiricLenz.XTB.Components;
 using Microsoft.Xrm.Sdk;
 
 
@@ -18,7 +19,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	internal class Solution
+	internal class Solution : IComparable<Solution>
 	{
 
 		private Guid _connectionGuid;
@@ -86,6 +87,13 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			Guid conectionGuid)
 		{
 			_connectionGuid = conectionGuid;
+		}
+
+
+		// ============================================================================
+		public int CompareTo(Solution other)
+		{
+			return _friendlyName.CompareTo(other.FriendlyName);
 		}
 
 

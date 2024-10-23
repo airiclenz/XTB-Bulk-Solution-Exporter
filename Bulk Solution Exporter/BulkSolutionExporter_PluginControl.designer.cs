@@ -34,8 +34,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BulkSolutionExporter_PluginControl));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.listSolutions2 = new Com.AiricLenz.XTB.Components.SortableCheckList();
-            this.listSolutions = new System.Windows.Forms.CheckedListBox();
+            this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
             this.textBox_log = new System.Windows.Forms.TextBox();
@@ -90,8 +89,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.listSolutions2);
-            this.splitContainer1.Panel1.Controls.Add(this.listSolutions);
+            this.splitContainer1.Panel1.Controls.Add(this.listBoxSolutions);
             // 
             // splitContainer1.Panel2
             // 
@@ -108,36 +106,29 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.SplitterDistance = 328;
             this.splitContainer1.TabIndex = 6;
             // 
-            // listSolutions2
+            // listBoxSolutions
             // 
-            this.listSolutions2.BackColor = System.Drawing.SystemColors.Window;
-            this.listSolutions2.BorderColor = System.Drawing.SystemColors.ControlDark;
-            this.listSolutions2.BorderThickness = 1F;
-            this.listSolutions2.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.listSolutions2.ItemHeigth = 20;
-            this.listSolutions2.Items = ((System.Collections.Generic.List<object>)(resources.GetObject("listSolutions2.Items")));
-            this.listSolutions2.Location = new System.Drawing.Point(12, 182);
-            this.listSolutions2.Name = "listSolutions2";
-            this.listSolutions2.ScrollOffset = 0;
-            this.listSolutions2.Size = new System.Drawing.Size(289, 249);
-            this.listSolutions2.TabIndex = 7;
-            this.listSolutions2.Text = "sortableCheckList1";
-            // 
-            // listSolutions
-            // 
-            this.listSolutions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.listBoxSolutions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.listSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.listSolutions.FormattingEnabled = true;
-            this.listSolutions.Location = new System.Drawing.Point(3, 3);
-            this.listSolutions.Name = "listSolutions";
-            this.listSolutions.Size = new System.Drawing.Size(322, 616);
-            this.listSolutions.Sorted = true;
-            this.listSolutions.TabIndex = 6;
-            this.listSolutions.UseCompatibleTextRendering = true;
-            this.listSolutions.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.listSolutions_ItemCheck);
-            this.listSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
+            this.listBoxSolutions.BackColor = System.Drawing.SystemColors.Window;
+            this.listBoxSolutions.BorderColor = System.Drawing.SystemColors.ControlDark;
+            this.listBoxSolutions.BorderThickness = 1F;
+            this.listBoxSolutions.CheckBoxMargin = 4;
+            this.listBoxSolutions.CheckBoxRadius = 18;
+            this.listBoxSolutions.CheckBoxSize = 18;
+            this.listBoxSolutions.ColorChecked = System.Drawing.Color.MediumSlateBlue;
+            this.listBoxSolutions.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listBoxSolutions.ItemHeigth = 24;
+            this.listBoxSolutions.Items = ((System.Collections.Generic.List<object>)(resources.GetObject("listBoxSolutions.Items")));
+            this.listBoxSolutions.Location = new System.Drawing.Point(3, 3);
+            this.listBoxSolutions.Name = "listBoxSolutions";
+            this.listBoxSolutions.Size = new System.Drawing.Size(322, 617);
+            this.listBoxSolutions.TabIndex = 7;
+            this.listBoxSolutions.Text = "sortableCheckList1";
+            this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
+            this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions2_ItemCheck);
             // 
             // label_title
             // 
@@ -362,7 +353,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_overwrite
             // 
-            this.flipSwitch_overwrite.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_overwrite.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_overwrite.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_overwrite.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_overwrite.IsOn = false;
@@ -382,7 +373,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_enableAutomation
             // 
-            this.flipSwitch_enableAutomation.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_enableAutomation.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_enableAutomation.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_enableAutomation.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_enableAutomation.IsOn = true;
@@ -425,7 +416,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_pushCommit
             // 
-            this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_pushCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_pushCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_pushCommit.IsOn = false;
@@ -443,7 +434,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_importUnmanaged
             // 
-            this.flipSwitch_importUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_importUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_importUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_importUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_importUnmanaged.IsOn = false;
@@ -461,7 +452,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_importManaged
             // 
-            this.flipSwitch_importManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_importManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_importManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_importManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_importManaged.IsOn = false;
@@ -479,7 +470,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_gitCommit
             // 
-            this.flipSwitch_gitCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_gitCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_gitCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_gitCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_gitCommit.IsOn = false;
@@ -497,7 +488,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_publishSource
             // 
-            this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_publishSource.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_publishSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_publishSource.IsOn = false;
@@ -515,7 +506,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_updateVersion
             // 
-            this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_updateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_updateVersion.IsOn = false;
@@ -533,7 +524,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_exportUnmanaged
             // 
-            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_exportUnmanaged.IsOn = false;
@@ -551,7 +542,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // flipSwitch_exportManaged
             // 
-            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
             this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
             this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_exportManaged.IsOn = false;
@@ -607,7 +598,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
         #endregion
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.CheckedListBox listSolutions;
         private System.Windows.Forms.TextBox textBox_unmanaged;
         private System.Windows.Forms.TextBox textBox_managed;
         private System.Windows.Forms.TextBox textBox_log;
@@ -643,6 +633,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.TextBox textBox_commitMessage;
 		private FlipSwitch flipSwitch_enableAutomation;
 		private FlipSwitch flipSwitch_overwrite;
-		private SortableCheckList listSolutions2;
+		private SortableCheckList listBoxSolutions;
 	}
 }

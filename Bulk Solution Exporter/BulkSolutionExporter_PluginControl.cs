@@ -49,7 +49,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateSolutionSettingsScreen()
 		{
-			if (listSolutions.SelectedIndex == -1)
+			if (listBoxSolutions.SelectedIndex == -1)
 			{
 				button_browseManaged.Enabled = false;
 				button_browseUnmananged.Enabled = false;
@@ -65,7 +65,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_currentSolution =
-				(listSolutions.SelectedItem as Solution);
+				(listBoxSolutions.SelectedItem as Solution);
 
 			_currentSolutionConfig =
 				_settings.GetSolutionConfiguration(
@@ -118,9 +118,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listSolutions.CheckedItems[i] as Solution;
+				var listItem = listBoxSolutions.CheckedItems[i] as Solution;
 				var solution = listItem;
 
 				var solutionConfig =
@@ -168,9 +168,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("");
 			Log("Importing solutions now");
 
-			for (int i = 0; i < listSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listSolutions.CheckedItems[i] as Solution;
+				var listItem = listBoxSolutions.CheckedItems[i] as Solution;
 				var solution = listItem;
 
 				var solutionConfig =
@@ -420,7 +420,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			// Execute import request
 			try
 			{
-				IncreaseServiceTimeout();
 				_targetServiceClient.Execute(importRequest);
 			}
 			catch (FaultException ex)
@@ -437,25 +436,16 @@ namespace Com.AiricLenz.XTB.Plugin
 			return true;
 		}
 
-		// ============================================================================
-		private void IncreaseServiceTimeout()
-		{
-			if (Service is OrganizationServiceProxy serviceProxy)
-			{
-				serviceProxy.Timeout = new TimeSpan(0, 15, 0); // Set to 15 minutes
-			}
-			/*
-			else if (Service is ServiceClient serviceClient)
-			{
-				serviceClient.ClientCredentials.ServiceTimeout = TimeSpan.FromMinutes(5); // Set to 5 minutes
-			}
-			*/
-		}
-
 
 		// ============================================================================
 		private void LoadAllSolutions()
 		{
+			
+			if (Service == null)
+			{
+				return;
+			}
+
 			WorkAsync(new WorkAsyncInfo
 			{
 				Message = "Getting Solutions",
@@ -495,7 +485,10 @@ namespace Com.AiricLenz.XTB.Plugin
 							"Error",
 							MessageBoxButtons.OK,
 							MessageBoxIcon.Error);
+
+						return;
 					}
+
 					var result = args.Result as EntityCollection;
 					if (result != null)
 					{
@@ -521,14 +514,14 @@ namespace Com.AiricLenz.XTB.Plugin
 								Solution.ConvertFrom(entity, _currentConnectionGuid, maxNameLength));
 
 						}
-
-						UpdateSolutionList();
-
 					}
+
+					UpdateSolutionList();
+					ExportButtonSetState();
 				}
 			});
 
-			ExportButtonSetState();
+			
 
 		}
 
@@ -540,7 +533,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					textBox_versionFormat.Text);
 
 			var exportEnabled =
-				(listSolutions.CheckedItems.Count > 0) &&
+				(listBoxSolutions.CheckedItems.Count > 0) &&
 				!(flipSwitch_gitCommit.IsOn && (textBox_commitMessage.Text.Length < 5)) &&
 				!(flipSwitch_updateVersion.IsOn && versionIsInvalid) &&
 				(
@@ -588,13 +581,18 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateSolutionList()
 		{
-			listSolutions.Items.Clear();
-			listSolutions2.Items.Clear();
+			listBoxSolutions.Items.Clear();
+
+			_solutions.Sort();
 
 			foreach (var solution in _solutions)
 			{
-				listSolutions.Items.Add(solution);
-				listSolutions2.Items.Add(solution);
+				listBoxSolutions.Items.Add(solution);
+			}
+
+			if (_settings == null)
+			{
+				return;
 			}
 
 			// select the item in the list that were selected before
@@ -610,16 +608,19 @@ namespace Com.AiricLenz.XTB.Plugin
 					continue;
 				}
 
-				for (int i = 0; i < listSolutions.Items.Count; i++)
+				for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 				{
-					var solution = listSolutions.Items[i] as Solution;
+					var solution = listBoxSolutions.Items[i] as Solution;
 
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
-						listSolutions.SetItemChecked(i, true);
+						listBoxSolutions.SetItemChecked(i, true);
 					}
 				}
 			}
+
+			listBoxSolutions.Refresh();
+			listBoxSolutions.Refresh();
 
 			ExportButtonSetState();
 
@@ -722,6 +723,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			button_loadSolutions.Enabled = Service != null;
+			LoadAllSolutions();
+
 		}
 
 
@@ -1032,13 +1035,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void listSolutions_SelectedIndexChanged(object sender, EventArgs e)
 		{
-			var rowIsSelected = listSolutions.SelectedIndex != -1;
+			UpdateSolutionSettingsScreen();
 
-			if (rowIsSelected)
-			{
-				UpdateSolutionSettingsScreen();
-			}
-
+			var rowIsSelected = listBoxSolutions.SelectedIndex != -1;
+			
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
 
@@ -1054,11 +1054,11 @@ namespace Com.AiricLenz.XTB.Plugin
 					SolutionConfiguration.GetConfigFromJson(
 						_settings.SolutionConfigurations[i]);
 
-				foreach (Solution solution in listSolutions.Items)
+				foreach (Solution solution in listBoxSolutions.Items)
 				{
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
-						var isCchecked = listSolutions.CheckedItems.Contains(solution);
+						var isCchecked = listBoxSolutions.CheckedItems.Contains(solution);
 
 						_settings.SetSelectedStatus(
 							config.SolutionIndentifier,
@@ -1093,7 +1093,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_browseManaged_Click(object sender, EventArgs e)
 		{
 			var selectedSolution =
-				listSolutions.SelectedItem as Solution;
+				listBoxSolutions.SelectedItem as Solution;
 
 			if (selectedSolution == null)
 			{
@@ -1121,7 +1121,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_browseUnmananged_Click(object sender, EventArgs e)
 		{
 			var selectedSolution =
-			   listSolutions.SelectedItem as Solution;
+			   listBoxSolutions.SelectedItem as Solution;
 
 			if (selectedSolution == null)
 			{
@@ -1148,7 +1148,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
-
+			listBoxSolutions.DeselectAll();
 			textBox_log.Text = string.Empty;
 			_sessionFiles.Clear();
 
@@ -1213,6 +1213,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			ExportButtonSetState();
 		}
 
+		// ============================================================================
+		private void listSolutions2_ItemCheck(object sender, EventArgs e)
+		{
+			ExportButtonSetState();
+		}
 
 		// ============================================================================
 		private void button_addAdditionalConnection_Click(object sender, EventArgs e)
@@ -1220,6 +1225,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			AddAdditionalOrganization();
 		}
 
+		
 
 
 

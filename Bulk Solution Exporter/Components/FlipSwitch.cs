@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using Com.AiricLenz.XTB.Plugin.Helpers;
 
 
 // ============================================================================
@@ -158,14 +159,6 @@ namespace Com.AiricLenz.XTB.Components
             set
             {
                 _isEnabled = value;
-
-				/*
-				if (_isEnabled == false)
-				{
-					_isOn = false;
-				}
-				*/
-
                 Invalidate();
             }
         }
@@ -278,7 +271,7 @@ namespace Com.AiricLenz.XTB.Components
 				LinearGradientBrush lgb = new LinearGradientBrush(
 					new Point(0, 0),
 					new Point(0, _switchHeight),
-					Color.FromArgb(alpha, (int) (fillColor.R * 0.9f), (int) (fillColor.G * 0.9f), (int) (fillColor.B * 0.9f)),
+					Color.FromArgb(alpha, ColorHelper.MixColors(fillColor, 0.11, Color.Black)),
 					Color.FromArgb(alpha, fillColor)
 				);
 

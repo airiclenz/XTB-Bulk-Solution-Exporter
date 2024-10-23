@@ -293,6 +293,7 @@
       <DependentUpon>FlipSwitch.cs</DependentUpon>
     </Compile>
     <Compile Include="Extentions\StringExtention.cs" />
+    <Compile Include="Helpers\ColorHelper.cs" />
     <Compile Include="Helpers\FileAndFolderHelper.cs" />
     <Compile Include="Helpers\GitHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
