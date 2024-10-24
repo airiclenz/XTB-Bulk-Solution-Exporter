@@ -9,6 +9,8 @@
 
 - Add possibility to transfer data
 
+## Added in Release 2024.10.<mark>XX</mark>
+
 
 ## Added in Release 2024.10.21
 

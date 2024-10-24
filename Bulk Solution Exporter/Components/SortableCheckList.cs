@@ -76,6 +76,7 @@ namespace Com.AiricLenz.XTB.Components
 			base.OnPaint(e);
 			Graphics g = e.Graphics;
 			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
 			Brush brushCheckedRow =
 				new SolidBrush(
@@ -148,7 +149,7 @@ namespace Com.AiricLenz.XTB.Components
 					DrawRoundedRectangle(
 						g,
 						new Rectangle(
-							10 + (int) _checkBoxMargin,
+							10 + _checkBoxMargin,
 							yPosition + (int) marginTopCheckBox + _checkBoxMargin,
 							_checkBoxSize - (2 * _checkBoxMargin),
 							_checkBoxSize - (2 * _checkBoxMargin)),
@@ -310,7 +311,10 @@ namespace Com.AiricLenz.XTB.Components
 		/// </summary>
 		public int SelectedIndex
 		{
-			get { return _selectedIndex; }
+			get
+			{
+				return _selectedIndex;
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -357,7 +361,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int ItemHeigth
 		{
-			get { return _itemHeight; }
+			get
+			{
+				return _itemHeight;
+			}
 			set
 			{
 				_itemHeight = value;
@@ -370,7 +377,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int CheckBoxSize
 		{
-			get { return _checkBoxSize; }
+			get
+			{
+				return _checkBoxSize;
+			}
 			set
 			{
 				_checkBoxSize = value;
@@ -388,7 +398,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int CheckBoxRadius
 		{
-			get { return _checkBoxRadius; }
+			get
+			{
+				return _checkBoxRadius;
+			}
 			set
 			{
 				_checkBoxRadius = value;
@@ -405,7 +418,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int CheckBoxMargin
 		{
-			get { return _checkBoxMargin; }
+			get
+			{
+				return _checkBoxMargin;
+			}
 			set
 			{
 				_checkBoxMargin = value;
@@ -441,7 +457,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public Color BorderColor
 		{
-			get { return _borderColor; }
+			get
+			{
+				return _borderColor;
+			}
 			set
 			{
 				_borderColor = value;
@@ -452,7 +471,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public float BorderThickness
 		{
-			get { return _borderThickness; }
+			get
+			{
+				return _borderThickness;
+			}
 			set
 			{
 				_borderThickness = value;
@@ -463,7 +485,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public Color ColorChecked
 		{
-			get { return _colorOn; }
+			get
+			{
+				return _colorOn;
+			}
 			set
 			{
 				_colorOn = value;
@@ -474,7 +499,10 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public Color ColorUnchecked
 		{
-			get { return _colorOff; }
+			get
+			{
+				return _colorOff;
+			}
 			set
 			{
 				_colorOff = value;
@@ -488,8 +516,14 @@ namespace Com.AiricLenz.XTB.Components
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public new string Text
 		{
-			get { return base.Text; }
-			set { base.Text = value; }	
+			get
+			{
+				return base.Text;
+			}
+			set
+			{
+				base.Text = value;
+			}
 		}
 
 
@@ -672,10 +706,10 @@ namespace Com.AiricLenz.XTB.Components
 
 		// ============================================================================
 		private void DrawRoundedRectangle(
-			Graphics g, 
-			Rectangle bounds, 
-			float cornerRadius, 
-			Pen drawPen, 
+			Graphics g,
+			Rectangle bounds,
+			float cornerRadius,
+			Pen drawPen,
 			Brush fillBrush)
 		{
 			using (GraphicsPath path = new GraphicsPath())
@@ -690,7 +724,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					g.FillPath(fillBrush, path);
 				}
-				
+
 				if (drawPen != null)
 				{
 					g.DrawPath(drawPen, path);
@@ -706,8 +740,8 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				SizeF textSize = g.MeasureString(measureText, Font);
 				_textHeight = textSize.Height;
-				_itemHeight = _textHeight > _itemHeight ? (int)_textHeight : _itemHeight;
-				_itemHeight = _checkBoxSize + 2 > _itemHeight ? (int) _checkBoxSize + 2 : _itemHeight;
+				_itemHeight = _textHeight > _itemHeight ? (int) _textHeight : _itemHeight;
+				_itemHeight = _checkBoxSize + 2 > _itemHeight ? _checkBoxSize + 2 : _itemHeight;
 			}
 		}
 
@@ -717,7 +751,7 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_metaDataPerItem.Count, startIndex + (Height / _itemHeight));
-			
+
 			// check check boxes for clicks
 			for (int i = startIndex; i < endIndex; i++)
 			{
@@ -733,7 +767,7 @@ namespace Com.AiricLenz.XTB.Components
 					Invalidate();
 
 					// Leave - we are done here...
-					return; 
+					return;
 				}
 			}
 
@@ -746,7 +780,7 @@ namespace Com.AiricLenz.XTB.Components
 				int yPosition = (i * _itemHeight) - _scrollOffset;
 
 				Rectangle checkBoxBoundsRow = new Rectangle(0, yPosition, Width, _itemHeight);
-				
+
 				if (checkBoxBoundsRow.Contains(clickLocation))
 				{
 					_selectedIndex = i;
@@ -798,35 +832,53 @@ namespace Com.AiricLenz.XTB.Components
 		// ============================================================================
 		public int CompareTo(SortableCheckItem other)
 		{
-			return this.SortingIndex.CompareTo(other.SortingIndex); 
+			return this.SortingIndex.CompareTo(other.SortingIndex);
 		}
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string Title
 		{
-			get { return _title; }
-			set { _title = value; }
+			get
+			{
+				return _title;
+			}
+			set
+			{
+				_title = value;
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public object ItemObject
 		{
-			get { return _item; }
+			get
+			{
+				return _item;
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int ItemHashCode
 		{
-			get { return _objectHashCode; } 
+			get
+			{
+				return _objectHashCode;
+			}
 			// set { _objectHashCode = value; }
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public bool IsChecked
 		{
-			get { return _isChecked; }
-			set { _isChecked = value; }
+			get
+			{
+				return _isChecked;
+			}
+			set
+			{
+				_isChecked = value;
+			}
 		}
 
 		/*
@@ -841,15 +893,27 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public bool IsIdentified
 		{
-			get { return _isIdentified; }
-			set { _isIdentified = value; }
+			get
+			{
+				return _isIdentified;
+			}
+			set
+			{
+				_isIdentified = value;
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int SortingIndex
 		{
-			get { return _sortingIndex; }
-			set	{ _sortingIndex = value; }
+			get
+			{
+				return _sortingIndex;
+			}
+			set
+			{
+				_sortingIndex = value;
+			}
 		}
 
 		// ============================================================================
