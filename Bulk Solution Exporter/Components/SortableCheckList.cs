@@ -76,7 +76,7 @@ namespace Com.AiricLenz.XTB.Components
 			base.OnPaint(e);
 			Graphics g = e.Graphics;
 			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
 			Brush brushCheckedRow =
 				new SolidBrush(
