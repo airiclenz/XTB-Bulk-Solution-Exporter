@@ -366,3 +366,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.exe
+Images/.DS_Store
+.DS_Store
