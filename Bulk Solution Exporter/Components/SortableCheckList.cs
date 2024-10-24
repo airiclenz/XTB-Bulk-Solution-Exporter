@@ -31,11 +31,17 @@ namespace Com.AiricLenz.XTB.Components
 		private int _checkBoxRadius = 5;
 		private int _checkBoxMargin = 3;
 		private int _selectedIndex = -1;
+		private int _dragBurgerSize = 14;
+		private float _dragBurgerLineThickness = 1.5f;
+		private bool _showScrollBar = true;
 
 		private Color _colorOff = Color.FromArgb(150, 150, 150);
 		private Color _colorOn = Color.MediumSlateBlue;
 
 		private const string measureText = "QWypg/#_Ág";
+		private int? _dragStartIndex = null;
+		private int _currentDropIndex = -1;
+
 
 
 		// ============================================================================
@@ -44,10 +50,12 @@ namespace Com.AiricLenz.XTB.Components
 			InitializeComponent();
 			SuspendLayout();
 
-			SetStyle(ControlStyles.Selectable, true);
+			SetStyle(ControlStyles.Selectable | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+			//SetStyle(ControlStyles.Selectable, true);
 			TabStop = true;
 			DoubleBuffered = true;
 			BackColor = SystemColors.Window;
+
 
 			AdjustItemHeight();
 			ResumeLayout();
@@ -60,12 +68,20 @@ namespace Com.AiricLenz.XTB.Components
 
 		#region Events
 
+		/// <summary>
+		/// Triggers when a new row was selected or all have been de-selected.
+		/// </summary>
 		public event EventHandler SelectedIndexChanged;
 
 		/// <summary>
 		/// Triggers whenever an item is checked or unchecked.
 		/// </summary>
 		public event EventHandler ItemChecked;
+
+		/// <summary>
+		/// Triggers if the order of the items has be changed.
+		/// </summary>
+		public event EventHandler ItemOrderChanged;
 
 
 
@@ -97,6 +113,7 @@ namespace Com.AiricLenz.XTB.Components
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_items.Count, startIndex + (Height / _itemHeight));
 			var marginTopText = (_itemHeight - _textHeight) / 2f;
+			var marginTopBurger = (_itemHeight - _dragBurgerSize) / 2f;
 			var marginTopCheckBox = (_itemHeight - _checkBoxSize) / 2f;
 
 			for (int i = startIndex; i < endIndex; i++)
@@ -157,44 +174,79 @@ namespace Com.AiricLenz.XTB.Components
 						null,
 						Brushes.White);
 				}
+
+
+				// Draw drag-burger
+				var brushBurgerLines = new SolidBrush(Color.FromArgb(40, Color.Black));
+
+				g.FillRectangle(
+					brushBurgerLines,
+					new RectangleF(
+						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+						yPosition + marginTopBurger,
+						_dragBurgerSize * 2f,
+						_dragBurgerLineThickness));
+
+				g.FillRectangle(
+					brushBurgerLines,
+					new RectangleF(
+						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+						yPosition + (_itemHeight / 2f) - (_dragBurgerLineThickness / 2f),
+						_dragBurgerSize * 2f,
+						_dragBurgerLineThickness));
+
+				g.FillRectangle(
+					brushBurgerLines,
+					new RectangleF(
+						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+						yPosition + marginTopBurger + _dragBurgerSize - _dragBurgerLineThickness,
+						_dragBurgerSize * 2f,
+						_dragBurgerLineThickness));
+
+
+				// paint a drag-n-drop indicator
+				if (i == _currentDropIndex)
+				{
+					var brushFill = new SolidBrush(Color.FromArgb(50, Color.OrangeRed));
+					g.FillRectangle(brushFill, 0, yPosition + 1, Width, _itemHeight - 2);
+				}
 			}
 
-
 			// paint the scroll bar
-			int totalItemsHeight = _metaDataPerItem.Count * _itemHeight;
-			int clientHeight = this.ClientRectangle.Height - 6;
+			if (_showScrollBar)
+			{
+				int totalItemsHeight = _metaDataPerItem.Count * _itemHeight;
+				int clientHeight = this.ClientRectangle.Height - 6;
 
-			// Calculate the length and position of the scrollbar
-			float scrollBarRatio = (float) clientHeight / totalItemsHeight;
-			int scrollBarHeight =
-				scrollBarRatio > 1 ?
-				clientHeight - 1 :
-				(int) (clientHeight * scrollBarRatio) - 1;
+				// Calculate the length and position of the scrollbar
+				float scrollBarRatio = (float) clientHeight / totalItemsHeight;
+				int scrollBarHeight =
+					scrollBarRatio > 1 ?
+					clientHeight - 1 :
+					(int) (clientHeight * scrollBarRatio) - 1;
 
-			int scrollBarPos = (int) ((float) _scrollOffset / totalItemsHeight * clientHeight) + 3;
+				int scrollBarPos = (int) ((float) _scrollOffset / totalItemsHeight * clientHeight) + 3;
 
-			// Draw the scrollbar
+				DrawRoundedRectangle(
+					g,
+					new Rectangle(Width - 11, scrollBarPos - 3, 10, scrollBarHeight + 6),
+					4f,
+					null,
+					new SolidBrush(BackColor));
 
-			DrawRoundedRectangle(
-				g,
-				new Rectangle(Width - 11, scrollBarPos - 3, 10, scrollBarHeight + 6),
-				4f,
-				null,
-				new SolidBrush(BackColor));
-
-			DrawRoundedRectangle(
-				g,
-				new Rectangle(Width - 8, scrollBarPos, 4, scrollBarHeight),
-				4f,
-				null,
-				new SolidBrush(Color.FromArgb(100, Color.Gray)));
+				DrawRoundedRectangle(
+					g,
+					new Rectangle(Width - 8, scrollBarPos, 4, scrollBarHeight),
+					4f,
+					null,
+					new SolidBrush(Color.FromArgb(100, Color.Gray)));
+			}
 
 
 			// -------------------------------------
 			// paint the border
 			var borderPen = new Pen(_borderColor, _borderThickness);
 			g.DrawRectangle(borderPen, 0, 0, Width - _borderThickness, Height - _borderThickness);
-
 
 		}
 
@@ -209,6 +261,12 @@ namespace Com.AiricLenz.XTB.Components
 		protected virtual void OnItemChecked()
 		{
 			ItemChecked?.Invoke(this, ItemCheckEventArgs.Empty);
+		}
+
+		// ============================================================================
+		protected virtual void OnItemOrderChanged()
+		{
+			ItemOrderChanged?.Invoke(this, ItemCheckEventArgs.Empty);
 		}
 
 
@@ -241,6 +299,61 @@ namespace Com.AiricLenz.XTB.Components
 			base.OnMouseDown(e);
 			Focus();
 			HandleItemClick(e.Location);
+			Invalidate();
+		}
+
+		// ============================================================================
+		protected override void OnMouseUp(
+			MouseEventArgs e)
+		{
+			base.OnMouseUp(e);
+
+			if (_dragStartIndex.HasValue &&
+				_currentDropIndex != -1 &&
+				_dragStartIndex.Value != _currentDropIndex)
+			{
+				// Reorder the list
+				var draggedItem = _items[_dragStartIndex.Value];
+				var draggedMetaItem = _metaDataPerItem[_dragStartIndex.Value];
+
+				_items.RemoveAt(_dragStartIndex.Value);
+				_metaDataPerItem.RemoveAt(_dragStartIndex.Value);
+
+				_items.Insert(_currentDropIndex, draggedItem);
+				_metaDataPerItem.Insert(_currentDropIndex, draggedMetaItem);
+
+				// Reset drag state
+				_dragStartIndex = null;
+				_currentDropIndex = -1;
+
+				// Trigger events
+				OnItemOrderChanged();
+				OnSelectedIndexChanged();
+			}
+			else
+			{
+				_dragStartIndex = null;
+				_currentDropIndex = -1;
+			}
+
+			Invalidate();
+		}
+
+		// ============================================================================
+		protected override void OnMouseMove(
+			MouseEventArgs e)
+		{
+			base.OnMouseMove(e);
+
+			if (_dragStartIndex.HasValue)
+			{
+				int newIndex = GetItemAtPoint(e.Location);
+				if (newIndex != -1 && newIndex != _currentDropIndex)
+				{
+					_currentDropIndex = newIndex;
+					Invalidate();
+				}
+			}
 		}
 
 		// ============================================================================
@@ -512,6 +625,50 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int DragBurgerSize
+		{
+			get
+			{
+				return _dragBurgerSize;
+			}
+			set
+			{
+				_dragBurgerSize = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public float DragBurgerLineThickness
+		{
+			get
+			{
+				return _dragBurgerLineThickness;
+			}
+			set
+			{
+				_dragBurgerLineThickness = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool ShowScrollBar
+		{
+			get
+			{
+				return _showScrollBar;
+			}
+			set
+			{
+				_showScrollBar = value;
+				Invalidate();
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		[Browsable(false)]
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public new string Text
@@ -525,6 +682,10 @@ namespace Com.AiricLenz.XTB.Components
 				base.Text = value;
 			}
 		}
+
+
+
+
 
 
 		#endregion
@@ -548,16 +709,45 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 		// ============================================================================
+		private int GetItemAtPoint(
+			Point location)
+		{
+			// Calculate which item is at the given location
+			for (int i = 0; i < _metaDataPerItem.Count; i++)
+			{
+				if (GetItemBounds(i).Contains(location))
+				{
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		// ============================================================================
+		private Rectangle GetItemBounds(
+			int index)
+		{
+			return
+				new Rectangle(
+					0,
+					(index * _itemHeight) + _scrollOffset,
+					Width,
+					_itemHeight);
+		}
+
+
+		// ============================================================================
 		public void SetItemChecked(
 			int index,
 			bool state)
 		{
-			if (index > 0 &&
+			if (index >= 0 &&
 				index < _metaDataPerItem.Count)
 			{
 				_metaDataPerItem[index].IsChecked = state;
 			}
 		}
+
 
 		// ============================================================================
 		private void SelectPreviousItem()
@@ -752,34 +942,59 @@ namespace Com.AiricLenz.XTB.Components
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_metaDataPerItem.Count, startIndex + (Height / _itemHeight));
 
-			// check check boxes for clicks
+			// check check-boxes for clicks
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				int yPosition = (i * _itemHeight) - _scrollOffset;
 
-				Rectangle checkBoxBoundsCheckBox = new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
+				var checkBoxBoundsCheckBox =
+					new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
 
 				if (checkBoxBoundsCheckBox.Contains(clickLocation))
 				{
 					_metaDataPerItem[i].Toggle();
 
 					OnItemChecked();
-					Invalidate();
 
 					// Leave - we are done here...
 					return;
 				}
 			}
 
+
 			// deselect all
 			_selectedIndex = -1;
+
+
+			// check drag-burger for click
+			for (int i = startIndex; i < endIndex; i++)
+			{
+				int yPosition = (i * _itemHeight) - _scrollOffset;
+
+				var checkBoxBoundsCheckBox =
+					new RectangleF(
+						Width - 15f - (_dragBurgerSize * 2f),
+						yPosition + ((_itemHeight - _dragBurgerSize) / 2f),
+						_dragBurgerSize * 2f,
+						_dragBurgerSize);
+
+				if (checkBoxBoundsCheckBox.Contains(clickLocation))
+				{
+					_dragStartIndex = i;
+
+					// Leave - we are done here...
+					return;
+				}
+			}
+
 
 			// check hole row for clicks
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				int yPosition = (i * _itemHeight) - _scrollOffset;
 
-				Rectangle checkBoxBoundsRow = new Rectangle(0, yPosition, Width, _itemHeight);
+				var checkBoxBoundsRow =
+					new Rectangle(0, yPosition, Width, _itemHeight);
 
 				if (checkBoxBoundsRow.Contains(clickLocation))
 				{
@@ -789,7 +1004,6 @@ namespace Com.AiricLenz.XTB.Components
 			}
 
 			OnSelectedIndexChanged();
-			Invalidate();
 		}
 
 

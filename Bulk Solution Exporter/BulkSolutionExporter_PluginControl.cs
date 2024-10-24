@@ -68,7 +68,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				(listBoxSolutions.SelectedItem as Solution);
 
 			_currentSolutionConfig =
-				_settings.GetSolutionConfiguration(
+				_settings.GetOrCreateSolutionConfiguration(
 					_currentSolution.SolutionIdentifier,
 					out bool isNew);
 
@@ -124,7 +124,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = listItem;
 
 				var solutionConfig =
-					_settings.GetSolutionConfiguration(
+					_settings.GetOrCreateSolutionConfiguration(
 						solution.SolutionIdentifier,
 						out bool isNew);
 
@@ -174,7 +174,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = listItem;
 
 				var solutionConfig =
-					_settings.GetSolutionConfiguration(
+					_settings.GetOrCreateSolutionConfiguration(
 						solution.SolutionIdentifier,
 						out bool isNew);
 
@@ -440,7 +440,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void LoadAllSolutions()
 		{
-			
+
 			if (Service == null)
 			{
 				return;
@@ -510,9 +510,27 @@ namespace Com.AiricLenz.XTB.Plugin
 
 						foreach (var entity in result.Entities)
 						{
-							_solutions.Add(
-								Solution.ConvertFrom(entity, _currentConnectionGuid, maxNameLength));
+							var newSolution =
+								Solution.ConvertFrom(
+									entity,
+									_currentConnectionGuid,
+									maxNameLength);
 
+							foreach (var configJson in _settings.SolutionConfigurations)
+							{
+								var config =
+									SolutionConfiguration.GetConfigFromJson(
+										configJson);
+
+								if (config.SolutionIndentifier == newSolution.SolutionIdentifier)
+								{
+									newSolution.SortingIndex = config.SortingIndex;
+									break;
+								}
+							}
+
+							_solutions.Add(
+								newSolution);
 						}
 					}
 
@@ -521,7 +539,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			});
 
-			
+
 
 		}
 
@@ -573,7 +591,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				label_commitMessage.Font = new Font(label_commitMessage.Font, FontStyle.Regular);
 			}
 
-			
+
 
 		}
 
@@ -584,6 +602,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			listBoxSolutions.Items.Clear();
 
 			_solutions.Sort();
+
 
 			foreach (var solution in _solutions)
 			{
@@ -716,7 +735,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
 				textBox_commitMessage.Text = _settings.CommitMessage;
 				UpdateGitOptionsVisibility();
-								
+
 				_codeUpdate = false;
 
 				ExportButtonSetState();
@@ -866,7 +885,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
 
-			UpdateVersionOptionsVisibility();			
+			UpdateVersionOptionsVisibility();
 
 			SaveSettings();
 			ExportButtonSetState();
@@ -888,7 +907,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_pushCommit.Enabled = gitEnabeld;
 
 			_codeUpdate = false;
-			
+
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -956,7 +975,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateImportOptionsVisibility();
 
-
 			SaveSettings();
 			ExportButtonSetState();
 		}
@@ -999,7 +1017,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.CommitMessage = textBox_commitMessage.Text;
 			SaveSettings();
 		}
-		
+
 
 		// ============================================================================
 		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
@@ -1038,7 +1056,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			UpdateSolutionSettingsScreen();
 
 			var rowIsSelected = listBoxSolutions.SelectedIndex != -1;
-			
+
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
 
@@ -1049,7 +1067,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			// checked property of all solution-configs
 			for (int i = 0; i < _settings.SolutionConfigurations.Count; i++)
 			{
-
 				var config =
 					SolutionConfiguration.GetConfigFromJson(
 						_settings.SolutionConfigurations[i]);
@@ -1060,11 +1077,42 @@ namespace Com.AiricLenz.XTB.Plugin
 					{
 						var isCchecked = listBoxSolutions.CheckedItems.Contains(solution);
 
-						_settings.SetSelectedStatus(
+						_settings.SetCheckedStatus(
 							config.SolutionIndentifier,
 							isCchecked);
 
+						break;
 					}
+				}
+			}
+
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
+		{
+			for (int i = 0; i < _settings.SolutionConfigurations.Count; i++)
+			{
+				var config =
+					SolutionConfiguration.GetConfigFromJson(
+						_settings.SolutionConfigurations[i]);
+
+				var index = 0;
+
+				for (int s = 0; s < listBoxSolutions.Items.Count; s++)
+				{
+					if ((listBoxSolutions.Items[s] as Solution).SolutionIdentifier == config.SolutionIndentifier)
+					{
+						_settings.SetSortingIndex(
+							config.SolutionIndentifier,
+							index);
+
+						break;
+					}
+
+					index++;
 				}
 			}
 
@@ -1206,15 +1254,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		}
 
-
 		// ============================================================================
-		private void listSolutions_ItemCheck(object sender, ItemCheckEventArgs e)
-		{
-			ExportButtonSetState();
-		}
-
-		// ============================================================================
-		private void listSolutions2_ItemCheck(object sender, EventArgs e)
+		private void listSolutions_ItemCheck(object sender, EventArgs e)
 		{
 			ExportButtonSetState();
 		}
@@ -1225,7 +1266,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			AddAdditionalOrganization();
 		}
 
-		
+
+
 
 
 

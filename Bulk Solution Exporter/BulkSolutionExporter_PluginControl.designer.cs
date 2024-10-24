@@ -119,16 +119,20 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.CheckBoxSize = 18;
             this.listBoxSolutions.ColorChecked = System.Drawing.Color.MediumSlateBlue;
             this.listBoxSolutions.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.listBoxSolutions.DragBurgerLineThickness = 1.5F;
+            this.listBoxSolutions.DragBurgerSize = 11;
             this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listBoxSolutions.ItemHeigth = 24;
             this.listBoxSolutions.Items = ((System.Collections.Generic.List<object>)(resources.GetObject("listBoxSolutions.Items")));
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 3);
             this.listBoxSolutions.Name = "listBoxSolutions";
+            this.listBoxSolutions.ShowScrollBar = true;
             this.listBoxSolutions.Size = new System.Drawing.Size(322, 617);
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
-            this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions2_ItemCheck);
+            this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
+            this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
             // 
             // label_title
             // 

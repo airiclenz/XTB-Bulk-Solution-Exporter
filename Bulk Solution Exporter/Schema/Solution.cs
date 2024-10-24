@@ -26,6 +26,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		private string _toStringValue;
 		private string _friendlyName;
 		private Version _version;
+		private int _sortingIndex = 0;
 
 		private static int _friendlyNameLength = 40;
 
@@ -81,6 +82,20 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			}
 		}
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int SortingIndex
+		{
+			get
+			{
+				return _sortingIndex;
+			}
+			set
+			{
+				_sortingIndex = value;
+			}
+		}
+
+
 
 		// ============================================================================
 		public Solution(
@@ -93,7 +108,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		// ============================================================================
 		public int CompareTo(Solution other)
 		{
-			return _friendlyName.CompareTo(other.FriendlyName);
+			return _sortingIndex.CompareTo(other.SortingIndex);
 		}
 
 
