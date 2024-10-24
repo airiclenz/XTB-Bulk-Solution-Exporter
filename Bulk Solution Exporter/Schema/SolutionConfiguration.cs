@@ -40,6 +40,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			get; set;
 		}
 
+
 		// ============================================================================
 		public SolutionConfiguration(
 			string solutionIdentifier)

@@ -11,7 +11,6 @@ using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
 
@@ -788,6 +787,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			flipSwitch_enableAutomation.Enabled = optionEnabled;
 			flipSwitch_overwrite.Enabled = optionEnabled;
+			flipSwitch_publishTarget.Enabled = optionEnabled;
 		}
 
 		// ============================================================================
@@ -1049,6 +1049,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		}
 
+		// ============================================================================
+		private void flipSwitch_publishTarget_Toggled(object sender, EventArgs e)
+		{
+			_settings.PublishAllPostImport = flipSwitch_publishTarget.IsOn;
+			SaveSettings();
+		}
+
 
 		// ============================================================================
 		private void listSolutions_SelectedIndexChanged(object sender, EventArgs e)
@@ -1266,7 +1273,29 @@ namespace Com.AiricLenz.XTB.Plugin
 			AddAdditionalOrganization();
 		}
 
+		// ============================================================================
+		private void button_checkAll_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.CheckAllItems();
+		}
 
+		// ============================================================================
+		private void button_uncheckAll_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.UnCheckAllItems();
+		}
+
+		// ============================================================================
+		private void splitContainer1_Panel1_Resize(object sender, EventArgs e)
+		{
+			/*
+			if (splitContainer1.Panel1.Width < 400)
+			{
+				splitContainer1.SplitterDistance = 400;
+				splitContainer1.Invalidate();
+			}
+			*/
+		}
 
 
 
@@ -1274,5 +1303,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		#endregion
 
 
+		
 	}
 }

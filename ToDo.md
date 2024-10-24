@@ -1,15 +1,15 @@
 # To-Dos
 
 - add dynamics content for commit message and update information tooltip accordingly
-- Save and import config file / alternatively create multiple profiles per connection for easier access
+- save and import config file / alternatively create multiple profiles per connection for easier access
 - show current branch and allow changing
-- add publish all for target
-- allow for sorting solutions for import order
-- add buttons for Select- / Deselect All
-
-- Add possibility to transfer data
+- add possibility to transfer data
+- added publish all for target
 
 ## Added in Release 2024.10.<mark>XX</mark>
+
+- allow for sorting solutions for import order
+- added buttons for checking- / unchecking all solutions in the list
 
 
 ## Added in Release 2024.10.21
@@ -20,5 +20,5 @@
 
 ## Added in Release 2024.10.14
 
-- Commit message
-- Import options (activate workflows / plugin steps, overwrite)
+- commit message
+- import options (activate workflows / plugin steps, overwrite)

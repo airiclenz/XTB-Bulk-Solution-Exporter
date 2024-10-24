@@ -35,52 +35,67 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			get; set;
 		}
+
+		public bool PublishAllPostImport
+		{
+			get; set;
+		}
+
 		public bool UpdateVersion
 		{
 			get; set;
 		}
+
 		public bool ExportManaged
 		{
 			get; set;
 		}
+
 		public bool ExportUnmanaged
 		{
 			get; set;
 		}
+
 		public bool GitCommit
 		{
 			get; set;
 		}
+
 		public bool PushCommit
 		{
 			get; set;
 		}
+
 		public bool ImportManaged
 		{
 			get; set;
 		}
+
 		public bool ImportUnmanaged
 		{
 			get; set;
 		}
 
-
 		public string CommitMessage
 		{
 			get; set;
 		}
+
 		public string VersionFormat
 		{
 			get; set;
 		}
+
 		public bool EnableAutomation
 		{
 			get; set;
 		}
+
 		public bool OverwriteCustomizations
 		{
 			get; set;
 		}
+
 
 
 		public List<string> SolutionConfigurations

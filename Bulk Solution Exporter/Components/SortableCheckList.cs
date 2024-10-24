@@ -34,6 +34,10 @@ namespace Com.AiricLenz.XTB.Components
 		private int _dragBurgerSize = 14;
 		private float _dragBurgerLineThickness = 1.5f;
 		private bool _showScrollBar = true;
+		private bool _isSortable = true;
+		private bool _isCheckable = true;
+
+
 
 		private Color _colorOff = Color.FromArgb(150, 150, 150);
 		private Color _colorOn = Color.MediumSlateBlue;
@@ -119,7 +123,7 @@ namespace Com.AiricLenz.XTB.Components
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				int yPosition = (i * _itemHeight) - _scrollOffset;
-				var isChecked = _metaDataPerItem[i].IsChecked;
+				var isChecked = _metaDataPerItem[i].IsChecked && _isCheckable;
 				var isSelected = i == _selectedIndex;
 
 				var brushRow = isSelected ? new SolidBrush(SystemColors.Highlight) : (isChecked ? brushCheckedRow : Brushes.White);
@@ -144,71 +148,81 @@ namespace Com.AiricLenz.XTB.Components
 					_metaDataPerItem[i].Title,
 					isChecked ? new Font(Font, FontStyle.Bold) : Font,
 					brushText,
-					new PointF(20 + _checkBoxSize, yPosition + marginTopText));
+					new RectangleF(
+						10 + (_isCheckable ? _checkBoxSize + 10 : 0), 
+						yPosition + marginTopText,
+						Width -  (_isCheckable ? _checkBoxSize + 10 : 10) - (_isSortable ? (_dragBurgerSize * 2) + 15 : 15) - (_showScrollBar ? 15f : 8f),
+						_textHeight));
+				
 
 				// Draw the checkbox background
-				LinearGradientBrush lgb = new LinearGradientBrush(
-					new Point(10, yPosition + (int) marginTopCheckBox),
-					new Point(10 + _checkBoxSize, yPosition + (int) marginTopCheckBox + _checkBoxSize),
-					ColorHelper.MixColors(checkBoxFillColor, 0.11, Color.Black),
-					Color.FromArgb(255, checkBoxFillColor));
-
-				DrawRoundedRectangle(
-					g,
-					new Rectangle(10, yPosition + (int) marginTopCheckBox, _checkBoxSize, _checkBoxSize),
-					_checkBoxRadius,
-					penCheckBoxFrame,
-					lgb);
-
-				// Draw the ckecker if this item is checked
-				if (isChecked)
+				if (_isCheckable)
 				{
+					LinearGradientBrush lgb = new LinearGradientBrush(
+						new Point(10, yPosition + (int) marginTopCheckBox),
+						new Point(10 + _checkBoxSize, yPosition + (int) marginTopCheckBox + _checkBoxSize),
+						ColorHelper.MixColors(checkBoxFillColor, 0.11, Color.Black),
+						Color.FromArgb(255, checkBoxFillColor));
+
 					DrawRoundedRectangle(
 						g,
-						new Rectangle(
-							10 + _checkBoxMargin,
-							yPosition + (int) marginTopCheckBox + _checkBoxMargin,
-							_checkBoxSize - (2 * _checkBoxMargin),
-							_checkBoxSize - (2 * _checkBoxMargin)),
-						checkerRadius,
-						null,
-						Brushes.White);
+						new Rectangle(10, yPosition + (int) marginTopCheckBox, _checkBoxSize, _checkBoxSize),
+						_checkBoxRadius,
+						penCheckBoxFrame,
+						lgb);
+
+					// Draw the ckecker if this item is checked
+					if (isChecked)
+					{
+						DrawRoundedRectangle(
+							g,
+							new Rectangle(
+								10 + _checkBoxMargin,
+								yPosition + (int) marginTopCheckBox + _checkBoxMargin,
+								_checkBoxSize - (2 * _checkBoxMargin),
+								_checkBoxSize - (2 * _checkBoxMargin)),
+							checkerRadius,
+							null,
+							Brushes.White);
+					}
 				}
 
-
 				// Draw drag-burger
-				var brushBurgerLines = new SolidBrush(Color.FromArgb(40, Color.Black));
-
-				g.FillRectangle(
-					brushBurgerLines,
-					new RectangleF(
-						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
-						yPosition + marginTopBurger,
-						_dragBurgerSize * 2f,
-						_dragBurgerLineThickness));
-
-				g.FillRectangle(
-					brushBurgerLines,
-					new RectangleF(
-						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
-						yPosition + (_itemHeight / 2f) - (_dragBurgerLineThickness / 2f),
-						_dragBurgerSize * 2f,
-						_dragBurgerLineThickness));
-
-				g.FillRectangle(
-					brushBurgerLines,
-					new RectangleF(
-						Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
-						yPosition + marginTopBurger + _dragBurgerSize - _dragBurgerLineThickness,
-						_dragBurgerSize * 2f,
-						_dragBurgerLineThickness));
-
-
-				// paint a drag-n-drop indicator
-				if (i == _currentDropIndex)
+				if (_isSortable)
 				{
-					var brushFill = new SolidBrush(Color.FromArgb(50, Color.OrangeRed));
-					g.FillRectangle(brushFill, 0, yPosition + 1, Width, _itemHeight - 2);
+					var brushBurgerLines = new SolidBrush(Color.FromArgb(40, Color.Black));
+
+					g.FillRectangle(
+						brushBurgerLines,
+						new RectangleF(
+							Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+							yPosition + marginTopBurger,
+							_dragBurgerSize * 2f,
+							_dragBurgerLineThickness));
+
+					g.FillRectangle(
+						brushBurgerLines,
+						new RectangleF(
+							Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+							yPosition + (_itemHeight / 2f) - (_dragBurgerLineThickness / 2f),
+							_dragBurgerSize * 2f,
+							_dragBurgerLineThickness));
+
+					g.FillRectangle(
+						brushBurgerLines,
+						new RectangleF(
+							Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f),
+							yPosition + marginTopBurger + _dragBurgerSize - _dragBurgerLineThickness,
+							_dragBurgerSize * 2f,
+							_dragBurgerLineThickness));
+
+
+					// paint a drag-n-drop indicator
+					if (i == _currentDropIndex)
+					{
+						var brushFill = new SolidBrush(Color.FromArgb(50, Color.OrangeRed));
+						g.FillRectangle(brushFill, 0, yPosition + 1, Width, _itemHeight - 2);
+					}
 				}
 			}
 
@@ -308,7 +322,8 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			base.OnMouseUp(e);
 
-			if (_dragStartIndex.HasValue &&
+			if (_isSortable &&
+				_dragStartIndex.HasValue &&
 				_currentDropIndex != -1 &&
 				_dragStartIndex.Value != _currentDropIndex)
 			{
@@ -345,7 +360,8 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			base.OnMouseMove(e);
 
-			if (_dragStartIndex.HasValue)
+			if (_isSortable &&
+				_dragStartIndex.HasValue)
 			{
 				int newIndex = GetItemAtPoint(e.Location);
 				if (newIndex != -1 && newIndex != _currentDropIndex)
@@ -353,26 +369,6 @@ namespace Com.AiricLenz.XTB.Components
 					_currentDropIndex = newIndex;
 					Invalidate();
 				}
-			}
-		}
-
-		// ============================================================================
-		protected override void OnKeyDown(
-			KeyEventArgs e)
-		{
-			base.OnKeyDown(e);
-
-			switch (e.KeyCode)
-			{
-				case Keys.Up:
-					SelectPreviousItem();
-					break;
-				case Keys.Down:
-					SelectNextItem();
-					break;
-				case Keys.Space:
-					ToggleSelectedItem();
-					break;
 			}
 		}
 
@@ -388,6 +384,12 @@ namespace Com.AiricLenz.XTB.Components
 				case Keys.Down:
 					SelectNextItem();
 					return true; // Key press handled
+				case Keys.Space:
+					if (_isCheckable)
+					{
+						ToggleSelectedItem();
+					}
+					break;
 			}
 			return base.ProcessCmdKey(ref msg, keyData);
 		}
@@ -667,6 +669,35 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsCheckable
+		{
+			get
+			{
+				return _isCheckable;
+			}
+			set
+			{
+				_isCheckable = value;
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsSortable
+		{
+			get
+			{
+				return _isSortable;
+			}
+			set
+			{
+				_isSortable = value;
+				Invalidate();
+			}
+		}
+
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		[Browsable(false)]
@@ -682,6 +713,7 @@ namespace Com.AiricLenz.XTB.Components
 				base.Text = value;
 			}
 		}
+
 
 
 
@@ -747,6 +779,32 @@ namespace Com.AiricLenz.XTB.Components
 				_metaDataPerItem[index].IsChecked = state;
 			}
 		}
+
+		// ============================================================================
+		public void CheckAllItems()
+		{
+			foreach (var item in _metaDataPerItem)
+			{
+				item.IsChecked = true;
+			}
+
+			OnItemChecked();
+			Invalidate();
+		}
+
+
+		// ============================================================================
+		public void UnCheckAllItems()
+		{
+			foreach (var item in _metaDataPerItem)
+			{
+				item.IsChecked = false;
+			}
+
+			OnItemChecked();
+			Invalidate();
+		}
+
 
 
 		// ============================================================================
@@ -942,48 +1000,54 @@ namespace Com.AiricLenz.XTB.Components
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_metaDataPerItem.Count, startIndex + (Height / _itemHeight));
 
+
 			// check check-boxes for clicks
-			for (int i = startIndex; i < endIndex; i++)
+			if (_isCheckable)
 			{
-				int yPosition = (i * _itemHeight) - _scrollOffset;
-
-				var checkBoxBoundsCheckBox =
-					new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
-
-				if (checkBoxBoundsCheckBox.Contains(clickLocation))
+				for (int i = startIndex; i < endIndex; i++)
 				{
-					_metaDataPerItem[i].Toggle();
+					int yPosition = (i * _itemHeight) - _scrollOffset;
 
-					OnItemChecked();
+					var checkBoxBoundsCheckBox =
+						new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
 
-					// Leave - we are done here...
-					return;
+					if (checkBoxBoundsCheckBox.Contains(clickLocation))
+					{
+						_metaDataPerItem[i].Toggle();
+
+						OnItemChecked();
+
+						// Leave - we are done here...
+						return;
+					}
 				}
 			}
-
 
 			// deselect all
 			_selectedIndex = -1;
 
 
 			// check drag-burger for click
-			for (int i = startIndex; i < endIndex; i++)
+			if (_isSortable)
 			{
-				int yPosition = (i * _itemHeight) - _scrollOffset;
-
-				var checkBoxBoundsCheckBox =
-					new RectangleF(
-						Width - 15f - (_dragBurgerSize * 2f),
-						yPosition + ((_itemHeight - _dragBurgerSize) / 2f),
-						_dragBurgerSize * 2f,
-						_dragBurgerSize);
-
-				if (checkBoxBoundsCheckBox.Contains(clickLocation))
+				for (int i = startIndex; i < endIndex; i++)
 				{
-					_dragStartIndex = i;
+					int yPosition = (i * _itemHeight) - _scrollOffset;
 
-					// Leave - we are done here...
-					return;
+					var checkBoxBoundsCheckBox =
+						new RectangleF(
+							Width - 15f - (_dragBurgerSize * 2f),
+							yPosition + ((_itemHeight - _dragBurgerSize) / 2f),
+							_dragBurgerSize * 2f,
+							_dragBurgerSize);
+
+					if (checkBoxBoundsCheckBox.Contains(clickLocation))
+					{
+						_dragStartIndex = i;
+
+						// Leave - we are done here...
+						return;
+					}
 				}
 			}
 
