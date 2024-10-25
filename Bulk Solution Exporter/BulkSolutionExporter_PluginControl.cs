@@ -67,13 +67,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				(listBoxSolutions.SelectedItem as Solution);
 
 			_currentSolutionConfig =
-				_settings.GetOrCreateSolutionConfiguration(
-					_currentSolution.SolutionIdentifier,
-					out bool isNew);
+				_settings.GetSolutionConfiguration(
+					_currentSolution.SolutionIdentifier);
 
-			if (isNew)
+			if (_currentSolutionConfig == null)
 			{
-				SaveSettings();
+				_settings.AddSolutionConfiguration(
+					_currentSolution.SolutionIdentifier);
 			}
 
 			textBox_managed.Text = _currentSolutionConfig.FileNameManaged;
@@ -87,10 +87,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void PublishAllInSource(
-			IOrganizationService organizationService)
+		private void PublishAll(
+			IOrganizationService organizationService,
+			bool isEnabled)
 		{
-			if (flipSwitch_publishSource.IsOff)
+			if (!isEnabled)
 			{
 				return;
 			}
@@ -101,8 +102,16 @@ namespace Com.AiricLenz.XTB.Plugin
 			PublishAllXmlRequest publishRequest =
 				new PublishAllXmlRequest();
 
-			organizationService.Execute(publishRequest);
-
+			try
+			{
+				organizationService.Execute(publishRequest);
+			}
+			catch (Exception ex)
+			{
+				Log(ex.Message);
+				return;
+			}
+			
 			Log("Publish All was completed.");
 		}
 
@@ -123,14 +132,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = listItem;
 
 				var solutionConfig =
-					_settings.GetOrCreateSolutionConfiguration(
-						solution.SolutionIdentifier,
-						out bool isNew);
-
-				if (isNew)
-				{
-					continue;
-				}
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier);
 
 				Log("");
 				Log("Exporting solution '" + solution.FriendlyName + "'");
@@ -173,14 +176,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = listItem;
 
 				var solutionConfig =
-					_settings.GetOrCreateSolutionConfiguration(
-						solution.SolutionIdentifier,
-						out bool isNew);
-
-				if (isNew)
-				{
-					continue;
-				}
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier);
 
 				var solutionFile =
 					importManagd ? solutionConfig.FileNameManaged : solutionConfig.FileNameUnmanaged;
@@ -495,6 +492,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 						var maxNameLength = 0;
 
+						// check max length of all solution names
 						foreach (var entity in result.Entities)
 						{
 							var solutionFrinedlyName =
@@ -507,6 +505,7 @@ namespace Com.AiricLenz.XTB.Plugin
 								maxNameLength;
 						}
 
+						// create our custom solutions records
 						foreach (var entity in result.Entities)
 						{
 							var newSolution =
@@ -515,24 +514,19 @@ namespace Com.AiricLenz.XTB.Plugin
 									_currentConnectionGuid,
 									maxNameLength);
 
-							foreach (var configJson in _settings.SolutionConfigurations)
-							{
-								var config =
-									SolutionConfiguration.GetConfigFromJson(
-										configJson);
+							var config =
+								_settings.GetSolutionConfiguration(
+									newSolution.SolutionIdentifier,
+									true);
 
-								if (config.SolutionIndentifier == newSolution.SolutionIdentifier)
-								{
-									newSolution.SortingIndex = config.SortingIndex;
-									break;
-								}
-							}
+							newSolution.SortingIndex = config.SortingIndex;
 
 							_solutions.Add(
 								newSolution);
 						}
 					}
 
+					SaveSettings(true);
 					UpdateSolutionList();
 					ExportButtonSetState();
 				}
@@ -646,14 +640,50 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void SaveSettings()
+		private void SaveSettings(
+			bool cleanUpNonExistingSolutions = false)
 		{
-			if (!_codeUpdate)
+			if (_codeUpdate)
 			{
-				SettingsManager.Instance.Save(GetType(), _settings);
+				return;
 			}
 
+			// remove solution-configuration from the config
+			// that have no solution in this environment anymore
+			if (cleanUpNonExistingSolutions)
+			{
+				var configsForCurrentConnection =
+					_settings.GetAllSolutionConfigurationdForConnection(
+						_currentConnectionGuid);
+
+				foreach (var solution in _solutions)
+				{
+					var found = false;
+
+					foreach (var config in configsForCurrentConnection)
+					{
+						if (solution.SolutionIdentifier == config.SolutionIndentifier)
+						{
+							found = true;
+							break;
+						}
+					}
+
+					if (!found)
+					{
+						_settings.RemoveSolutionConfiguration(
+							solution.SolutionIdentifier);
+					}
+				}
+			}
+
+			// Save
+			SettingsManager.Instance.Save(GetType(), _settings);
 		}
+
+
+		
+
 
 
 		// ============================================================================
@@ -722,6 +752,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateImportOptionsVisibility();
 
 				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
+				flipSwitch_publishTarget.IsOn = _settings.PublishAllPostImport;
 				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
 				textBox_versionFormat.Text = _settings.VersionFormat;
 				UpdateVersionOptionsVisibility();
@@ -1131,7 +1162,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void textBox_managed_TextChanged(object sender, EventArgs e)
 		{
 			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
-			_settings.AddSolutionConfiguration(_currentSolutionConfig);
+			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 			SaveSettings();
 		}
 
@@ -1139,7 +1170,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
 		{
 			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
-			_settings.AddSolutionConfiguration(_currentSolutionConfig);
+			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 			SaveSettings();
 		}
 
@@ -1233,10 +1264,11 @@ namespace Com.AiricLenz.XTB.Plugin
 				Message = message,
 				Work = (worker, args) =>
 				{
-					PublishAllInSource(Service);    // Source environment
+					PublishAll(Service, flipSwitch_publishSource.IsOn);
 					ExportAllSolutions();
 					HandleGit();
 					ImportAllSolutions();
+					PublishAll(_targetServiceClient, flipSwitch_publishTarget.IsOn);
 
 					args.Result = null;
 				},

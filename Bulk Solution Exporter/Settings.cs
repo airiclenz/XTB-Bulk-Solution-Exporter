@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Activities.Expressions;
+using System.Activities.Statements;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -189,78 +190,136 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		public SolutionConfiguration GetOrCreateSolutionConfiguration(
+		public SolutionConfiguration GetSolutionConfiguration(
 			string solutionIdentifier,
-			out bool isNew)
+			bool createIfNotFound = false)
 		{
 
 			for (int i = 0; i < SolutionConfigurations.Count; i++)
 			{
-
 				var config =
 					SolutionConfiguration.GetConfigFromJson(
 						SolutionConfigurations[i]);
 
 				if (config == null)
 				{
+					SolutionConfigurations.RemoveAt(i);
 					continue;
 				}
 
 				if (config.SolutionIndentifier == solutionIdentifier)
 				{
-					isNew = false;
 					return config;
 				}
 			}
 
-			var newConfig = new SolutionConfiguration(solutionIdentifier);
-			SolutionConfigurations.Add(
-				JsonConvert.SerializeObject(newConfig));
+			if (createIfNotFound)
+			{
+				var newSolutionConfig =
+					new SolutionConfiguration(
+						solutionIdentifier);
 
-			isNew = true;
-			return newConfig;
+				SolutionConfigurations.Add(
+					newSolutionConfig.GetJson());
+
+				return newSolutionConfig;
+			}
+
+			return null;
 		}
 
 
+		// ============================================================================
+		public SolutionConfiguration AddSolutionConfiguration(
+			string solutionIdentifier)
+		{
+			// does it already exist?
+			var existingConfig =
+				GetSolutionConfiguration(solutionIdentifier);
+
+			if (existingConfig != null)
+			{
+				return existingConfig;
+			}
+
+			var newSolutionConfig =
+				new SolutionConfiguration(
+					solutionIdentifier);
+
+			SolutionConfigurations.Add(
+				newSolutionConfig.GetJson());
+
+			return newSolutionConfig;
+		}
+
+
+		// ============================================================================
+		public bool UpdateSolutionConfiguration(
+			SolutionConfiguration config)
+		{
+			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			{
+				var currentConfig =
+					SolutionConfiguration.GetConfigFromJson(
+						SolutionConfigurations[i]);
+
+				if (config.SolutionIndentifier == currentConfig.SolutionIndentifier)
+				{
+					SolutionConfigurations[i] = config.GetJson();
+					return true;
+				}
+			}
+
+			return false;
+		}
 
 
 
 		// ============================================================================
-		public void AddSolutionConfiguration(
-			SolutionConfiguration newConfig)
+		public void RemoveSolutionConfiguration(
+			string solutionIdentifier)
 		{
-			var found = false;
-
 			for (int i = 0; i < SolutionConfigurations.Count; i++)
 			{
-
-				var config =
+				var currentConfig =
 					SolutionConfiguration.GetConfigFromJson(
 						SolutionConfigurations[i]);
 
-
-				if (config == null)
+				if (currentConfig.SolutionIndentifier == solutionIdentifier)
 				{
-					continue;
-				}
-
-				if (config.SolutionIndentifier == newConfig.SolutionIndentifier)
-				{
-					found = true;
-
-					SolutionConfigurations[i] = newConfig.GetJson();
-
-					break;
+					SolutionConfigurations.RemoveAt(i);
+					return;
 				}
 			}
-
-			if (!found)
-			{
-				SolutionConfigurations.Add(
-					JsonConvert.SerializeObject(newConfig));
-			}
-
 		}
+
+
+		// ============================================================================
+		public List<SolutionConfiguration> GetAllSolutionConfigurationdForConnection(
+			Guid connectionGuid)
+		{
+			var resultList =
+				new List<SolutionConfiguration>();
+
+			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			{
+				var currentConfig =
+					SolutionConfiguration.GetConfigFromJson(
+						SolutionConfigurations[i]);
+
+				var guidString =
+					connectionGuid.ToString().ToLower();
+
+				if (currentConfig.SolutionIndentifier.StartsWith(guidString))
+				{
+					resultList.Add(currentConfig);
+				}
+			}
+
+			return resultList;
+		}
+
+
 
 	}
 }

@@ -45,7 +45,8 @@ namespace Com.AiricLenz.XTB.Components
 		private const string measureText = "QWypg/#_Ág";
 		private int? _dragStartIndex = null;
 		private int _currentDropIndex = -1;
-
+		private int _hoveringAboveDragBurgerIndex = -1;
+		private int _hoveringAboveCheckBoxIndex = -1;
 
 
 		// ============================================================================
@@ -128,6 +129,7 @@ namespace Com.AiricLenz.XTB.Components
 
 				var brushRow = isSelected ? new SolidBrush(SystemColors.Highlight) : (isChecked ? brushCheckedRow : Brushes.White);
 				var brushText = isSelected ? new SolidBrush(SystemColors.HighlightText) : new SolidBrush(ForeColor);
+				var hoveringThisCheckBox = _hoveringAboveCheckBoxIndex == i;
 
 				//var checkBoxBrush = new SolidBrush(
 				var checkBoxFillColor =
@@ -136,8 +138,8 @@ namespace Com.AiricLenz.XTB.Components
 					_colorOff;
 				var penCheckBoxFrame =
 					isSelected ?
-					new Pen(Color.FromArgb(210, Color.Black), 1.5f) :
-					new Pen(Color.FromArgb(120, 0, 0, 0), isChecked ? 1.5f : 1f);
+					new Pen(Color.FromArgb(210, Color.Black), hoveringThisCheckBox ? 2f : 1.5f) :
+					new Pen(Color.FromArgb(120, 0, 0, 0), isChecked ? (hoveringThisCheckBox ? 2f : 1.5f) : (hoveringThisCheckBox ? 2f : 1f));
 
 				// paint the row
 				g.FillRectangle(brushRow, new Rectangle(0, yPosition, this.Width, _itemHeight));
@@ -190,7 +192,11 @@ namespace Com.AiricLenz.XTB.Components
 				// Draw drag-burger
 				if (_isSortable)
 				{
-					var brushBurgerLines = new SolidBrush(Color.FromArgb(40, Color.Black));
+					var brushBurgerLines = 
+						new SolidBrush(
+							Color.FromArgb(
+								_hoveringAboveDragBurgerIndex == i ? 100 : 40, 
+								Color.Black));
 
 					g.FillRectangle(
 						brushBurgerLines,
@@ -285,6 +291,16 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
+		protected override void OnLeave(EventArgs e)
+		{
+			base.OnLeave(e);
+
+			_hoveringAboveCheckBoxIndex = -1;
+			_hoveringAboveDragBurgerIndex = -1;
+		}
+
+
+		// ============================================================================
 		protected override void OnMouseWheel(
 			MouseEventArgs e)
 		{
@@ -312,9 +328,10 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			base.OnMouseDown(e);
 			Focus();
-			HandleItemClick(e.Location);
+			HandleMousePointerPosition(e.Location, true);
 			Invalidate();
 		}
+
 
 		// ============================================================================
 		protected override void OnMouseUp(
@@ -359,6 +376,8 @@ namespace Com.AiricLenz.XTB.Components
 			MouseEventArgs e)
 		{
 			base.OnMouseMove(e);
+
+			HandleMousePointerPosition(e.Location);
 
 			if (_isSortable &&
 				_dragStartIndex.HasValue)
@@ -995,13 +1014,20 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
-		private void HandleItemClick(Point clickLocation)
+		private void HandleMousePointerPosition(
+			Point pointerLocation,
+			bool isClick = false)
 		{
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_metaDataPerItem.Count, startIndex + (Height / _itemHeight));
 
+			var _hoverCheckBoxIndexOld = _hoveringAboveCheckBoxIndex;
+			var _hoverDragBurgerIndexOld = _hoveringAboveDragBurgerIndex;
+			
+			_hoveringAboveCheckBoxIndex = -1;
+			_hoveringAboveDragBurgerIndex = -1;
 
-			// check check-boxes for clicks
+			// check check-boxes
 			if (_isCheckable)
 			{
 				for (int i = startIndex; i < endIndex; i++)
@@ -1011,11 +1037,21 @@ namespace Com.AiricLenz.XTB.Components
 					var checkBoxBoundsCheckBox =
 						new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
 
-					if (checkBoxBoundsCheckBox.Contains(clickLocation))
+					if (checkBoxBoundsCheckBox.Contains(pointerLocation))
 					{
-						_metaDataPerItem[i].Toggle();
-
-						OnItemChecked();
+						if (isClick)
+						{
+							_metaDataPerItem[i].Toggle();
+							OnItemChecked();
+						}
+						else
+						{
+							_hoveringAboveCheckBoxIndex = i;
+							if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld)
+							{
+								Invalidate();
+							}
+						}
 
 						// Leave - we are done here...
 						return;
@@ -1023,11 +1059,15 @@ namespace Com.AiricLenz.XTB.Components
 				}
 			}
 
-			// deselect all
-			_selectedIndex = -1;
+
+			if (isClick)
+			{
+				// deselect all
+				_selectedIndex = -1;
+			}
 
 
-			// check drag-burger for click
+			// check drag-burger
 			if (_isSortable)
 			{
 				for (int i = startIndex; i < endIndex; i++)
@@ -1037,22 +1077,44 @@ namespace Com.AiricLenz.XTB.Components
 					var checkBoxBoundsCheckBox =
 						new RectangleF(
 							Width - 15f - (_dragBurgerSize * 2f),
-							yPosition + ((_itemHeight - _dragBurgerSize) / 2f),
+							yPosition,
 							_dragBurgerSize * 2f,
-							_dragBurgerSize);
+							_itemHeight);
 
-					if (checkBoxBoundsCheckBox.Contains(clickLocation))
+					if (checkBoxBoundsCheckBox.Contains(pointerLocation))
 					{
-						_dragStartIndex = i;
-
+						if (isClick)
+						{
+							_dragStartIndex = i;
+						}
+						else
+						{
+							_hoveringAboveDragBurgerIndex = i;
+							if (_hoveringAboveDragBurgerIndex != _hoverDragBurgerIndexOld)
+							{
+								Invalidate();
+							}
+						}
+						
 						// Leave - we are done here...
 						return;
 					}
 				}
 			}
 
+			if (!isClick)
+			{
+				if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld ||
+					_hoveringAboveDragBurgerIndex != _hoverDragBurgerIndexOld)
+				{
+					Invalidate();
+				}
 
-			// check hole row for clicks
+				return;
+			}
+
+
+			// check hole row
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				int yPosition = (i * _itemHeight) - _scrollOffset;
@@ -1060,7 +1122,7 @@ namespace Com.AiricLenz.XTB.Components
 				var checkBoxBoundsRow =
 					new Rectangle(0, yPosition, Width, _itemHeight);
 
-				if (checkBoxBoundsRow.Contains(clickLocation))
+				if (checkBoxBoundsRow.Contains(pointerLocation))
 				{
 					_selectedIndex = i;
 					break;

@@ -19,26 +19,37 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	{
 
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string SolutionIndentifier
 		{
 			get; set;
 		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string FileNameManaged
 		{
 			get; set;
 		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string FileNameUnmanaged
 		{
 			get; set;
 		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public bool Selected
 		{
 			get; set;
 		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public int SortingIndex
 		{
 			get; set;
 		}
+
+		
 
 
 		// ============================================================================
@@ -62,9 +73,10 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		// ============================================================================
 		public string GetJson()
 		{
-			return
-				JsonConvert.SerializeObject(this);
+			return JsonConvert.SerializeObject(this);
 		}
+
+
 
 
 	}
