@@ -1,15 +1,19 @@
 # To-Dos
 
 - add dynamics content for commit message and update information tooltip accordingly
+- allow for dynamic content in the filenames
 - save and import config file / alternatively create multiple profiles per connection for easier access
 - show current branch and allow changing
 - add possibility to transfer data
-- added publish all for target
+- show icons for the solutions (visualization of file status)
+- evtl. create custom (abstract) class for SortableCheckListItem
+
 
 ## Added in Release 2024.10.<mark>XX</mark>
 
 - allow for sorting solutions for import order
 - added buttons for checking- / unchecking all solutions in the list
+- added publish all for target
 
 
 ## Added in Release 2024.10.21
