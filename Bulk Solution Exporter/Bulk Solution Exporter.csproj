@@ -336,7 +336,7 @@
   <PropertyGroup>
     <PostBuildEvent>if $(ConfigurationName) == Debug (
      IF NOT EXIST Plugins mkdir Plugins
-     move /Y $(TargetFileName) Plugins
+     copy /Y $(TargetFileName) Plugins
 )
 
 </PostBuildEvent>

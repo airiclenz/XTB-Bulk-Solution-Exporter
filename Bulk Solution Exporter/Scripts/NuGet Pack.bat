@@ -12,7 +12,7 @@ IF /I "%AREYOUSURE%" NEQ "Y" GOTO END
 
 cd ..
 
-Scripts\\nuget.exe pack -Prop Configuration=Debug
+Scripts\\nuget.exe pack -Prop Configuration=Release
 
 copy "Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.*.nupkg" "Bulk Solution Exporter.nuget" /Y
 del "Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.*.nupkg"

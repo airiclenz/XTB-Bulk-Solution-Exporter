@@ -11,6 +11,9 @@
 
 ## Added in Release 2024.10.<mark>XX</mark>
 
+## Added in Release 2024.10.28
+
+- better list for solutions
 - allow for sorting solutions for import order
 - added buttons for checking- / unchecking all solutions in the list
 - added publish all for target
