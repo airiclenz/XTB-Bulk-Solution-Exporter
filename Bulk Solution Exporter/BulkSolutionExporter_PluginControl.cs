@@ -111,7 +111,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Log(ex.Message);
 				return;
 			}
-			
+
 			Log("Publish All was completed.");
 		}
 
@@ -234,9 +234,18 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool isManaged)
 		{
 
-			if (isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameUnmanaged) ||
+			if (isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameManaged) ||
 				!isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameUnmanaged))
 			{
+				if (isManaged)
+				{
+					Log("|   No file name for a managed solution was given!");
+				}
+				else
+				{
+					Log("|   No file name for an unmanaged solution was given!");
+				}
+
 				return;
 			}
 
@@ -310,6 +319,21 @@ namespace Com.AiricLenz.XTB.Plugin
 			Service.Update(solutionToBeUpdated);
 
 			Log("|   Updated the version number: " + oldVersionString + " --> " + solution.Version);
+
+			// update the list as well:
+			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
+			{
+				var solutionItem =
+					listBoxSolutions.Items[i] as Solution;
+
+				if (solutionItem.SolutionIdentifier == solution.SolutionIdentifier)
+				{
+					listBoxSolutions.Items[i] = solution;
+					listBoxSolutions.Invalidate();
+					break;
+				}
+			}
+
 			return true;
 		}
 
@@ -397,7 +421,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			if (!File.Exists(solutionPath))
 			{
-				Log("|   The files does not exist.");
+				Log("|   The file '" + solutionPath + "' does not exist.");
 				return false;
 			}
 
@@ -682,7 +706,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
-		
+
 
 
 
@@ -694,10 +718,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (textBox_log.InvokeRequired)
 			{
 				textBox_log.Invoke(new Action(() => textBox_log.Text += message));
+				textBox_log.SelectionStart = textBox_log.Text.Length;
+				textBox_log.ScrollToCaret();
 			}
 			else
 			{
 				textBox_log.Text += message;
+				textBox_log.SelectionStart = textBox_log.Text.Length;
+				textBox_log.ScrollToCaret();
 			}
 
 		}
@@ -1335,6 +1363,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		#endregion
 
 
-		
+
 	}
 }
