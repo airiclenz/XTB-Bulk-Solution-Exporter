@@ -36,9 +36,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panelSeparator = new System.Windows.Forms.Panel();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.button_checkAll = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
+            this.button_checkAll = new System.Windows.Forms.ToolStripButton();
+            this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
@@ -76,6 +76,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -130,27 +133,15 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.button_uncheckAll,
-            this.toolStripSeparator3,
-            this.button_checkAll});
+            this.button_checkAll,
+            this.button_invertCheck,
+            this.toolStripSeparator5,
+            this.toolStripDropDownButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(492, 25);
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
-            // 
-            // button_checkAll
-            // 
-            this.button_checkAll.Image = ((System.Drawing.Image)(resources.GetObject("button_checkAll.Image")));
-            this.button_checkAll.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_checkAll.Name = "button_checkAll";
-            this.button_checkAll.Size = new System.Drawing.Size(77, 22);
-            this.button_checkAll.Text = "Check All";
-            this.button_checkAll.Click += new System.EventHandler(this.button_checkAll_Click);
-            // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
             // 
             // button_uncheckAll
             // 
@@ -161,12 +152,32 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll.Text = "Un-Check All";
             this.button_uncheckAll.Click += new System.EventHandler(this.button_uncheckAll_Click);
             // 
+            // button_checkAll
+            // 
+            this.button_checkAll.Image = ((System.Drawing.Image)(resources.GetObject("button_checkAll.Image")));
+            this.button_checkAll.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_checkAll.Name = "button_checkAll";
+            this.button_checkAll.Size = new System.Drawing.Size(77, 22);
+            this.button_checkAll.Text = "Check All";
+            this.button_checkAll.Click += new System.EventHandler(this.button_checkAll_Click);
+            // 
+            // button_invertCheck
+            // 
+            this.button_invertCheck.Image = ((System.Drawing.Image)(resources.GetObject("button_invertCheck.Image")));
+            this.button_invertCheck.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_invertCheck.Name = "button_invertCheck";
+            this.button_invertCheck.Size = new System.Drawing.Size(93, 22);
+            this.button_invertCheck.Text = "Invert Check";
+            this.button_invertCheck.Click += new System.EventHandler(this.button_invertCheck_Click);
+            // 
             // listBoxSolutions
             // 
             this.listBoxSolutions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listBoxSolutions.BackColor = System.Drawing.SystemColors.Window;
+            this.listBoxSolutions.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("listBoxSolutions.BackgroundImage")));
+            this.listBoxSolutions.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.listBoxSolutions.BorderColor = System.Drawing.SystemColors.ControlDark;
             this.listBoxSolutions.BorderThickness = 1F;
             this.listBoxSolutions.CheckBoxMargin = 4;
@@ -180,7 +191,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.IsCheckable = true;
             this.listBoxSolutions.IsSortable = true;
             this.listBoxSolutions.ItemHeigth = 24;
-            this.listBoxSolutions.Items = ((System.Collections.Generic.List<object>)(resources.GetObject("listBoxSolutions.Items")));
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
@@ -638,6 +648,28 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_publishTarget.Title = "Publish All (Target)";
             this.flipSwitch_publishTarget.Toggled += new System.EventHandler(this.flipSwitch_publishTarget_Toggled);
             // 
+            // toolStripDropDownButton1
+            // 
+            this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.checkButton_showLogicalNames});
+            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
+            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
+            this.toolStripDropDownButton1.Size = new System.Drawing.Size(78, 22);
+            this.toolStripDropDownButton1.Text = "Settings";
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
+            // 
+            // checkButton_showLogicalNames
+            // 
+            this.checkButton_showLogicalNames.CheckOnClick = true;
+            this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
+            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(184, 22);
+            this.checkButton_showLogicalNames.Text = "Show Logical Names";
+            // 
             // BulkSolutionExporter_PluginControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -720,9 +752,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private SortableCheckList listBoxSolutions;
 		private System.Windows.Forms.ToolStrip toolStrip1;
 		private System.Windows.Forms.ToolStripButton button_checkAll;
-		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
 		private System.Windows.Forms.ToolStripButton button_uncheckAll;
 		private System.Windows.Forms.Panel panelSeparator;
 		private FlipSwitch flipSwitch_publishTarget;
+		private System.Windows.Forms.ToolStripButton button_invertCheck;
+		private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
+		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+		private System.Windows.Forms.ToolStripMenuItem checkButton_showLogicalNames;
 	}
 }

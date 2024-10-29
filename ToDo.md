@@ -6,11 +6,8 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - show icons for the solutions (visualization of file status)
-- evtl. create custom (abstract) class for SortableCheckListItem
 - add sorting by name functionality
-- add invert selection button
 - add option for showing logical names of solutions
-- remove the three empty object from the list
 
 
 ## Added in Release 2024.10.<mark>XX</mark>

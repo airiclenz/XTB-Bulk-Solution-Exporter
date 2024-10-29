@@ -4,8 +4,10 @@ using System.Collections.Specialized;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.ServiceModel;
 using System.Windows.Forms;
+using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
@@ -128,8 +130,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i] as Solution;
-				var solution = listItem;
+				var listItem = listBoxSolutions.CheckedItems[i] as SortableCheckItem;
+				var solution = listItem.ItemObject as Solution;
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -172,8 +174,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i] as Solution;
-				var solution = listItem;
+				var listItem = listBoxSolutions.CheckedItems[i] as SortableCheckItem;
+				var solution = listItem.ItemObject as Solution;
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -323,12 +325,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			// update the list as well:
 			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
-				var solutionItem =
-					listBoxSolutions.Items[i] as Solution;
+				var listItem = listBoxSolutions.Items[i] as SortableCheckItem;
+				var solutionItem = listItem.ItemObject as Solution;
 
 				if (solutionItem.SolutionIdentifier == solution.SolutionIdentifier)
 				{
-					listBoxSolutions.Items[i] = solution;
+					listBoxSolutions.Items[i].ItemObject = solution;
 					listBoxSolutions.Invalidate();
 					break;
 				}
@@ -620,10 +622,12 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_solutions.Sort();
 
-
-			foreach (var solution in _solutions)
+			for (int i=0; i<_solutions.Count; i++)
 			{
-				listBoxSolutions.Items.Add(solution);
+				var solution = _solutions[i];
+
+				listBoxSolutions.Items.Add(
+					new SortableCheckItem(solution, i));
 			}
 
 			if (_settings == null)
@@ -646,7 +650,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 				{
-					var solution = listBoxSolutions.Items[i] as Solution;
+					var solution = listBoxSolutions.Items[i].ItemObject as Solution;
 
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
@@ -1137,11 +1141,13 @@ namespace Com.AiricLenz.XTB.Plugin
 					SolutionConfiguration.GetConfigFromJson(
 						_settings.SolutionConfigurations[i]);
 
-				foreach (Solution solution in listBoxSolutions.Items)
+				foreach (SortableCheckItem listItem in listBoxSolutions.Items)
 				{
+					var solution = listItem.ItemObject as Solution;
+
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
-						var isCchecked = listBoxSolutions.CheckedItems.Contains(solution);
+						var isCchecked = listBoxSolutions.CheckedItems.Contains(listItem);
 
 						_settings.SetCheckedStatus(
 							config.SolutionIndentifier,
@@ -1169,7 +1175,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				for (int s = 0; s < listBoxSolutions.Items.Count; s++)
 				{
-					if ((listBoxSolutions.Items[s] as Solution).SolutionIdentifier == config.SolutionIndentifier)
+					var listItem = listBoxSolutions.Items[s];
+					var solution = listItem.ItemObject as Solution;
+
+					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
 						_settings.SetSortingIndex(
 							config.SolutionIndentifier,
@@ -1340,6 +1349,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 		// ============================================================================
+		private void button_invertCheck_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.InvertCheckOfAllItems();
+		}
+
+		// ============================================================================
 		private void button_uncheckAll_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.UnCheckAllItems();
@@ -1360,9 +1375,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 
+
+
 		#endregion
 
 
-
+		
 	}
 }

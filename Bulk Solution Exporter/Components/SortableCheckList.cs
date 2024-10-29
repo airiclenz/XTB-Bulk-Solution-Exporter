@@ -19,8 +19,8 @@ namespace Com.AiricLenz.XTB.Components
 	public partial class SortableCheckList : Control
 	{
 
-		private List<object> _items = new List<object>();
-		private List<SortableCheckItem> _metaDataPerItem = new List<SortableCheckItem>();
+		//private List<object> _items = new List<object>();
+		private List<SortableCheckItem> _items = new List<SortableCheckItem>();
 
 		private int _itemHeight = 20;
 		private float _textHeight;
@@ -55,8 +55,13 @@ namespace Com.AiricLenz.XTB.Components
 			InitializeComponent();
 			SuspendLayout();
 
-			SetStyle(ControlStyles.Selectable | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
-			//SetStyle(ControlStyles.Selectable, true);
+			SetStyle(
+				ControlStyles.Selectable | 
+				ControlStyles.UserPaint | 
+				ControlStyles.ResizeRedraw | 
+				ControlStyles.OptimizedDoubleBuffer, 
+				true);
+
 			TabStop = true;
 			DoubleBuffered = true;
 			BackColor = SystemColors.Window;
@@ -106,13 +111,6 @@ namespace Com.AiricLenz.XTB.Components
 			var checkerRadius = _checkBoxRadius * 0.5f;
 
 
-			// do some cleanup if needed
-			if (_items.Count != _metaDataPerItem.Count)
-			{
-				SynchronizeItemsMetaData();
-			}
-
-
 			// -------------------------------------
 			// paint all items
 			int startIndex = _scrollOffset / _itemHeight;
@@ -124,7 +122,7 @@ namespace Com.AiricLenz.XTB.Components
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				int yPosition = (i * _itemHeight) - _scrollOffset;
-				var isChecked = _metaDataPerItem[i].IsChecked && _isCheckable;
+				var isChecked = _items[i].IsChecked && _isCheckable;
 				var isSelected = i == _selectedIndex;
 
 				var brushRow = isSelected ? new SolidBrush(SystemColors.Highlight) : (isChecked ? brushCheckedRow : Brushes.White);
@@ -147,7 +145,7 @@ namespace Com.AiricLenz.XTB.Components
 
 				// write the text
 				g.DrawString(
-					_metaDataPerItem[i].Title,
+					_items[i].Title,
 					isChecked ? new Font(Font, FontStyle.Bold) : Font,
 					brushText,
 					new RectangleF(
@@ -235,7 +233,7 @@ namespace Com.AiricLenz.XTB.Components
 			// paint the scroll bar
 			if (_showScrollBar)
 			{
-				int totalItemsHeight = _metaDataPerItem.Count * _itemHeight;
+				int totalItemsHeight = _items.Count * _itemHeight;
 				int clientHeight = this.ClientRectangle.Height - 6;
 
 				// Calculate the length and position of the scrollbar
@@ -354,14 +352,11 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				// Reorder the list
 				var draggedItem = _items[_dragStartIndex.Value];
-				var draggedMetaItem = _metaDataPerItem[_dragStartIndex.Value];
+				var draggedMetaItem = _items[_dragStartIndex.Value];
 
 				_items.RemoveAt(_dragStartIndex.Value);
-				_metaDataPerItem.RemoveAt(_dragStartIndex.Value);
-
 				_items.Insert(_currentDropIndex, draggedItem);
-				_metaDataPerItem.Insert(_currentDropIndex, draggedMetaItem);
-
+				
 				// Reset drag state
 				_dragStartIndex = null;
 				_currentDropIndex = -1;
@@ -431,17 +426,17 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public List<object> Items
+		public List<SortableCheckItem> Items
 		{
 			get
 			{
-				SynchronizeItemsMetaData();
+				//SynchronizeItemsMetaData();
 				return _items;
 			}
 			set
 			{
 				_items = value;
-				SynchronizeItemsMetaData();
+				//SynchronizeItemsMetaData();
 				Invalidate();
 			}
 		}
@@ -469,7 +464,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				if (_selectedIndex != -1)
 				{
-					return _metaDataPerItem[_selectedIndex].ItemObject;
+					return _items[_selectedIndex].ItemObject;
 				}
 
 				return null;
@@ -481,13 +476,37 @@ namespace Com.AiricLenz.XTB.Components
 		/// <summary>
 		/// Returns a list of all checked items
 		/// </summary>
-		public List<object> CheckedItems
+		public List<SortableCheckItem> CheckedItems
+		{
+			get
+			{
+				List<SortableCheckItem> resultList = new List<SortableCheckItem>();
+
+				foreach (var item in _items)
+				{
+					if (item.IsChecked)
+					{
+						resultList.Add(item);
+					}
+				}
+
+				return resultList;
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Returns a list of all checked items
+		/// </summary>
+		public List<object> CheckedObject
 		{
 			get
 			{
 				List<object> resultList = new List<object>();
 
-				foreach (var item in _metaDataPerItem)
+				foreach (var item in _items)
 				{
 					if (item.IsChecked)
 					{
@@ -498,6 +517,7 @@ namespace Com.AiricLenz.XTB.Components
 				return resultList;
 			}
 		}
+
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -782,7 +802,7 @@ namespace Com.AiricLenz.XTB.Components
 			Point location)
 		{
 			// Calculate which item is at the given location
-			for (int i = 0; i < _metaDataPerItem.Count; i++)
+			for (int i = 0; i < _items.Count; i++)
 			{
 				if (GetItemBounds(i).Contains(location))
 				{
@@ -811,16 +831,16 @@ namespace Com.AiricLenz.XTB.Components
 			bool state)
 		{
 			if (index >= 0 &&
-				index < _metaDataPerItem.Count)
+				index < _items.Count)
 			{
-				_metaDataPerItem[index].IsChecked = state;
+				_items[index].IsChecked = state;
 			}
 		}
 
 		// ============================================================================
 		public void CheckAllItems()
 		{
-			foreach (var item in _metaDataPerItem)
+			foreach (var item in _items)
 			{
 				item.IsChecked = true;
 			}
@@ -833,9 +853,22 @@ namespace Com.AiricLenz.XTB.Components
 		// ============================================================================
 		public void UnCheckAllItems()
 		{
-			foreach (var item in _metaDataPerItem)
+			foreach (var item in _items)
 			{
 				item.IsChecked = false;
+			}
+
+			OnItemChecked();
+			Invalidate();
+		}
+
+
+		// ============================================================================
+		public void InvertCheckOfAllItems()
+		{
+			foreach (var item in _items)
+			{
+				item.IsChecked = !item.IsChecked;
 			}
 
 			OnItemChecked();
@@ -859,7 +892,7 @@ namespace Com.AiricLenz.XTB.Components
 		// ============================================================================
 		private void SelectNextItem()
 		{
-			if (_selectedIndex < _metaDataPerItem.Count - 1)
+			if (_selectedIndex < _items.Count - 1)
 			{
 				_selectedIndex++;
 				EnsureItemVisible(_selectedIndex);
@@ -877,7 +910,7 @@ namespace Com.AiricLenz.XTB.Components
 				return;
 			}
 
-			_metaDataPerItem[_selectedIndex].Toggle();
+			_items[_selectedIndex].Toggle();
 			OnItemChecked();
 			Invalidate();
 
@@ -888,12 +921,9 @@ namespace Com.AiricLenz.XTB.Components
 		// ============================================================================
 		public new void Invalidate()
 		{
-			base.Invalidate();
+			CheckIfBackgroundImageNeedsShowing();
 
-			if (_items.Count != _metaDataPerItem.Count)
-			{
-				SynchronizeItemsMetaData();
-			}
+			base.Invalidate();
 		}
 
 
@@ -909,7 +939,7 @@ namespace Com.AiricLenz.XTB.Components
 			int index)
 		{
 			if (index < 0 ||
-				index > _metaDataPerItem.Count)
+				index > _items.Count)
 			{
 				return;
 			}
@@ -939,66 +969,6 @@ namespace Com.AiricLenz.XTB.Components
 				_items.Count == 0;
 
 			base.BackgroundImage = noData ? _noDataImage : null;
-		}
-
-		// ============================================================================
-		private void SynchronizeItemsMetaData()
-		{
-
-			CheckIfBackgroundImageNeedsShowing();
-
-			// unidentify all meta data rows
-			foreach (var metaData in _metaDataPerItem)
-			{
-				metaData.UnIdentify();
-			}
-
-			var position = -1;
-
-			// link items to metadata
-			foreach (var item in _items)
-			{
-				var hashCode = item.GetHashCode();
-				var found = false;
-				position++;
-
-				foreach (var metaData in _metaDataPerItem)
-				{
-					if (metaData.IsIdentified)
-					{
-						continue;
-					}
-
-					if (hashCode == metaData.ItemHashCode)
-					{
-						metaData.IsIdentified = true;
-						found = true;
-						break;
-					}
-				}
-
-				if (!found)
-				{
-					var newMetaData =
-						new SortableCheckItem(
-							item,
-							position);
-
-					_metaDataPerItem.Insert(position, newMetaData);
-				}
-			}
-
-			// remove unidentified metadata rows
-			for (int i = 0; i < _metaDataPerItem.Count; i++)
-			{
-				if (!_metaDataPerItem[i].IsIdentified)
-				{
-					_metaDataPerItem.RemoveAt(i);
-				}
-			}
-
-			//_itemMetaDatas.Sort();
-			Console.WriteLine("Exit");
 		}
 
 
@@ -1050,7 +1020,7 @@ namespace Com.AiricLenz.XTB.Components
 			bool isClick = false)
 		{
 			int startIndex = _scrollOffset / _itemHeight;
-			int endIndex = Math.Min(_metaDataPerItem.Count, startIndex + (Height / _itemHeight));
+			int endIndex = Math.Min(_items.Count, startIndex + (Height / _itemHeight));
 
 			var _hoverCheckBoxIndexOld = _hoveringAboveCheckBoxIndex;
 			var _hoverDragBurgerIndexOld = _hoveringAboveDragBurgerIndex;
@@ -1072,7 +1042,7 @@ namespace Com.AiricLenz.XTB.Components
 					{
 						if (isClick)
 						{
-							_metaDataPerItem[i].Toggle();
+							_items[i].Toggle();
 							OnItemChecked();
 						}
 						else
@@ -1166,8 +1136,6 @@ namespace Com.AiricLenz.XTB.Components
 
 		#endregion
 
-
-
 	}
 
 
@@ -1185,6 +1153,7 @@ namespace Com.AiricLenz.XTB.Components
 		//private bool _isSelected;
 		private int _sortingIndex;
 		private string _title;
+		private Image _icon;
 
 		// ============================================================================
 		public SortableCheckItem(
@@ -1198,6 +1167,21 @@ namespace Com.AiricLenz.XTB.Components
 			_isChecked = false;
 			//_isSelected = false;
 			_title = item.ToString();
+		}
+
+		// ============================================================================
+		public SortableCheckItem(
+			object item,
+			int sortingIndex,
+			Image icon)
+		{
+			_objectHashCode = item.GetHashCode();
+			_item = item;
+			_sortingIndex = sortingIndex;
+			_isIdentified = true;
+			_isChecked = false;
+			_title = item.ToString();
+			_icon = icon;
 		}
 
 		// ============================================================================
@@ -1227,16 +1211,23 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				return _item;
 			}
+			set
+			{
+				_item = value;
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int ItemHashCode
+		public Image Icon
 		{
 			get
 			{
-				return _objectHashCode;
+				return _icon;
 			}
-			// set { _objectHashCode = value; }
+			set
+			{
+				_icon = value; 
+			}
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1252,14 +1243,6 @@ namespace Com.AiricLenz.XTB.Components
 			}
 		}
 
-		/*
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool IsSelected
-		{
-			get { return _isSelected; }
-			set { _isSelected = value; }
-		}
-		*/
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public bool IsIdentified
