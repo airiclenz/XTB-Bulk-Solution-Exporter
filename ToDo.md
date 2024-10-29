@@ -7,9 +7,15 @@
 - add possibility to transfer data
 - show icons for the solutions (visualization of file status)
 - evtl. create custom (abstract) class for SortableCheckListItem
+- add sorting by name functionality
+- add invert selection button
+- add option for showing logical names of solutions
+- remove the three empty object from the list
 
 
 ## Added in Release 2024.10.<mark>XX</mark>
+
+
 
 ## Added in Release 2024.10.28
 
@@ -17,7 +23,6 @@
 - allow for sorting solutions for import order
 - added buttons for checking- / unchecking all solutions in the list
 - added publish all for target
-
 
 ## Added in Release 2024.10.21
 
