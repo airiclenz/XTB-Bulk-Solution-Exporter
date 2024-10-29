@@ -36,7 +36,7 @@ namespace Com.AiricLenz.XTB.Components
 		private bool _showScrollBar = true;
 		private bool _isSortable = true;
 		private bool _isCheckable = true;
-
+		private Image _noDataImage = null;
 
 
 		private Color _colorOff = Color.FromArgb(150, 150, 150);
@@ -240,12 +240,20 @@ namespace Com.AiricLenz.XTB.Components
 
 				// Calculate the length and position of the scrollbar
 				float scrollBarRatio = (float) clientHeight / totalItemsHeight;
+				float itemsHeightTimesClientHeight = totalItemsHeight * clientHeight;
+
 				int scrollBarHeight =
 					scrollBarRatio > 1 ?
 					clientHeight - 1 :
 					(int) (clientHeight * scrollBarRatio) - 1;
 
-				int scrollBarPos = (int) ((float) _scrollOffset / totalItemsHeight * clientHeight) + 3;
+
+				int scrollBarPos = 3;
+				if (itemsHeightTimesClientHeight > 0)
+				{
+					scrollBarPos = (int) ((float) _scrollOffset / itemsHeightTimesClientHeight) + 3;
+				}
+					
 
 				DrawRoundedRectangle(
 					g,
@@ -427,7 +435,7 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			get
 			{
-				VerifyItems();
+				SynchronizeItemsMetaData();
 				return _items;
 			}
 			set
@@ -719,6 +727,22 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public new Image BackgroundImage
+		{
+			get
+			{
+				return _noDataImage;
+			}
+			set
+			{
+				_noDataImage = value;
+				Invalidate();
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		[Browsable(false)]
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public new string Text
@@ -746,12 +770,6 @@ namespace Com.AiricLenz.XTB.Components
 
 		#region Custom Logic
 
-
-		// ============================================================================
-		private void VerifyItems()
-		{
-			SynchronizeItemsMetaData();
-		}
 
 		// ============================================================================
 		private void ClampScrollOffset()
@@ -914,8 +932,21 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
+		private void CheckIfBackgroundImageNeedsShowing()
+		{
+			var noData =
+				_items == null ||
+				_items.Count == 0;
+
+			base.BackgroundImage = noData ? _noDataImage : null;
+		}
+
+		// ============================================================================
 		private void SynchronizeItemsMetaData()
 		{
+
+			CheckIfBackgroundImageNeedsShowing();
+
 			// unidentify all meta data rows
 			foreach (var metaData in _metaDataPerItem)
 			{
