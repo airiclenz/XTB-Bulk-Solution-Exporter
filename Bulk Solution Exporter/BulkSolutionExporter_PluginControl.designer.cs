@@ -39,6 +39,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
             this.button_checkAll = new System.Windows.Forms.ToolStripButton();
             this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
@@ -76,9 +79,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
+            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
+            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -135,6 +137,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll,
             this.button_checkAll,
             this.button_invertCheck,
+            this.button_sortAsc,
+            this.button_sortDesc,
             this.toolStripSeparator5,
             this.toolStripDropDownButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
@@ -169,6 +173,28 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_invertCheck.Size = new System.Drawing.Size(93, 22);
             this.button_invertCheck.Text = "Invert Check";
             this.button_invertCheck.Click += new System.EventHandler(this.button_invertCheck_Click);
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripDropDownButton1
+            // 
+            this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.checkButton_showLogicalNames});
+            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
+            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
+            this.toolStripDropDownButton1.Size = new System.Drawing.Size(78, 22);
+            this.toolStripDropDownButton1.Text = "Settings";
+            // 
+            // checkButton_showLogicalNames
+            // 
+            this.checkButton_showLogicalNames.CheckOnClick = true;
+            this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
+            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(184, 22);
+            this.checkButton_showLogicalNames.Text = "Show Logical Names";
             // 
             // listBoxSolutions
             // 
@@ -648,27 +674,25 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_publishTarget.Title = "Publish All (Target)";
             this.flipSwitch_publishTarget.Toggled += new System.EventHandler(this.flipSwitch_publishTarget_Toggled);
             // 
-            // toolStripDropDownButton1
+            // button_sortAsc
             // 
-            this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.checkButton_showLogicalNames});
-            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
-            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
-            this.toolStripDropDownButton1.Size = new System.Drawing.Size(78, 22);
-            this.toolStripDropDownButton1.Text = "Settings";
+            this.button_sortAsc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_sortAsc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortAsc.Image")));
+            this.button_sortAsc.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_sortAsc.Name = "button_sortAsc";
+            this.button_sortAsc.Size = new System.Drawing.Size(23, 22);
+            this.button_sortAsc.Text = "Sort Alphabetically";
+            this.button_sortAsc.Click += new System.EventHandler(this.button_sortAsc_Click);
             // 
-            // toolStripSeparator5
+            // button_sortDesc
             // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
-            // 
-            // checkButton_showLogicalNames
-            // 
-            this.checkButton_showLogicalNames.CheckOnClick = true;
-            this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
-            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(184, 22);
-            this.checkButton_showLogicalNames.Text = "Show Logical Names";
+            this.button_sortDesc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_sortDesc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortDesc.Image")));
+            this.button_sortDesc.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_sortDesc.Name = "button_sortDesc";
+            this.button_sortDesc.Size = new System.Drawing.Size(23, 22);
+            this.button_sortDesc.Text = "Sort Alphabetically Descending";
+            this.button_sortDesc.Click += new System.EventHandler(this.button_sortDesc_Click);
             // 
             // BulkSolutionExporter_PluginControl
             // 
@@ -759,5 +783,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
 		private System.Windows.Forms.ToolStripMenuItem checkButton_showLogicalNames;
+		private System.Windows.Forms.ToolStripButton button_sortAsc;
+		private System.Windows.Forms.ToolStripButton button_sortDesc;
 	}
 }

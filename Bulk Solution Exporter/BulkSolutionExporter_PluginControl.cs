@@ -518,8 +518,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 						var maxNameLength = 0;
 
+						// sort alphabetically after loading
+						var sortedSolutionsEntities =
+							result.Entities.OrderBy(
+								item => item.GetAttributeValue<string>("friendlyname")).ToList();
+
 						// check max length of all solution names
-						foreach (var entity in result.Entities)
+						foreach (var entity in sortedSolutionsEntities)
 						{
 							var solutionFrinedlyName =
 								entity.GetAttributeValue<string>(
@@ -532,7 +537,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 
 						// create our custom solutions records
-						foreach (var entity in result.Entities)
+						foreach (var entity in sortedSolutionsEntities)
 						{
 							var newSolution =
 								Solution.ConvertFrom(
@@ -1361,6 +1366,21 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 		// ============================================================================
+		private void button_sortAsc_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.SortAlphabetically(
+				SortOrder.Ascending);
+		}
+
+		// ============================================================================
+		private void button_sortDesc_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.SortAlphabetically(
+				SortOrder.Descending);
+		}
+
+
+		// ============================================================================
 		private void splitContainer1_Panel1_Resize(object sender, EventArgs e)
 		{
 			/*
@@ -1377,8 +1397,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 
-		#endregion
 
+
+
+		#endregion
 
 		
 	}

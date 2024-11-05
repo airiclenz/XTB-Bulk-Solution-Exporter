@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
+using Microsoft.Crm.Sdk.Messages;
 
 
 // ============================================================================
@@ -934,6 +936,31 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
+
+		// ============================================================================
+		public void SortAlphabetically(
+			SortOrder sortOrder = SortOrder.Ascending)
+		{
+
+			if (sortOrder == SortOrder.Ascending)
+			{
+				_items = _items.OrderBy(item => item.Title).ToList();
+			}
+			else
+			{
+				_items = _items.OrderByDescending(item => item.Title).ToList();
+			}
+
+			// update the sorting indexes as well:
+			for (int i = 0; i < _items.Count; i++)
+			{
+				_items[i].SortingIndex = i;
+			}
+
+			Invalidate();
+		}
+
+
 		// ============================================================================
 		public void EnsureItemVisible(
 			int index)
@@ -1150,10 +1177,12 @@ namespace Com.AiricLenz.XTB.Components
 		private object _item;
 		private bool _isIdentified;
 		private bool _isChecked;
-		//private bool _isSelected;
 		private int _sortingIndex;
 		private string _title;
 		private Image _icon;
+
+
+
 
 		// ============================================================================
 		public SortableCheckItem(
@@ -1282,6 +1311,17 @@ namespace Com.AiricLenz.XTB.Components
 			_isChecked = !_isChecked;
 			return _isChecked;
 		}
+
+	}
+
+
+	// ============================================================================
+	// ============================================================================
+	// ============================================================================
+	public class SortableCheckItemColumn
+	{
+
+
 
 	}
 }
