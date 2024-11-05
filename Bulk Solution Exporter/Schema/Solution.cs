@@ -23,12 +23,9 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	{
 
 		private Guid _connectionGuid;
-		private string _toStringValue;
 		private string _friendlyName;
 		private Version _version;
 		private int _sortingIndex = 0;
-
-		private static int _friendlyNameLength = 40;
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -53,7 +50,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			set
 			{
 				_friendlyName = value;
-				UpdateToStringValue();
 			}
 		}
 
@@ -68,7 +64,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			set
 			{
 				_version = value;
-				UpdateToStringValue();
 			}
 		}
 
@@ -116,7 +111,11 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		// Overriding the ToString method
 		public override string ToString()
 		{
-			return _toStringValue;
+			return
+				FriendlyName +
+				" - [" +
+				(_version == null ? "" : _version.ToString()) +
+				"]";
 		}
 
 
@@ -126,7 +125,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			Guid connectionGuid,
 			int friendlyNameLength = 40)
 		{
-			_friendlyNameLength = friendlyNameLength;
+			
 
 			if (record == null)
 			{
@@ -166,16 +165,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 
-		// ============================================================================
-		private void UpdateToStringValue()
-		{
-
-			_toStringValue =
-				FriendlyName.ForceToLength(_friendlyNameLength) +
-				" - [" +
-				(_version == null ? "" : _version.ToString()).ForceToLength(13) +
-				"]";
-		}
 	}
 
 }

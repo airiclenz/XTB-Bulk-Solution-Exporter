@@ -754,6 +754,22 @@ namespace Com.AiricLenz.XTB.Plugin
 			InitializeComponent();
 
 			textBox_log.Text = string.Empty;
+
+			listBoxSolutions.Columns.Add(
+				new ColumnDefinition
+				{
+					Header = "Solution Name",
+					PropertyName = "FriendlyName",
+					WidthPercent = 60
+				});
+
+			listBoxSolutions.Columns.Add(
+				new ColumnDefinition
+				{
+					Header = "Version",
+					PropertyName = "Version",
+					WidthPercent = 40
+				});
 		}
 
 

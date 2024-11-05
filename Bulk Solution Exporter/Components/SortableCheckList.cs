@@ -23,6 +23,8 @@ namespace Com.AiricLenz.XTB.Components
 
 		//private List<object> _items = new List<object>();
 		private List<SortableCheckItem> _items = new List<SortableCheckItem>();
+		private List<ColumnDefinition> _columns = new List<ColumnDefinition>();
+
 
 		private int _itemHeight = 20;
 		private float _textHeight;
@@ -68,6 +70,14 @@ namespace Com.AiricLenz.XTB.Components
 			DoubleBuffered = true;
 			BackColor = SystemColors.Window;
 
+			_columns.Add(
+				new ColumnDefinition
+				{
+					Header = "Title",
+					PropertyName = string.Empty,
+					WidthPercent = 100
+				});
+
 
 			AdjustItemHeight();
 			ResumeLayout();
@@ -111,19 +121,39 @@ namespace Com.AiricLenz.XTB.Components
 					Color.FromArgb(30, ColorHelper.MixColors(_colorOn, 0.6, Color.Black)));
 
 			var checkerRadius = _checkBoxRadius * 0.5f;
+			var marginTopText = (_itemHeight - _textHeight) / 2f;
+			var marginTopBurger = (_itemHeight - _dragBurgerSize) / 2f;
+			var marginTopCheckBox = (_itemHeight - _checkBoxSize) / 2f;
+
+
+			// -------------------------------------
+			// paint all headers
+			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
+			var spaceAvailableForColumns = this.Width - leftMargin;
+			var colPosX = leftMargin;
+
+			if (_items.Count > 0)
+			{
+				foreach (var column in _columns)
+				{
+					var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
+					g.DrawString(column.Header, Font, Brushes.Black, colPosX, marginTopText);
+					colPosX += (int) colWidth;
+				}
+			}
+			
 
 
 			// -------------------------------------
 			// paint all items
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_items.Count, startIndex + (Height / _itemHeight));
-			var marginTopText = (_itemHeight - _textHeight) / 2f;
-			var marginTopBurger = (_itemHeight - _dragBurgerSize) / 2f;
-			var marginTopCheckBox = (_itemHeight - _checkBoxSize) / 2f;
-
+			
+			
 			for (int i = startIndex; i < endIndex; i++)
 			{
-				int yPosition = (i * _itemHeight) - _scrollOffset;
+				// add one item height for the header
+				int yPosition = (i * _itemHeight) - _scrollOffset + _itemHeight; 
 				var isChecked = _items[i].IsChecked && _isCheckable;
 				var isSelected = i == _selectedIndex;
 
@@ -145,16 +175,46 @@ namespace Com.AiricLenz.XTB.Components
 				g.FillRectangle(brushRow, new Rectangle(0, yPosition, this.Width, _itemHeight));
 				g.DrawRectangle(Pens.LightGray, new Rectangle(0, yPosition, this.Width, _itemHeight));
 
+
 				// write the text
-				g.DrawString(
-					_items[i].Title,
-					isChecked ? new Font(Font, FontStyle.Bold) : Font,
-					brushText,
-					new RectangleF(
-						10 + (_isCheckable ? _checkBoxSize + 10 : 0), 
-						yPosition + marginTopText,
-						Width -  (_isCheckable ? _checkBoxSize + 10 : 10) - (_isSortable ? (_dragBurgerSize * 2) + 15 : 15) - (_showScrollBar ? 15f : 8f),
-						_textHeight));
+				colPosX = leftMargin;
+
+				if (_items.Count > 0)
+				{
+					foreach (var column in _columns)
+					{
+						var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
+						var propertyValue = string.Empty;
+						if (string.IsNullOrWhiteSpace(column.PropertyName))
+						{
+							propertyValue =
+								_items[i].ItemObject?.ToString();
+						}
+						else
+						{
+							propertyValue = 
+								_items[i].ItemObject.GetType().GetProperty(column.PropertyName)?.GetValue(_items[i].ItemObject, null)?.ToString();
+						}
+						
+						g.DrawString(
+							propertyValue,
+							isChecked ? new Font(Font, FontStyle.Bold) : Font,
+							brushText,
+							new RectangleF(
+								colPosX,
+								yPosition + marginTopText,
+								colWidth,
+								//Width - (_isCheckable ? _checkBoxSize + 10 : 10) - (_isSortable ? (_dragBurgerSize * 2) + 15 : 15) - (_showScrollBar ? 15f : 8f),
+								_textHeight));
+
+
+						colPosX += (int) colWidth;
+					}
+				}
+
+
+				
+				
 				
 
 				// Draw the checkbox background
@@ -432,13 +492,42 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			get
 			{
-				//SynchronizeItemsMetaData();
 				return _items;
 			}
 			set
 			{
-				_items = value;
-				//SynchronizeItemsMetaData();
+				if (value == null)
+				{
+					_items = new List<SortableCheckItem>();
+				}
+				else
+				{
+					_items = value;
+				}
+				
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public List<ColumnDefinition> Columns
+		{
+			get
+			{
+				return _columns;
+			}
+			set
+			{
+				if (value == null)
+				{
+					_columns = new List<ColumnDefinition>();
+				}
+				else
+				{
+					_columns = value;
+				}
+				
 				Invalidate();
 			}
 		}
@@ -1170,6 +1259,7 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
+	[Serializable]
 	public class SortableCheckItem : IComparable<SortableCheckItem>
 	{
 		private int _objectHashCode = 0;
@@ -1318,10 +1408,51 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	public class SortableCheckItemColumn
+	[Serializable]
+	public class ColumnDefinition
 	{
+		private int _width = 100;
+		private string _header = string.Empty;
+		private string _propertyName = string.Empty;
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int WidthPercent
+		{
+			get
+			{
+				return _width;
+			}
+			set
+			{
+				_width = value;
+			}
+		}
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public string Header
+		{
+			get
+			{
+				return _header;
+			}
+			set
+			{
+				_header = value;
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public string PropertyName
+		{
+			get
+			{
+				return _propertyName;
+			}
+			set
+			{
+				_propertyName = value;
+			}
+		}
 
 	}
 }

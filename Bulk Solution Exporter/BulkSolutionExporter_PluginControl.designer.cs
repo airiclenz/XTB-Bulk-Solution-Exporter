@@ -39,6 +39,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
             this.button_checkAll = new System.Windows.Forms.ToolStripButton();
             this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
+            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
+            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
             this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
@@ -79,8 +81,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
-            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -174,6 +174,26 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_invertCheck.Text = "Invert Check";
             this.button_invertCheck.Click += new System.EventHandler(this.button_invertCheck_Click);
             // 
+            // button_sortAsc
+            // 
+            this.button_sortAsc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_sortAsc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortAsc.Image")));
+            this.button_sortAsc.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_sortAsc.Name = "button_sortAsc";
+            this.button_sortAsc.Size = new System.Drawing.Size(23, 22);
+            this.button_sortAsc.Text = "Sort Alphabetically";
+            this.button_sortAsc.Click += new System.EventHandler(this.button_sortAsc_Click);
+            // 
+            // button_sortDesc
+            // 
+            this.button_sortDesc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_sortDesc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortDesc.Image")));
+            this.button_sortDesc.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_sortDesc.Name = "button_sortDesc";
+            this.button_sortDesc.Size = new System.Drawing.Size(23, 22);
+            this.button_sortDesc.Text = "Sort Alphabetically Descending";
+            this.button_sortDesc.Click += new System.EventHandler(this.button_sortDesc_Click);
+            // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
@@ -211,12 +231,14 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.CheckBoxSize = 18;
             this.listBoxSolutions.ColorChecked = System.Drawing.Color.MediumSlateBlue;
             this.listBoxSolutions.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.listBoxSolutions.Columns = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.ColumnDefinition>)(resources.GetObject("listBoxSolutions.Columns")));
             this.listBoxSolutions.DragBurgerLineThickness = 1.5F;
             this.listBoxSolutions.DragBurgerSize = 11;
             this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listBoxSolutions.IsCheckable = true;
             this.listBoxSolutions.IsSortable = true;
             this.listBoxSolutions.ItemHeigth = 24;
+            this.listBoxSolutions.Items = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.SortableCheckItem>)(resources.GetObject("listBoxSolutions.Items")));
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
@@ -673,26 +695,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_publishTarget.TextOnLeftSide = false;
             this.flipSwitch_publishTarget.Title = "Publish All (Target)";
             this.flipSwitch_publishTarget.Toggled += new System.EventHandler(this.flipSwitch_publishTarget_Toggled);
-            // 
-            // button_sortAsc
-            // 
-            this.button_sortAsc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.button_sortAsc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortAsc.Image")));
-            this.button_sortAsc.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_sortAsc.Name = "button_sortAsc";
-            this.button_sortAsc.Size = new System.Drawing.Size(23, 22);
-            this.button_sortAsc.Text = "Sort Alphabetically";
-            this.button_sortAsc.Click += new System.EventHandler(this.button_sortAsc_Click);
-            // 
-            // button_sortDesc
-            // 
-            this.button_sortDesc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.button_sortDesc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortDesc.Image")));
-            this.button_sortDesc.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_sortDesc.Name = "button_sortDesc";
-            this.button_sortDesc.Size = new System.Drawing.Size(23, 22);
-            this.button_sortDesc.Text = "Sort Alphabetically Descending";
-            this.button_sortDesc.Click += new System.EventHandler(this.button_sortDesc_Click);
             // 
             // BulkSolutionExporter_PluginControl
             // 

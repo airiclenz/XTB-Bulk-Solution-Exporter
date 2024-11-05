@@ -37,8 +37,11 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				if (int.TryParse(parts[i], out int number))
 				{
 					_version[i] = number;
+					//_versionDigits[i] = 2;
 				}
 			}
+
+			//UpdateVersionString();
 		}
 
 
@@ -102,9 +105,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 					_versionDigits[i] = 2;
 				}
 
-
-
-
 			}
 
 			UpdateVersionString();
@@ -128,9 +128,15 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 			for (int i = 0; i < 4; i++)
 			{
+				var versionPartLen =
+					 _version[i].ToString().Length;
+
+				var digits =
+					Math.Max(versionPartLen, _versionDigits[i]);
+				
 				_versionString +=
 					(i > 0 ? "." : "") +
-					(_version[i] == -1 ? "" : _version[i].ToString("D" + _versionDigits[i]));
+					(_version[i] == -1 ? "" : _version[i].ToString("D" + digits));
 			}
 		}
 

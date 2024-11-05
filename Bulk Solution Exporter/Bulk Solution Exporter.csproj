@@ -317,6 +317,7 @@
   <ItemGroup>
     <EmbeddedResource Include="BulkSolutionExporter_PluginControl.resx">
       <DependentUpon>BulkSolutionExporter_PluginControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\FlipSwitch.resx">
       <DependentUpon>FlipSwitch.cs</DependentUpon>
