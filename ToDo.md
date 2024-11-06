@@ -6,13 +6,14 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - show icons for the solutions (visualization of file status)
-- add option for showing logical names of solutions
 
 
 ## Added in Release 2024.11.<mark>XX</mark>
 
+- added multiple columns
 - added sorting by name functionality
-
+- add option for showing logical names of solutions
+ 
 ## Added in Release 2024.10.28
 
 - better list for solutions

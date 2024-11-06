@@ -118,7 +118,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Panel2.Controls.Add(this.textBox_unmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.textBox_managed);
             this.splitContainer1.Size = new System.Drawing.Size(1494, 620);
-            this.splitContainer1.SplitterDistance = 492;
+            this.splitContainer1.SplitterDistance = 606;
             this.splitContainer1.TabIndex = 6;
             // 
             // panelSeparator
@@ -128,7 +128,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.panelSeparator.BackColor = System.Drawing.SystemColors.ControlDark;
             this.panelSeparator.Location = new System.Drawing.Point(0, 28);
             this.panelSeparator.Name = "panelSeparator";
-            this.panelSeparator.Size = new System.Drawing.Size(489, 2);
+            this.panelSeparator.Size = new System.Drawing.Size(603, 2);
             this.panelSeparator.TabIndex = 9;
             // 
             // toolStrip1
@@ -143,7 +143,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripDropDownButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(492, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(606, 25);
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -215,6 +215,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
             this.checkButton_showLogicalNames.Size = new System.Drawing.Size(184, 22);
             this.checkButton_showLogicalNames.Text = "Show Logical Names";
+            this.checkButton_showLogicalNames.CheckStateChanged += new System.EventHandler(this.checkButton_showLogicalNames_CheckStateChanged);
             // 
             // listBoxSolutions
             // 
@@ -242,7 +243,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
-            this.listBoxSolutions.Size = new System.Drawing.Size(486, 580);
+            this.listBoxSolutions.Size = new System.Drawing.Size(600, 580);
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
@@ -282,7 +283,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_log.Name = "textBox_log";
             this.textBox_log.ReadOnly = true;
             this.textBox_log.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBox_log.Size = new System.Drawing.Size(983, 459);
+            this.textBox_log.Size = new System.Drawing.Size(869, 459);
             this.textBox_log.TabIndex = 6;
             this.textBox_log.Text = "This is the log...";
             // 
@@ -336,7 +337,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_unmanaged.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_unmanaged.Location = new System.Drawing.Point(107, 101);
             this.textBox_unmanaged.Name = "textBox_unmanaged";
-            this.textBox_unmanaged.Size = new System.Drawing.Size(884, 23);
+            this.textBox_unmanaged.Size = new System.Drawing.Size(770, 23);
             this.textBox_unmanaged.TabIndex = 1;
             this.textBox_unmanaged.TextChanged += new System.EventHandler(this.textBox_unmanaged_TextChanged);
             // 
@@ -348,7 +349,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_managed.Location = new System.Drawing.Point(107, 53);
             this.textBox_managed.Name = "textBox_managed";
-            this.textBox_managed.Size = new System.Drawing.Size(884, 23);
+            this.textBox_managed.Size = new System.Drawing.Size(770, 23);
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 

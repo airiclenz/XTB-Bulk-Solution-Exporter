@@ -130,15 +130,31 @@ namespace Com.AiricLenz.XTB.Components
 			// -------------------------------------
 			// paint all headers
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
-			var spaceAvailableForColumns = this.Width - leftMargin;
+			var spaceAvailableForColumns = 
+				this.Width - 
+				leftMargin - 
+				(_isSortable ? (_dragBurgerSize * 2) + 6 : 0) -
+				(_showScrollBar ? 8 : 0);
+
 			var colPosX = leftMargin;
+
+			g.FillRectangle(
+				new SolidBrush(Color.FromArgb(255, 60, 60, 60)), 
+				new Rectangle(0, 0, this.Width, _itemHeight));
 
 			if (_items.Count > 0)
 			{
 				foreach (var column in _columns)
 				{
 					var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
-					g.DrawString(column.Header, Font, Brushes.Black, colPosX, marginTopText);
+					
+					g.DrawString(
+						column.Header,
+						new Font(Font, FontStyle.Bold), 
+						Brushes.White, 
+						colPosX,
+						marginTopText);
+
 					colPosX += (int) colWidth;
 				}
 			}
@@ -259,7 +275,18 @@ namespace Com.AiricLenz.XTB.Components
 							Color.FromArgb(
 								_hoveringAboveDragBurgerIndex == i ? 100 : 40,
 								Color.Black));
+					/*
+					// white background
+					g.FillRectangle(
+						new SolidBrush(Color.FromArgb(230, BackColor)),
+						new RectangleF(
+							Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f) - 3,
+							yPosition,
+							_dragBurgerSize * 2f + 10,
+							_itemHeight));
+					*/
 
+					// the lines
 					g.FillRectangle(
 						brushBurgerLines,
 						new RectangleF(
@@ -321,7 +348,7 @@ namespace Com.AiricLenz.XTB.Components
 					new Rectangle(Width - 11, scrollBarPos - 3, 10, scrollBarHeight + 6),
 					4f,
 					null,
-					new SolidBrush(BackColor));
+					new SolidBrush(Color.FromArgb(230, BackColor)));
 
 				// actual scrollbar
 				DrawRoundedRectangle(
@@ -1194,7 +1221,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				for (int i = startIndex; i < endIndex; i++)
 				{
-					int yPosition = (i * _itemHeight) - _scrollOffset;
+					int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
 
 					var checkBoxBoundsCheckBox =
 						new RectangleF(

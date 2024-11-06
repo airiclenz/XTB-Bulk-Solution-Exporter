@@ -819,6 +819,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_commitMessage.Text = _settings.CommitMessage;
 				UpdateGitOptionsVisibility();
 
+				checkButton_showLogicalNames.Checked = _settings.ShowLogicalSolutionNames;
+
 				_codeUpdate = false;
 
 				ExportButtonSetState();
@@ -1409,15 +1411,53 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		private void checkButton_showLogicalNames_CheckStateChanged(object sender, EventArgs e)
+		{
+			var newColumnSetup =
+				new List<ColumnDefinition>
+				{
+					new ColumnDefinition
+					{
+						Header = "Solution Name",
+						PropertyName = "FriendlyName",
+						WidthPercent = 42
+					},
 
+					new ColumnDefinition
+					{
+						Header = "Logical Name",
+						PropertyName = "UniqueName",
+						WidthPercent = 38
+					},
 
+					new ColumnDefinition
+					{
+						Header = "Version",
+						PropertyName = "Version",
+						WidthPercent = 20
+					}
+				};
 
+			if (checkButton_showLogicalNames.Checked == false)
+			{
+				newColumnSetup.RemoveAt(1);
+				newColumnSetup[0].WidthPercent = 65;
+				newColumnSetup[1].WidthPercent = 35;
+			}
 
+			listBoxSolutions.Columns = newColumnSetup;
+			listBoxSolutions.Refresh();
+
+			_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
+			SaveSettings();
+		}
 
 
 
 		#endregion
 
-		
+
+
 	}
 }

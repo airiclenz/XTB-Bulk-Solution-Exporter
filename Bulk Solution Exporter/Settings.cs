@@ -97,6 +97,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		}
 
+		public bool ShowLogicalSolutionNames
+		{
+			get; set;
+		}
+
 
 
 		public List<string> SolutionConfigurations
