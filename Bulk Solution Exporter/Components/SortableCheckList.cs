@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -60,10 +61,10 @@ namespace Com.AiricLenz.XTB.Components
 			SuspendLayout();
 
 			SetStyle(
-				ControlStyles.Selectable | 
-				ControlStyles.UserPaint | 
-				ControlStyles.ResizeRedraw | 
-				ControlStyles.OptimizedDoubleBuffer, 
+				ControlStyles.Selectable |
+				ControlStyles.UserPaint |
+				ControlStyles.ResizeRedraw |
+				ControlStyles.OptimizedDoubleBuffer,
 				true);
 
 			TabStop = true;
@@ -141,19 +142,25 @@ namespace Com.AiricLenz.XTB.Components
 					colPosX += (int) colWidth;
 				}
 			}
-			
+
 
 
 			// -------------------------------------
 			// paint all items
 			int startIndex = _scrollOffset / _itemHeight;
-			int endIndex = Math.Min(_items.Count, startIndex + (Height / _itemHeight));
-			
-			
+			int endIndex =
+				Math.Min(
+					_items.Count,
+					startIndex + ((Height - _itemHeight) / _itemHeight));
+
+
 			for (int i = startIndex; i < endIndex; i++)
 			{
 				// add one item height for the header
-				int yPosition = (i * _itemHeight) - _scrollOffset + _itemHeight; 
+				int yPosition = Math.Max(
+					_itemHeight,
+					((i + 1) * _itemHeight) - _scrollOffset);
+
 				var isChecked = _items[i].IsChecked && _isCheckable;
 				var isSelected = i == _selectedIndex;
 
@@ -192,10 +199,10 @@ namespace Com.AiricLenz.XTB.Components
 						}
 						else
 						{
-							propertyValue = 
+							propertyValue =
 								_items[i].ItemObject.GetType().GetProperty(column.PropertyName)?.GetValue(_items[i].ItemObject, null)?.ToString();
 						}
-						
+
 						g.DrawString(
 							propertyValue,
 							isChecked ? new Font(Font, FontStyle.Bold) : Font,
@@ -204,7 +211,6 @@ namespace Com.AiricLenz.XTB.Components
 								colPosX,
 								yPosition + marginTopText,
 								colWidth,
-								//Width - (_isCheckable ? _checkBoxSize + 10 : 10) - (_isSortable ? (_dragBurgerSize * 2) + 15 : 15) - (_showScrollBar ? 15f : 8f),
 								_textHeight));
 
 
@@ -212,10 +218,6 @@ namespace Com.AiricLenz.XTB.Components
 					}
 				}
 
-
-				
-				
-				
 
 				// Draw the checkbox background
 				if (_isCheckable)
@@ -252,10 +254,10 @@ namespace Com.AiricLenz.XTB.Components
 				// Draw drag-burger
 				if (_isSortable)
 				{
-					var brushBurgerLines = 
+					var brushBurgerLines =
 						new SolidBrush(
 							Color.FromArgb(
-								_hoveringAboveDragBurgerIndex == i ? 100 : 40, 
+								_hoveringAboveDragBurgerIndex == i ? 100 : 40,
 								Color.Black));
 
 					g.FillRectangle(
@@ -300,21 +302,20 @@ namespace Com.AiricLenz.XTB.Components
 
 				// Calculate the length and position of the scrollbar
 				float scrollBarRatio = (float) clientHeight / totalItemsHeight;
-				float itemsHeightTimesClientHeight = totalItemsHeight * clientHeight;
 
 				int scrollBarHeight =
 					scrollBarRatio > 1 ?
 					clientHeight - 1 :
-					(int) (clientHeight * scrollBarRatio) - 1;
-
+					(int) (clientHeight * scrollBarRatio) - 3;
 
 				int scrollBarPos = 3;
-				if (itemsHeightTimesClientHeight > 0)
-				{
-					scrollBarPos = (int) ((float) _scrollOffset / itemsHeightTimesClientHeight) + 3;
-				}
-					
 
+				if (totalItemsHeight > 0)
+				{
+					scrollBarPos += (int) ((float) _scrollOffset / totalItemsHeight * clientHeight);
+				}
+
+				// white background
 				DrawRoundedRectangle(
 					g,
 					new Rectangle(Width - 11, scrollBarPos - 3, 10, scrollBarHeight + 6),
@@ -322,6 +323,7 @@ namespace Com.AiricLenz.XTB.Components
 					null,
 					new SolidBrush(BackColor));
 
+				// actual scrollbar
 				DrawRoundedRectangle(
 					g,
 					new Rectangle(Width - 8, scrollBarPos, 4, scrollBarHeight),
@@ -375,10 +377,19 @@ namespace Com.AiricLenz.XTB.Components
 			base.OnMouseWheel(e);
 
 			_scrollOffset -= e.Delta / 120 * _itemHeight;
+
 			ClampScrollOffset();
 
 			Invalidate();
 		}
+
+
+		// ============================================================================
+		int RoundUpToNextMultiple(int number, int stepSize)
+		{
+			return ((number + stepSize - 1) / stepSize) * stepSize;
+		}
+
 
 		// ============================================================================
 		protected override void OnResize(
@@ -418,7 +429,7 @@ namespace Com.AiricLenz.XTB.Components
 
 				_items.RemoveAt(_dragStartIndex.Value);
 				_items.Insert(_currentDropIndex, draggedItem);
-				
+
 				// Reset drag state
 				_dragStartIndex = null;
 				_currentDropIndex = -1;
@@ -504,7 +515,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					_items = value;
 				}
-				
+
 				Invalidate();
 			}
 		}
@@ -527,7 +538,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					_columns = value;
 				}
-				
+
 				Invalidate();
 			}
 		}
@@ -885,7 +896,16 @@ namespace Com.AiricLenz.XTB.Components
 		// ============================================================================
 		private void ClampScrollOffset()
 		{
-			_scrollOffset = Math.Max(0, Math.Min(_scrollOffset, Math.Max(0, (Items.Count * _itemHeight) - Height)));
+			_scrollOffset =
+				Math.Max(
+					0,
+					Math.Min(
+						_scrollOffset,
+						Math.Max(
+							0,
+							(Items.Count * _itemHeight) - (Height - _itemHeight))));
+
+			_scrollOffset = RoundUpToNextMultiple(_scrollOffset, _itemHeight);
 		}
 
 		// ============================================================================
@@ -915,7 +935,6 @@ namespace Com.AiricLenz.XTB.Components
 					_itemHeight);
 		}
 
-
 		// ============================================================================
 		public void SetItemChecked(
 			int index,
@@ -940,7 +959,6 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
-
 		// ============================================================================
 		public void UnCheckAllItems()
 		{
@@ -953,7 +971,6 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
-
 		// ============================================================================
 		public void InvertCheckOfAllItems()
 		{
@@ -965,8 +982,6 @@ namespace Com.AiricLenz.XTB.Components
 			OnItemChecked();
 			Invalidate();
 		}
-
-
 
 		// ============================================================================
 		private void SelectPreviousItem()
@@ -992,7 +1007,6 @@ namespace Com.AiricLenz.XTB.Components
 			}
 		}
 
-
 		// ============================================================================
 		private void ToggleSelectedItem()
 		{
@@ -1007,8 +1021,6 @@ namespace Com.AiricLenz.XTB.Components
 
 		}
 
-
-
 		// ============================================================================
 		public new void Invalidate()
 		{
@@ -1017,14 +1029,12 @@ namespace Com.AiricLenz.XTB.Components
 			base.Invalidate();
 		}
 
-
 		// ============================================================================
 		public void DeselectAll()
 		{
 			_selectedIndex = -1;
 			Invalidate();
 		}
-
 
 		// ============================================================================
 		public void SortAlphabetically(
@@ -1049,7 +1059,6 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
-
 		// ============================================================================
 		public void EnsureItemVisible(
 			int index)
@@ -1060,7 +1069,7 @@ namespace Com.AiricLenz.XTB.Components
 				return;
 			}
 
-			int itemTop = index * _itemHeight;
+			int itemTop = (index * _itemHeight) + _itemHeight;
 			int itemBottom = itemTop + _itemHeight;
 
 			// Adjust scrolling to ensure the item is fully visible
@@ -1076,7 +1085,6 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
-
 		// ============================================================================
 		private void CheckIfBackgroundImageNeedsShowing()
 		{
@@ -1086,7 +1094,6 @@ namespace Com.AiricLenz.XTB.Components
 
 			base.BackgroundImage = noData ? _noDataImage : null;
 		}
-
 
 		// ============================================================================
 		private void DrawRoundedRectangle(
@@ -1116,7 +1123,6 @@ namespace Com.AiricLenz.XTB.Components
 			}
 		}
 
-
 		// ============================================================================
 		private void AdjustItemHeight()
 		{
@@ -1129,18 +1135,17 @@ namespace Com.AiricLenz.XTB.Components
 			}
 		}
 
-
 		// ============================================================================
 		private void HandleMousePointerPosition(
 			Point pointerLocation,
 			bool isClick = false)
 		{
 			int startIndex = _scrollOffset / _itemHeight;
-			int endIndex = Math.Min(_items.Count, startIndex + (Height / _itemHeight));
+			int endIndex = Math.Min(_items.Count, startIndex + ((Height - _itemHeight) / _itemHeight));
 
 			var _hoverCheckBoxIndexOld = _hoveringAboveCheckBoxIndex;
 			var _hoverDragBurgerIndexOld = _hoveringAboveDragBurgerIndex;
-			
+
 			_hoveringAboveCheckBoxIndex = -1;
 			_hoveringAboveDragBurgerIndex = -1;
 
@@ -1149,7 +1154,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				for (int i = startIndex; i < endIndex; i++)
 				{
-					int yPosition = (i * _itemHeight) - _scrollOffset;
+					int yPosition = (i * _itemHeight) - _scrollOffset + _itemHeight;
 
 					var checkBoxBoundsCheckBox =
 						new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
@@ -1212,7 +1217,7 @@ namespace Com.AiricLenz.XTB.Components
 								Invalidate();
 							}
 						}
-						
+
 						// Leave - we are done here...
 						return;
 					}
@@ -1254,7 +1259,7 @@ namespace Com.AiricLenz.XTB.Components
 
 	}
 
-
+	#region Supporting Classes
 
 	// ============================================================================
 	// ============================================================================
@@ -1345,7 +1350,7 @@ namespace Com.AiricLenz.XTB.Components
 			}
 			set
 			{
-				_icon = value; 
+				_icon = value;
 			}
 		}
 
@@ -1455,4 +1460,7 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 	}
+
+
+	#endregion
 }
