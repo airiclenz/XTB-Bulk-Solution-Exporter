@@ -130,16 +130,16 @@ namespace Com.AiricLenz.XTB.Components
 			// -------------------------------------
 			// paint all headers
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
-			var spaceAvailableForColumns = 
-				this.Width - 
-				leftMargin - 
+			var spaceAvailableForColumns =
+				this.Width -
+				leftMargin -
 				(_isSortable ? (_dragBurgerSize * 2) + 6 : 0) -
 				(_showScrollBar ? 8 : 0);
 
 			var colPosX = leftMargin;
 
 			g.FillRectangle(
-				new SolidBrush(Color.FromArgb(255, 60, 60, 60)), 
+				new SolidBrush(Color.FromArgb(255, 60, 60, 60)),
 				new Rectangle(0, 0, this.Width, _itemHeight));
 
 			if (_items.Count > 0)
@@ -147,11 +147,11 @@ namespace Com.AiricLenz.XTB.Components
 				foreach (var column in _columns)
 				{
 					var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
-					
+
 					g.DrawString(
 						column.Header,
-						new Font(Font, FontStyle.Bold), 
-						Brushes.White, 
+						new Font(Font, FontStyle.Bold),
+						Brushes.White,
 						colPosX,
 						marginTopText);
 
@@ -957,7 +957,7 @@ namespace Com.AiricLenz.XTB.Components
 			return
 				new Rectangle(
 					0,
-					(index * _itemHeight) + _scrollOffset,
+					(index * _itemHeight) + _itemHeight - _scrollOffset,
 					Width,
 					_itemHeight);
 		}
@@ -1181,7 +1181,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				for (int i = startIndex; i < endIndex; i++)
 				{
-					int yPosition = (i * _itemHeight) - _scrollOffset + _itemHeight;
+					int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
 
 					var checkBoxBoundsCheckBox =
 						new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
@@ -1266,7 +1266,7 @@ namespace Com.AiricLenz.XTB.Components
 			// check hole row
 			for (int i = startIndex; i < endIndex; i++)
 			{
-				int yPosition = (i * _itemHeight) - _scrollOffset;
+				int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
 
 				var checkBoxBoundsRow =
 					new Rectangle(0, yPosition, Width, _itemHeight);
