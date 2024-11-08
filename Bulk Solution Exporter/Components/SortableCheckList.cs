@@ -113,6 +113,8 @@ namespace Com.AiricLenz.XTB.Components
 			PaintEventArgs e)
 		{
 			base.OnPaint(e);
+
+
 			Graphics g = e.Graphics;
 			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
@@ -275,16 +277,6 @@ namespace Com.AiricLenz.XTB.Components
 							Color.FromArgb(
 								_hoveringAboveDragBurgerIndex == i ? 100 : 40,
 								Color.Black));
-					/*
-					// white background
-					g.FillRectangle(
-						new SolidBrush(Color.FromArgb(230, BackColor)),
-						new RectangleF(
-							Width - (_showScrollBar ? 15f : 8f) - (_dragBurgerSize * 2f) - 3,
-							yPosition,
-							_dragBurgerSize * 2f + 10,
-							_itemHeight));
-					*/
 
 					// the lines
 					g.FillRectangle(
@@ -1119,7 +1111,13 @@ namespace Com.AiricLenz.XTB.Components
 				_items == null ||
 				_items.Count == 0;
 
-			base.BackgroundImage = noData ? _noDataImage : null;
+			var supposedBackground = noData ? _noDataImage : null;
+
+			if (supposedBackground != base.BackgroundImage)
+			{
+				base.BackgroundImage = supposedBackground;
+				Invalidate();
+			}
 		}
 
 		// ============================================================================

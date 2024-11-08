@@ -130,7 +130,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i] as SortableCheckItem;
+				var listItem = listBoxSolutions.CheckedItems[i];
 				var solution = listItem.ItemObject as Solution;
 
 				var solutionConfig =
@@ -174,7 +174,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i] as SortableCheckItem;
+				var listItem = listBoxSolutions.CheckedItems[i];
 				var solution = listItem.ItemObject as Solution;
 
 				var solutionConfig =
@@ -325,7 +325,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			// update the list as well:
 			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
-				var listItem = listBoxSolutions.Items[i] as SortableCheckItem;
+				var listItem = listBoxSolutions.Items[i];
 				var solutionItem = listItem.ItemObject as Solution;
 
 				if (solutionItem.SolutionIdentifier == solution.SolutionIdentifier)
@@ -627,7 +627,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_solutions.Sort();
 
-			for (int i=0; i<_solutions.Count; i++)
+			for (int i = 0; i < _solutions.Count; i++)
 			{
 				var solution = _solutions[i];
 
@@ -1274,7 +1274,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			saveFileDialog1.Title = "Save Unanaged file as...";
+			saveFileDialog1.Title = "Save Unmanaged file as...";
 
 			if (!string.IsNullOrWhiteSpace(textBox_unmanaged.Text))
 			{
