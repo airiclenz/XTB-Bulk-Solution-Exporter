@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
@@ -76,7 +77,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					Header = "Title",
 					PropertyName = string.Empty,
-					WidthPercent = 100
+					Width = 100
 				});
 
 
@@ -127,8 +128,7 @@ namespace Com.AiricLenz.XTB.Components
 			var marginTopText = (_itemHeight - _textHeight) / 2f;
 			var marginTopBurger = (_itemHeight - _dragBurgerSize) / 2f;
 			var marginTopCheckBox = (_itemHeight - _checkBoxSize) / 2f;
-
-
+			
 			// -------------------------------------
 			// paint all headers
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
@@ -148,7 +148,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				foreach (var column in _columns)
 				{
-					var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
+					var colWidth = spaceAvailableForColumns * (column.Width / 100f);
 
 					g.DrawString(
 						column.Header,
@@ -208,29 +208,43 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					foreach (var column in _columns)
 					{
-						var colWidth = spaceAvailableForColumns * (column.WidthPercent / 100f);
-						var propertyValue = string.Empty;
-						if (string.IsNullOrWhiteSpace(column.PropertyName))
-						{
-							propertyValue =
-								_items[i].ItemObject?.ToString();
-						}
-						else
-						{
-							propertyValue =
-								_items[i].ItemObject.GetType().GetProperty(column.PropertyName)?.GetValue(_items[i].ItemObject, null)?.ToString();
-						}
+						var colWidth = spaceAvailableForColumns * (column.Width / 100f);
 
-						g.DrawString(
-							propertyValue,
-							isChecked ? new Font(Font, FontStyle.Bold) : Font,
-							brushText,
-							new RectangleF(
-								colPosX,
-								yPosition + marginTopText,
-								colWidth,
-								_textHeight));
+						if (!string.IsNullOrWhiteSpace(column.PropertyName))
+						{
+							var propertyObject = _items[i].ItemObject.GetType().GetProperty(column.PropertyName)?.GetValue(_items[i].ItemObject, null);
 
+							if (propertyObject is Bitmap)
+							{
+								var propertyBitmap = propertyObject as Bitmap;
+								var imageHeight = Math.Min(_itemHeight - 2, propertyBitmap.Height);
+								var ratio = (float)imageHeight / (float)propertyBitmap.Height;
+								var imageWidth = propertyBitmap.Width * ratio;
+								var marginTop = (_itemHeight - imageHeight) / 2;
+								
+								g.DrawImage(
+									propertyBitmap,
+									colPosX,
+									yPosition + marginTopText,
+									imageWidth,
+									imageHeight);
+							}
+							else
+							{
+								var propertyString = propertyObject?.ToString();
+
+								g.DrawString(
+									propertyString,
+									isChecked ? new Font(Font, FontStyle.Bold) : Font,
+									brushText,
+									new RectangleF(
+										colPosX,
+										yPosition + marginTopText,
+										colWidth,
+										_textHeight));
+							}
+						}
+						
 
 						colPosX += (int) colWidth;
 					}
@@ -1446,7 +1460,7 @@ namespace Com.AiricLenz.XTB.Components
 		private string _propertyName = string.Empty;
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int WidthPercent
+		public int Width
 		{
 			get
 			{

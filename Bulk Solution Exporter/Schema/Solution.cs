@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		private string _friendlyName;
 		private Version _version;
 		private int _sortingIndex = 0;
-
+		private Bitmap _fileStatusImage;
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public Guid SolutionId
@@ -87,6 +88,19 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			set
 			{
 				_sortingIndex = value;
+			}
+		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public Bitmap FileStatusImage
+		{
+			get
+			{
+				return _fileStatusImage;
+			}
+			set
+			{
+				_fileStatusImage = value;
 			}
 		}
 

@@ -661,6 +661,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					{
 						listBoxSolutions.SetItemChecked(i, true);
 					}
+
+					UpdateFileStateImageForSolution(i);
 				}
 			}
 
@@ -740,6 +742,107 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		private void UpdateFileStateImageForSolution(
+			int index)
+		{
+			if (index == -1)
+			{
+				return;
+			}
+
+			var solution = listBoxSolutions.Items[index].ItemObject as Solution;
+			var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
+
+			var fileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
+			var fileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
+
+			if (fileManaged)
+			{
+				if (fileUnmanaged)
+				{
+					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
+						Properties.Resources.FileStatus_MU;
+				}
+				else
+				{
+					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
+							Properties.Resources.FileStatus_MX;
+				}
+			}
+			else
+			{
+				if (fileUnmanaged)
+				{
+					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
+						Properties.Resources.FileStatus_XU;
+				}
+				else
+				{
+					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
+						Properties.Resources.FileStatus_XX;
+				}
+			}
+
+			listBoxSolutions.Refresh();
+		}
+
+
+		// ============================================================================
+		private void UpdateColumns(
+			bool updateSettings = false)
+		{
+			var newColumnSetup =
+					new List<ColumnDefinition>
+					{
+					new ColumnDefinition
+					{
+						Header = "Solution Name",
+						PropertyName = "FriendlyName",
+						Width = 38
+					},
+
+					new ColumnDefinition
+					{
+						Header = "Logical Name",
+						PropertyName = "UniqueName",
+						Width = 34
+					},
+
+					new ColumnDefinition
+					{
+						Header = "Version",
+						PropertyName = "Version",
+						Width = 20
+					},
+
+					new ColumnDefinition
+					{
+						Header = "Files",
+						PropertyName = "FileStatusImage",
+						Width = 8
+					}
+					};
+
+			if (checkButton_showLogicalNames.Checked == false)
+			{
+				newColumnSetup.RemoveAt(1);
+				newColumnSetup[0].Width = 61;
+				newColumnSetup[1].Width = 31;
+				newColumnSetup[2].Width = 8;
+			}
+
+			listBoxSolutions.Columns = newColumnSetup;
+			listBoxSolutions.Refresh();
+
+			if (updateSettings)
+			{
+				_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
+				SaveSettings();
+			}
+			
+		}
+
 
 		#endregion
 
@@ -755,21 +858,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			textBox_log.Text = string.Empty;
 
-			listBoxSolutions.Columns.Add(
-				new ColumnDefinition
-				{
-					Header = "Solution Name",
-					PropertyName = "FriendlyName",
-					WidthPercent = 60
-				});
-
-			listBoxSolutions.Columns.Add(
-				new ColumnDefinition
-				{
-					Header = "Version",
-					PropertyName = "Version",
-					WidthPercent = 40
-				});
+			UpdateColumns();
 		}
 
 
@@ -1223,6 +1312,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
+
+			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+
 			SaveSettings();
 		}
 
@@ -1231,6 +1323,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
+
+			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+
 			SaveSettings();
 		}
 
@@ -1261,6 +1356,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				textBox_managed.Text = saveFileDialog1.FileName;
 			}
+
+			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
 		}
 
 		// ============================================================================
@@ -1289,6 +1386,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				textBox_unmanaged.Text = saveFileDialog1.FileName;
 			}
+
+			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
 		}
 
 		// ============================================================================
@@ -1414,43 +1513,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void checkButton_showLogicalNames_CheckStateChanged(object sender, EventArgs e)
 		{
-			var newColumnSetup =
-				new List<ColumnDefinition>
-				{
-					new ColumnDefinition
-					{
-						Header = "Solution Name",
-						PropertyName = "FriendlyName",
-						WidthPercent = 42
-					},
-
-					new ColumnDefinition
-					{
-						Header = "Logical Name",
-						PropertyName = "UniqueName",
-						WidthPercent = 38
-					},
-
-					new ColumnDefinition
-					{
-						Header = "Version",
-						PropertyName = "Version",
-						WidthPercent = 20
-					}
-				};
-
-			if (checkButton_showLogicalNames.Checked == false)
-			{
-				newColumnSetup.RemoveAt(1);
-				newColumnSetup[0].WidthPercent = 65;
-				newColumnSetup[1].WidthPercent = 35;
-			}
-
-			listBoxSolutions.Columns = newColumnSetup;
-			listBoxSolutions.Refresh();
-
-			_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
-			SaveSettings();
+			UpdateColumns(true);
 		}
 
 

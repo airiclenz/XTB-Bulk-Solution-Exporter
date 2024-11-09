@@ -329,6 +329,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bulk solution exporter.ico" />
+    <None Include="Resources\FileStatus_XX.png" />
+    <None Include="Resources\FileStatus_XU.png" />
+    <None Include="Resources\FileStatus_MX.png" />
+    <None Include="Resources\FileStatus_MU.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Bulk Solution Exporter.nuget\" />
