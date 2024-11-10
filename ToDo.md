@@ -5,15 +5,20 @@
 - save and import config file / alternatively create multiple profiles per connection for easier access
 - show current branch and allow changing
 - add possibility to transfer data
-- show icons for the solutions (visualization of file status)
 
 
 ## Added in Release 2024.11.<mark>XX</mark>
 
+
+
+## Added in Release 2024.11.10
+
 - added multiple columns
 - added sorting by name functionality
 - add option for showing logical names of solutions
- 
+- show icons for the solutions (visualization of file status)
+- made it moire visible to what target one is connected
+
 ## Added in Release 2024.10.28
 
 - better list for solutions

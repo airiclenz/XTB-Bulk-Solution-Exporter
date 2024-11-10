@@ -1032,6 +1032,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
 
 				button_addAdditionalConnection.Enabled = false;
+				button_addAdditionalConnection.Text = "Target is " + detail.ConnectionName;
 
 				UpdateImportOptionsVisibility();
 			}
@@ -1494,19 +1495,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			listBoxSolutions.SortAlphabetically(
 				SortOrder.Descending);
-		}
-
-
-		// ============================================================================
-		private void splitContainer1_Panel1_Resize(object sender, EventArgs e)
-		{
-			/*
-			if (splitContainer1.Panel1.Width < 400)
-			{
-				splitContainer1.SplitterDistance = 400;
-				splitContainer1.Invalidate();
-			}
-			*/
 		}
 
 

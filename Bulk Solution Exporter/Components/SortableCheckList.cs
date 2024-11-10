@@ -330,24 +330,19 @@ namespace Com.AiricLenz.XTB.Components
 			// paint the scroll bar
 			if (_showScrollBar)
 			{
-				int totalItemsHeight = _items.Count * _itemHeight;
-				int clientHeight = this.ClientRectangle.Height - 6;
+				int totalItemsHeight = (_items.Count + 1) * _itemHeight;
+				int clientHeight = this.ClientRectangle.Height - 7;
 
 				// Calculate the length and position of the scrollbar
-				float scrollBarRatio = (float) clientHeight / totalItemsHeight;
+				float scrollBarRatio = (float) clientHeight / (float) totalItemsHeight;
 
 				int scrollBarHeight =
 					scrollBarRatio > 1 ?
-					clientHeight - 1 :
-					(int) (clientHeight * scrollBarRatio) - 3;
+					clientHeight :
+					(int) (clientHeight * scrollBarRatio);
 
-				int scrollBarPos = 3;
-
-				if (totalItemsHeight > 0)
-				{
-					scrollBarPos += (int) ((float) _scrollOffset / totalItemsHeight * clientHeight);
-				}
-
+				int scrollBarPos = 3 + (int) ((float) _scrollOffset / totalItemsHeight * clientHeight);
+				
 				// white background
 				DrawRoundedRectangle(
 					g,
