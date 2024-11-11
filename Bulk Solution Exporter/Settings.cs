@@ -139,28 +139,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			string solutionIdentifier,
 			bool selectedState)
 		{
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			var config = GetSolutionConfiguration(solutionIdentifier);
+			if (config == null)
 			{
-
-				var config =
-					JsonConvert.DeserializeObject<SolutionConfiguration>(
-						SolutionConfigurations[i]);
-
-				if (config == null)
-				{
-					continue;
-				}
-
-				if (config.SolutionIndentifier == solutionIdentifier)
-				{
-					config.Selected = selectedState;
-
-					SolutionConfigurations[i] =
-						JsonConvert.SerializeObject(config);
-
-					return;
-				}
+				return;
 			}
+
+			config.Checked = selectedState;
+			UpdateSolutionConfiguration(config);
 		}
 
 
@@ -169,28 +155,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			string solutionIdentifier,
 			int index)
 		{
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			var config = GetSolutionConfiguration(solutionIdentifier);
+			if (config == null)
 			{
-
-				var config =
-					JsonConvert.DeserializeObject<SolutionConfiguration>(
-						SolutionConfigurations[i]);
-
-				if (config == null)
-				{
-					continue;
-				}
-
-				if (config.SolutionIndentifier == solutionIdentifier)
-				{
-					config.SortingIndex = index;
-
-					SolutionConfigurations[i] =
-						JsonConvert.SerializeObject(config);
-
-					return;
-				}
+				return;
 			}
+
+			config.SortingIndex = index;
+			UpdateSolutionConfiguration(config);
 		}
 
 
@@ -199,6 +171,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			string solutionIdentifier,
 			bool createIfNotFound = false)
 		{
+
+			if (string.IsNullOrWhiteSpace(solutionIdentifier))
+			{
+				return null;
+			}
 
 			for (int i = 0; i < SolutionConfigurations.Count; i++)
 			{

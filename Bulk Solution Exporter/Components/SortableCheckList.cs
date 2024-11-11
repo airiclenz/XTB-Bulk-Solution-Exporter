@@ -413,13 +413,6 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
-		int RoundUpToNextMultiple(int number, int stepSize)
-		{
-			return ((number + stepSize - 1) / stepSize) * stepSize;
-		}
-
-
-		// ============================================================================
 		protected override void OnResize(
 			EventArgs e)
 		{
@@ -461,6 +454,13 @@ namespace Com.AiricLenz.XTB.Components
 				// Reset drag state
 				_dragStartIndex = null;
 				_currentDropIndex = -1;
+
+				// update all sorting indexes
+				int index = 0;
+				foreach (var item in _items)
+				{
+					item.SortingIndex = index++;
+				}
 
 				// Trigger events
 				OnItemOrderChanged();
@@ -936,6 +936,14 @@ namespace Com.AiricLenz.XTB.Components
 			_scrollOffset = RoundUpToNextMultiple(_scrollOffset, _itemHeight);
 		}
 
+
+		// ============================================================================
+		int RoundUpToNextMultiple(int number, int stepSize)
+		{
+			return ((number + stepSize - 1) / stepSize) * stepSize;
+		}
+
+
 		// ============================================================================
 		private int GetItemAtPoint(
 			Point location)
@@ -1323,7 +1331,6 @@ namespace Com.AiricLenz.XTB.Components
 			_sortingIndex = sortingIndex;
 			_isIdentified = true;
 			_isChecked = false;
-			//_isSelected = false;
 			_title = item.ToString();
 		}
 

@@ -38,7 +38,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool Selected
+		public bool Checked
 		{
 			get; set;
 		}

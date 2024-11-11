@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Activities.Statements;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
@@ -52,6 +53,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			if (listBoxSolutions.SelectedIndex == -1)
 			{
+				_codeUpdate = true;
+
+				_currentSolution = null;
+				_currentSolutionConfig = null;
+
 				button_browseManaged.Enabled = false;
 				button_browseUnmananged.Enabled = false;
 
@@ -59,8 +65,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_unmanaged.Text = string.Empty;
 
 				label_title.Text = "No Solution selected";
-
-				_currentSolution = null;
+				_codeUpdate = false;
 
 				return;
 			}
@@ -78,8 +83,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					_currentSolution.SolutionIdentifier);
 			}
 
+			_codeUpdate = true;
 			textBox_managed.Text = _currentSolutionConfig.FileNameManaged;
 			textBox_unmanaged.Text = _currentSolutionConfig.FileNameUnmanaged;
+			_codeUpdate = false;
 
 			button_browseManaged.Enabled = true;
 			button_browseUnmananged.Enabled = true;
@@ -515,26 +522,11 @@ namespace Com.AiricLenz.XTB.Plugin
 					if (result != null)
 					{
 						_solutions.Clear();
-
-						var maxNameLength = 0;
-
+												
 						// sort alphabetically after loading
 						var sortedSolutionsEntities =
 							result.Entities.OrderBy(
 								item => item.GetAttributeValue<string>("friendlyname")).ToList();
-
-						// check max length of all solution names
-						foreach (var entity in sortedSolutionsEntities)
-						{
-							var solutionFrinedlyName =
-								entity.GetAttributeValue<string>(
-									"friendlyname");
-
-							maxNameLength =
-								solutionFrinedlyName.Length > maxNameLength ?
-								solutionFrinedlyName.Length :
-								maxNameLength;
-						}
 
 						// create our custom solutions records
 						foreach (var entity in sortedSolutionsEntities)
@@ -542,8 +534,7 @@ namespace Com.AiricLenz.XTB.Plugin
 							var newSolution =
 								Solution.ConvertFrom(
 									entity,
-									_currentConnectionGuid,
-									maxNameLength);
+									_currentConnectionGuid);
 
 							var config =
 								_settings.GetSolutionConfiguration(
@@ -648,27 +639,19 @@ namespace Com.AiricLenz.XTB.Plugin
 					SolutionConfiguration.GetConfigFromJson(
 						configString);
 
-				if (!config.Selected)
-				{
-					continue;
-				}
-
 				for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 				{
 					var solution = listBoxSolutions.Items[i].ItemObject as Solution;
 
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
-						listBoxSolutions.SetItemChecked(i, true);
+						listBoxSolutions.SetItemChecked(i, config.Checked);
+						UpdateFileStateImageForSolution(i);
 					}
-
-					UpdateFileStateImageForSolution(i);
 				}
 			}
 
 			listBoxSolutions.Refresh();
-			listBoxSolutions.Refresh();
-
 			ExportButtonSetState();
 
 		}
@@ -687,29 +670,19 @@ namespace Com.AiricLenz.XTB.Plugin
 			// that have no solution in this environment anymore
 			if (cleanUpNonExistingSolutions)
 			{
-				var configsForCurrentConnection =
-					_settings.GetAllSolutionConfigurationdForConnection(
-						_currentConnectionGuid);
+				RemoveNonExistantSolutions();
+			}
 
-				foreach (var solution in _solutions)
-				{
-					var found = false;
+			// Update the Solution Configs from the solutions...
+			foreach (var listBoxItem in listBoxSolutions.Items)
+			{
+				var solution = listBoxItem.ItemObject as Solution;
+				var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier, true);
 
-					foreach (var config in configsForCurrentConnection)
-					{
-						if (solution.SolutionIdentifier == config.SolutionIndentifier)
-						{
-							found = true;
-							break;
-						}
-					}
-
-					if (!found)
-					{
-						_settings.RemoveSolutionConfiguration(
-							solution.SolutionIdentifier);
-					}
-				}
+				config.Checked = listBoxItem.IsChecked;
+				config.SortingIndex = listBoxItem.SortingIndex;
+				
+				_settings.UpdateSolutionConfiguration(config);
 			}
 
 			// Save
@@ -717,6 +690,33 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		private void RemoveNonExistantSolutions()
+		{
+			var configsForCurrentConnection =
+					_settings.GetAllSolutionConfigurationdForConnection(
+						_currentConnectionGuid);
+
+			foreach (var solution in _solutions)
+			{
+				var found = false;
+
+				foreach (var config in configsForCurrentConnection)
+				{
+					if (solution.SolutionIdentifier == config.SolutionIndentifier)
+					{
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+				{
+					_settings.RemoveSolutionConfiguration(
+						solution.SolutionIdentifier);
+				}
+			}
+		}
 
 
 
@@ -783,8 +783,6 @@ namespace Com.AiricLenz.XTB.Plugin
 						Properties.Resources.FileStatus_XX;
 				}
 			}
-
-			listBoxSolutions.Refresh();
 		}
 
 
@@ -842,6 +840,51 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			
 		}
+
+		// ============================================================================
+		private void UpdateGitOptionsVisibility()
+		{
+			textBox_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
+			textBox_commitMessage.BackColor = (
+				flipSwitch_gitCommit.IsOn ?
+				SystemColors.ControlLightLight :
+				SystemColors.Control);
+
+			label_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
+			label_commitMessage.ForeColor = (
+				flipSwitch_gitCommit.IsOn ?
+				SystemColors.ControlText :
+				SystemColors.ControlDarkDark);
+		}
+
+		// ============================================================================
+		private void UpdateVersionOptionsVisibility()
+		{
+			textBox_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
+			textBox_versionFormat.BackColor = (
+				flipSwitch_updateVersion.IsOn ?
+				SystemColors.ControlLightLight :
+				SystemColors.Control);
+
+			label_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
+			label_versionFormat.ForeColor = (
+				flipSwitch_updateVersion.IsOn ?
+				SystemColors.ControlText :
+				SystemColors.ControlDarkDark);
+		}
+
+		// ============================================================================
+		private void UpdateImportOptionsVisibility()
+		{
+			var optionEnabled =
+				flipSwitch_importManaged.IsOn ||
+				flipSwitch_importUnmanaged.IsOn;
+
+			flipSwitch_enableAutomation.Enabled = optionEnabled;
+			flipSwitch_overwrite.Enabled = optionEnabled;
+			flipSwitch_publishTarget.Enabled = optionEnabled;
+		}
+
 
 
 		#endregion
@@ -922,50 +965,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void UpdateGitOptionsVisibility()
-		{
-			textBox_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
-			textBox_commitMessage.BackColor = (
-				flipSwitch_gitCommit.IsOn ?
-				SystemColors.ControlLightLight :
-				SystemColors.Control);
-
-			label_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
-			label_commitMessage.ForeColor = (
-				flipSwitch_gitCommit.IsOn ?
-				SystemColors.ControlText :
-				SystemColors.ControlDarkDark);
-		}
-
-		// ============================================================================
-		private void UpdateVersionOptionsVisibility()
-		{
-			textBox_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
-			textBox_versionFormat.BackColor = (
-				flipSwitch_updateVersion.IsOn ?
-				SystemColors.ControlLightLight :
-				SystemColors.Control);
-
-			label_versionFormat.Enabled = flipSwitch_updateVersion.IsOn;
-			label_versionFormat.ForeColor = (
-				flipSwitch_updateVersion.IsOn ?
-				SystemColors.ControlText :
-				SystemColors.ControlDarkDark);
-		}
-
-		// ============================================================================
-		private void UpdateImportOptionsVisibility()
-		{
-			var optionEnabled =
-				flipSwitch_importManaged.IsOn ||
-				flipSwitch_importUnmanaged.IsOn;
-
-			flipSwitch_enableAutomation.Enabled = optionEnabled;
-			flipSwitch_overwrite.Enabled = optionEnabled;
-			flipSwitch_publishTarget.Enabled = optionEnabled;
-		}
-
-		// ============================================================================
 		public override void ClosingPlugin(PluginCloseInfo info)
 		{
 			base.ClosingPlugin(info);
@@ -983,7 +982,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			EventArgs e)
 		{
 			// Before leaving, save the settings
-			SaveSettings();
+			SaveSettings(true);
 		}
 
 
@@ -1063,8 +1062,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateVersionOptionsVisibility();
 
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 
@@ -1084,8 +1083,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_codeUpdate = false;
 
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 		// ============================================================================
@@ -1104,8 +1103,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_codeUpdate = false;
 
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 
@@ -1116,18 +1115,16 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
 
 			UpdateGitOptionsVisibility();
-
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 		// ============================================================================
 		private void flipSwitch_pushCommit_Toggled(object sender, EventArgs e)
 		{
 			_settings.PushCommit = flipSwitch_pushCommit.IsOn;
-
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 
 		}
 
@@ -1150,9 +1147,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			UpdateImportOptionsVisibility();
-
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 		// ============================================================================
@@ -1173,9 +1169,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			UpdateImportOptionsVisibility();
-
-			SaveSettings();
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 
@@ -1184,6 +1179,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.CommitMessage = textBox_commitMessage.Text;
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 
@@ -1200,6 +1196,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.VersionFormat = textBox_versionFormat.Text;
 			ExportButtonSetState();
+			SaveSettings() ;
 		}
 
 		// ============================================================================
@@ -1245,65 +1242,12 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			ExportButtonSetState();
 
-
-			// update the setting.solutionConfiurations to reflect the 
-			// checked property of all solution-configs
-			for (int i = 0; i < _settings.SolutionConfigurations.Count; i++)
-			{
-				var config =
-					SolutionConfiguration.GetConfigFromJson(
-						_settings.SolutionConfigurations[i]);
-
-				foreach (SortableCheckItem listItem in listBoxSolutions.Items)
-				{
-					var solution = listItem.ItemObject as Solution;
-
-					if (solution.SolutionIdentifier == config.SolutionIndentifier)
-					{
-						var isCchecked = listBoxSolutions.CheckedItems.Contains(listItem);
-
-						_settings.SetCheckedStatus(
-							config.SolutionIndentifier,
-							isCchecked);
-
-						break;
-					}
-				}
-			}
-
-			SaveSettings();
 		}
 
 
 		// ============================================================================
 		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
 		{
-			for (int i = 0; i < _settings.SolutionConfigurations.Count; i++)
-			{
-				var config =
-					SolutionConfiguration.GetConfigFromJson(
-						_settings.SolutionConfigurations[i]);
-
-				var index = 0;
-
-				for (int s = 0; s < listBoxSolutions.Items.Count; s++)
-				{
-					var listItem = listBoxSolutions.Items[s];
-					var solution = listItem.ItemObject as Solution;
-
-					if (solution.SolutionIdentifier == config.SolutionIndentifier)
-					{
-						_settings.SetSortingIndex(
-							config.SolutionIndentifier,
-							index);
-
-						break;
-					}
-
-					index++;
-				}
-			}
-
 			SaveSettings();
 		}
 
@@ -1311,6 +1255,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void textBox_managed_TextChanged(object sender, EventArgs e)
 		{
+			if (listBoxSolutions.SelectedIndex == -1 ||
+				_codeUpdate)
+			{
+				return;
+			}
+
 			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
@@ -1322,6 +1272,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
 		{
+			if (listBoxSolutions.SelectedIndex == -1 ||
+				_codeUpdate)
+			{
+				return;
+			}
+
 			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
@@ -1359,6 +1315,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+			listBoxSolutions.Refresh();
+			//SaveSettings();
 		}
 
 		// ============================================================================
@@ -1389,6 +1347,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+			listBoxSolutions.Refresh();
+			//SaveSettings();
 		}
 
 		// ============================================================================
@@ -1457,6 +1417,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void listSolutions_ItemCheck(object sender, EventArgs e)
 		{
 			ExportButtonSetState();
+			SaveSettings();
 		}
 
 		// ============================================================================
@@ -1469,32 +1430,35 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_checkAll_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.CheckAllItems();
+			SaveSettings();
 		}
 
 		// ============================================================================
 		private void button_invertCheck_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.InvertCheckOfAllItems();
+			SaveSettings();
 		}
 
 		// ============================================================================
 		private void button_uncheckAll_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.UnCheckAllItems();
+			SaveSettings();
 		}
 
 		// ============================================================================
 		private void button_sortAsc_Click(object sender, EventArgs e)
 		{
-			listBoxSolutions.SortAlphabetically(
-				SortOrder.Ascending);
+			listBoxSolutions.SortAlphabetically(SortOrder.Ascending);
+			SaveSettings();
 		}
 
 		// ============================================================================
 		private void button_sortDesc_Click(object sender, EventArgs e)
 		{
-			listBoxSolutions.SortAlphabetically(
-				SortOrder.Descending);
+			listBoxSolutions.SortAlphabetically(SortOrder.Descending);
+			SaveSettings();
 		}
 
 
@@ -1502,13 +1466,14 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void checkButton_showLogicalNames_CheckStateChanged(object sender, EventArgs e)
 		{
 			UpdateColumns(true);
+			SaveSettings();
 		}
 
 
 
+
+
 		#endregion
-
-
 
 	}
 }

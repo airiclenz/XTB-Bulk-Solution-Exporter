@@ -9,7 +9,9 @@
 
 ## Added in Release 2024.11.<mark>XX</mark>
 
+## Added in Release 2024.11.11
 
+- Bugfixes in saving the settings which removed / destroyed already defined configs
 
 ## Added in Release 2024.11.10
 
