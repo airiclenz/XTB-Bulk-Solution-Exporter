@@ -6,9 +6,11 @@
 - show current branch and allow changing
 - add possibility to transfer data
 
-
-
+- 
 ## Added in Release 2024.11.<mark>XX</mark>
+
+
+## Added in Release 2024.11.29
 
 - Better internal code for allowing for defining column width as percent and pixels
 - Better usability by noting that a row need to be selected for adding files
