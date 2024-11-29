@@ -329,6 +329,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bulk solution exporter.ico" />
+    <None Include="Resources\warning_transparent.16px.png" />
+    <None Include="Resources\warning.16px.png" />
+    <None Include="Resources\Warning.png" />
     <None Include="Resources\FileStatus_XX.png" />
     <None Include="Resources\FileStatus_XU.png" />
     <None Include="Resources\FileStatus_MX.png" />

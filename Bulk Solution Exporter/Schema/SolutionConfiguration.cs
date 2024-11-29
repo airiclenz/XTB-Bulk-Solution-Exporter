@@ -49,7 +49,19 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			get; set;
 		}
 
-		
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public string ExportedVersionNumberManaged
+		{
+			get; set;
+		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public string ExportedVersionNumberUnmanaged
+		{
+			get; set;
+		}
+
+
 
 
 		// ============================================================================

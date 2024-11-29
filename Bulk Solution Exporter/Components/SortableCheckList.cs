@@ -43,7 +43,7 @@ namespace Com.AiricLenz.XTB.Components
 		private bool _isSortable = true;
 		private bool _isCheckable = true;
 		private Image _noDataImage = null;
-
+		private int _dynamicColumnSpace = 0;
 
 		private Color _colorOff = Color.FromArgb(150, 150, 150);
 		private Color _colorOn = Color.MediumSlateBlue;
@@ -77,7 +77,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					Header = "Title",
 					PropertyName = string.Empty,
-					Width = 100
+					Width = "100px"
 				});
 
 
@@ -86,6 +86,410 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
+		// ##################################################
+		// ##################################################
+
+		#region Properties
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public List<SortableCheckItem> Items
+		{
+			get
+			{
+				return _items;
+			}
+			set
+			{
+				if (value == null)
+				{
+					_items = new List<SortableCheckItem>();
+				}
+				else
+				{
+					_items = value;
+				}
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public List<ColumnDefinition> Columns
+		{
+			get
+			{
+				return _columns;
+			}
+			set
+			{
+				if (value == null)
+				{
+					_columns = new List<ColumnDefinition>();
+				}
+				else
+				{
+					_columns = value;
+				}
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Return the index of the currently selected row / item; If no row / item is selected, the return value is -1
+		/// </summary>
+		public int SelectedIndex
+		{
+			get
+			{
+				return _selectedIndex;
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Return the currently selected row / item; If no row / item is selected, the return value is null
+		/// </summary>
+		public object SelectedItem
+		{
+			get
+			{
+				if (_selectedIndex != -1)
+				{
+					return _items[_selectedIndex].ItemObject;
+				}
+
+				return null;
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Returns a list of all checked items
+		/// </summary>
+		public List<SortableCheckItem> CheckedItems
+		{
+			get
+			{
+				List<SortableCheckItem> resultList = new List<SortableCheckItem>();
+
+				foreach (var item in _items)
+				{
+					if (item.IsChecked)
+					{
+						resultList.Add(item);
+					}
+				}
+
+				return resultList;
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Returns a list of all checked items
+		/// </summary>
+		public List<object> CheckedObject
+		{
+			get
+			{
+				List<object> resultList = new List<object>();
+
+				foreach (var item in _items)
+				{
+					if (item.IsChecked)
+					{
+						resultList.Add(item.ItemObject);
+					}
+				}
+
+				return resultList;
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int ItemHeigth
+		{
+			get
+			{
+				return _itemHeight;
+			}
+			set
+			{
+				_itemHeight = value;
+				AdjustItemHeight();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int CheckBoxSize
+		{
+			get
+			{
+				return _checkBoxSize;
+			}
+			set
+			{
+				_checkBoxSize = value;
+
+				if (_checkBoxSize < 10)
+				{
+					_checkBoxSize = 10;
+				}
+
+				AdjustItemHeight();
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int CheckBoxRadius
+		{
+			get
+			{
+				return _checkBoxRadius;
+			}
+			set
+			{
+				_checkBoxRadius = value;
+
+				if (_checkBoxRadius > _checkBoxSize)
+				{
+					_checkBoxRadius = _checkBoxSize;
+				}
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int CheckBoxMargin
+		{
+			get
+			{
+				return _checkBoxMargin;
+			}
+			set
+			{
+				_checkBoxMargin = value;
+
+				if (_checkBoxMargin < 1)
+				{
+					_checkBoxMargin = 1;
+				}
+
+				if (_checkBoxMargin > (_checkBoxSize / 2f) - 1)
+				{
+					_checkBoxMargin = (int) (_checkBoxSize / 2f) - 1;
+				}
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public override Font Font
+		{
+			get => base.Font;
+			set
+			{
+				base.Font = value;
+
+				RecalculateColumnWidths();
+				AdjustItemHeight();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public Color BorderColor
+		{
+			get
+			{
+				return _borderColor;
+			}
+			set
+			{
+				_borderColor = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public float BorderThickness
+		{
+			get
+			{
+				return _borderThickness;
+			}
+			set
+			{
+				_borderThickness = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public Color ColorChecked
+		{
+			get
+			{
+				return _colorOn;
+			}
+			set
+			{
+				_colorOn = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public Color ColorUnchecked
+		{
+			get
+			{
+				return _colorOff;
+			}
+			set
+			{
+				_colorOff = value;
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int DragBurgerSize
+		{
+			get
+			{
+				return _dragBurgerSize;
+			}
+			set
+			{
+				_dragBurgerSize = value;
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public float DragBurgerLineThickness
+		{
+			get
+			{
+				return _dragBurgerLineThickness;
+			}
+			set
+			{
+				_dragBurgerLineThickness = value;
+				Invalidate();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool ShowScrollBar
+		{
+			get
+			{
+				return _showScrollBar;
+			}
+			set
+			{
+				_showScrollBar = value;
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsCheckable
+		{
+			get
+			{
+				return _isCheckable;
+			}
+			set
+			{
+				_isCheckable = value;
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsSortable
+		{
+			get
+			{
+				return _isSortable;
+			}
+			set
+			{
+				_isSortable = value;
+
+				RecalculateColumnWidths();
+				Invalidate();
+			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public new Image BackgroundImage
+		{
+			get
+			{
+				return _noDataImage;
+			}
+			set
+			{
+				_noDataImage = value;
+				Invalidate();
+			}
+		}
+
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public new string Text
+		{
+			get
+			{
+				return base.Text;
+			}
+			set
+			{
+				base.Text = value;
+			}
+		}
+
+
+		#endregion
 
 		// ##################################################
 		// ##################################################
@@ -132,11 +536,7 @@ namespace Com.AiricLenz.XTB.Components
 			// -------------------------------------
 			// paint all headers
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
-			var spaceAvailableForColumns =
-				this.Width -
-				leftMargin -
-				(_isSortable ? (_dragBurgerSize * 2) + 6 : 0) -
-				(_showScrollBar ? 8 : 0);
+			var spaceAvailableForColumns = GetSpaceForColumns(leftMargin);
 
 			var colPosX = leftMargin;
 
@@ -148,7 +548,7 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				foreach (var column in _columns)
 				{
-					var colWidth = spaceAvailableForColumns * (column.Width / 100f);
+					var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
 
 					g.DrawString(
 						column.Header,
@@ -208,7 +608,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					foreach (var column in _columns)
 					{
-						var colWidth = spaceAvailableForColumns * (column.Width / 100f);
+						var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
 
 						if (!string.IsNullOrWhiteSpace(column.PropertyName))
 						{
@@ -419,6 +819,7 @@ namespace Com.AiricLenz.XTB.Components
 			base.OnResize(e);
 			ClampScrollOffset();
 			EnsureItemVisible(_selectedIndex);
+			RecalculateColumnWidths();
 			Invalidate();
 		}
 
@@ -519,406 +920,50 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		#endregion
-
-		// ##################################################
-		// ##################################################
-
-		#region Properties
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public List<SortableCheckItem> Items
-		{
-			get
-			{
-				return _items;
-			}
-			set
-			{
-				if (value == null)
-				{
-					_items = new List<SortableCheckItem>();
-				}
-				else
-				{
-					_items = value;
-				}
-
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public List<ColumnDefinition> Columns
-		{
-			get
-			{
-				return _columns;
-			}
-			set
-			{
-				if (value == null)
-				{
-					_columns = new List<ColumnDefinition>();
-				}
-				else
-				{
-					_columns = value;
-				}
-
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		/// <summary>
-		/// Return the index of the currently selected row / item; If no row / item is selected, the return value is -1
-		/// </summary>
-		public int SelectedIndex
-		{
-			get
-			{
-				return _selectedIndex;
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		/// <summary>
-		/// Return the currently selected row / item; If no row / item is selected, the return value is null
-		/// </summary>
-		public object SelectedItem
-		{
-			get
-			{
-				if (_selectedIndex != -1)
-				{
-					return _items[_selectedIndex].ItemObject;
-				}
-
-				return null;
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		/// <summary>
-		/// Returns a list of all checked items
-		/// </summary>
-		public List<SortableCheckItem> CheckedItems
-		{
-			get
-			{
-				List<SortableCheckItem> resultList = new List<SortableCheckItem>();
-
-				foreach (var item in _items)
-				{
-					if (item.IsChecked)
-					{
-						resultList.Add(item);
-					}
-				}
-
-				return resultList;
-			}
-		}
-
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		/// <summary>
-		/// Returns a list of all checked items
-		/// </summary>
-		public List<object> CheckedObject
-		{
-			get
-			{
-				List<object> resultList = new List<object>();
-
-				foreach (var item in _items)
-				{
-					if (item.IsChecked)
-					{
-						resultList.Add(item.ItemObject);
-					}
-				}
-
-				return resultList;
-			}
-		}
-
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int ItemHeigth
-		{
-			get
-			{
-				return _itemHeight;
-			}
-			set
-			{
-				_itemHeight = value;
-				AdjustItemHeight();
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int CheckBoxSize
-		{
-			get
-			{
-				return _checkBoxSize;
-			}
-			set
-			{
-				_checkBoxSize = value;
-
-				if (_checkBoxSize < 10)
-				{
-					_checkBoxSize = 10;
-				}
-
-				AdjustItemHeight();
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int CheckBoxRadius
-		{
-			get
-			{
-				return _checkBoxRadius;
-			}
-			set
-			{
-				_checkBoxRadius = value;
-
-				if (_checkBoxRadius > _checkBoxSize)
-				{
-					_checkBoxRadius = _checkBoxSize;
-				}
-
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int CheckBoxMargin
-		{
-			get
-			{
-				return _checkBoxMargin;
-			}
-			set
-			{
-				_checkBoxMargin = value;
-
-				if (_checkBoxMargin < 1)
-				{
-					_checkBoxMargin = 1;
-				}
-
-				if (_checkBoxMargin > (_checkBoxSize / 2f) - 1)
-				{
-					_checkBoxMargin = (int) (_checkBoxSize / 2f) - 1;
-				}
-
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public override Font Font
-		{
-			get => base.Font;
-			set
-			{
-				base.Font = value;
-				AdjustItemHeight();
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public Color BorderColor
-		{
-			get
-			{
-				return _borderColor;
-			}
-			set
-			{
-				_borderColor = value;
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public float BorderThickness
-		{
-			get
-			{
-				return _borderThickness;
-			}
-			set
-			{
-				_borderThickness = value;
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public Color ColorChecked
-		{
-			get
-			{
-				return _colorOn;
-			}
-			set
-			{
-				_colorOn = value;
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public Color ColorUnchecked
-		{
-			get
-			{
-				return _colorOff;
-			}
-			set
-			{
-				_colorOff = value;
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int DragBurgerSize
-		{
-			get
-			{
-				return _dragBurgerSize;
-			}
-			set
-			{
-				_dragBurgerSize = value;
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public float DragBurgerLineThickness
-		{
-			get
-			{
-				return _dragBurgerLineThickness;
-			}
-			set
-			{
-				_dragBurgerLineThickness = value;
-				Invalidate();
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool ShowScrollBar
-		{
-			get
-			{
-				return _showScrollBar;
-			}
-			set
-			{
-				_showScrollBar = value;
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool IsCheckable
-		{
-			get
-			{
-				return _isCheckable;
-			}
-			set
-			{
-				_isCheckable = value;
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool IsSortable
-		{
-			get
-			{
-				return _isSortable;
-			}
-			set
-			{
-				_isSortable = value;
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public new Image BackgroundImage
-		{
-			get
-			{
-				return _noDataImage;
-			}
-			set
-			{
-				_noDataImage = value;
-				Invalidate();
-			}
-		}
-
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		[Browsable(false)]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public new string Text
-		{
-			get
-			{
-				return base.Text;
-			}
-			set
-			{
-				base.Text = value;
-			}
-		}
-
-
-
-
-
-
-
-		#endregion
-
+		
 		// ##################################################
 		// ##################################################
 
 		#region Custom Logic
+
+
+		// ============================================================================
+		private void RecalculateColumnWidths()
+		{
+			var fixedWidthUsed = 0;
+			var percentSum = 0;
+
+			foreach (var column in _columns)
+			{
+				if (column.IsFixedWidth)
+				{
+					fixedWidthUsed += column.GetWithInPixels();
+				}
+				else
+				{
+					percentSum += column.GetWithInPixels(100);
+				}
+			}
+
+			_dynamicColumnSpace = GetSpaceForColumns() - fixedWidthUsed;
+		}
+
+
+		// ============================================================================
+		private int GetSpaceForColumns(
+			int leftMargin = -1)
+		{
+			if (leftMargin == -1)
+			{
+				leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
+			}
+
+			return
+				this.Width -
+				leftMargin -
+				(_isSortable ? (_dragBurgerSize * 2) + 6 : 0) -
+				(_showScrollBar ? 8 : 0);
+		}
 
 
 		// ============================================================================
@@ -1457,20 +1502,32 @@ namespace Com.AiricLenz.XTB.Components
 	[Serializable]
 	public class ColumnDefinition
 	{
-		private int _width = 100;
+		private string _widthString = "100px";
+		private int _widthNumber = 100;
 		private string _header = string.Empty;
 		private string _propertyName = string.Empty;
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public int Width
+		/// <summary>
+		/// Accepts string definitions of the with in a few formats:
+		/// ###% or ###px or ### --> ###px
+		/// </summary>
+		public string Width
 		{
 			get
 			{
-				return _width;
+				return _widthString;
 			}
 			set
 			{
-				_width = value;
+				if (TryParseWidthString(
+					value, 
+					out string widthString, 
+					out int widthNumber))
+				{
+					_widthString = widthString;
+					_widthNumber = widthNumber;
+				}
 			}
 		}
 
@@ -1498,6 +1555,72 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				_propertyName = value;
 			}
+		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsFixedWidth
+		{
+			get
+			{
+				return !_widthString.EndsWith("%");
+			}
+		}
+
+
+
+		// ============================================================================
+		public int GetWithInPixels(
+			int clientWith = 0)
+		{
+			if (_widthString.EndsWith("px"))
+			{
+				return _widthNumber;
+			}
+
+			else if (_widthString.EndsWith("%"))
+			{
+				return (int)((_widthNumber / 100f) * clientWith);
+			}
+
+			return _widthNumber;
+		}
+
+
+		// ============================================================================
+		private bool TryParseWidthString(
+			string widthString,
+			out string resultString,
+			out int resultNumber)
+		{
+			widthString = widthString.Trim().ToLower();
+			var workString = widthString;
+
+			if (workString.EndsWith("px"))
+			{
+				workString = workString.Remove(workString.Length - 2, 2);
+			}
+
+			else if (workString.EndsWith("%"))
+			{
+				workString = workString.Remove(workString.Length - 1, 1);
+			}
+
+			var isSuccess = 
+				int.TryParse(workString, out int widthNumber);
+
+			if (isSuccess)
+			{
+				resultString = widthString;
+				resultNumber = widthNumber;
+			}
+			else
+			{
+				resultString = string.Empty;
+				resultNumber = -1;
+			}
+
+			return isSuccess;
 		}
 
 	}

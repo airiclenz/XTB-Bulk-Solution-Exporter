@@ -5,12 +5,14 @@
 - save and import config file / alternatively create multiple profiles per connection for easier access
 - show current branch and allow changing
 - add possibility to transfer data
-- save exported version number so that we know if the version number has been updates elsewhere
-- Note that a row need to be selected for adding files
-- allow for defining column width as percent and pixels
+
 
 
 ## Added in Release 2024.11.<mark>XX</mark>
+
+- Better internal code for allowing for defining column width as percent and pixels
+- Better usability by noting that a row need to be selected for adding files
+- New warning for not yet exported or outdated files
 
 ## Added in Release 2024.11.11
 

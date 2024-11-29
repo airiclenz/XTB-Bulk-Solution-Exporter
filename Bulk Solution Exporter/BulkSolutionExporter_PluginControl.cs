@@ -64,7 +64,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_managed.Text = string.Empty;
 				textBox_unmanaged.Text = string.Empty;
 
-				label_title.Text = "No Solution selected";
+				label_title.Text = "No Solution selected (click a solution in the list)";
 				_codeUpdate = false;
 
 				return;
@@ -92,6 +92,32 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_browseUnmananged.Enabled = true;
 
 			label_title.Text = _currentSolution.FriendlyName;
+
+			UpdateFileWarningStatus();
+
+		}
+
+		// ============================================================================
+		private void UpdateFileWarningStatus()
+		{
+			if (_currentSolution == null)
+			{
+				pictureBox_warningManaged.Visible = false;
+				pictureBox_warningUnmanaged.Visible = false;
+
+				return;
+			}
+
+			var isManagedVersionOutdated =
+				_currentSolutionConfig.ExportedVersionNumberManaged != _currentSolution.Version.ToString() &&
+				!string.IsNullOrWhiteSpace(_currentSolutionConfig.FileNameManaged);
+
+			var isUnmanagedVersionOutdated =
+				_currentSolutionConfig.ExportedVersionNumberUnmanaged != _currentSolution.Version.ToString() &&
+				!string.IsNullOrWhiteSpace(_currentSolutionConfig.FileNameUnmanaged);
+
+			pictureBox_warningManaged.Visible = isManagedVersionOutdated;
+			pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
 		}
 
 
@@ -287,15 +313,30 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_sessionFiles.Add(filePath);
 
+			// update the settings
+			var configToBeUpdated =
+				_settings.GetSolutionConfiguration(
+					solutionConfiguration.SolutionIndentifier);
+
 			if (isManaged)
 			{
 				Log("|   Exported the solution as a managed to: " + filePath);
+
+				configToBeUpdated.ExportedVersionNumberManaged =
+					solution.Version.ToString();
+
 			}
 			else
 			{
 				Log("|   Exported the solution as an unmanaged to: " + filePath);
+
+				configToBeUpdated.ExportedVersionNumberUnmanaged =
+					solution.Version.ToString();
+
 			}
 
+			_settings.UpdateSolutionConfiguration(configToBeUpdated);
+			SaveSettings();
 		}
 
 
@@ -646,7 +687,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					if (solution.SolutionIdentifier == config.SolutionIndentifier)
 					{
 						listBoxSolutions.SetItemChecked(i, config.Checked);
-						UpdateFileStateImageForSolution(i);
+						UpdateSolutionStatusImages(i);
 					}
 				}
 			}
@@ -729,8 +770,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (textBox_log.InvokeRequired)
 			{
 				textBox_log.Invoke(new Action(() => textBox_log.Text += message));
-				textBox_log.SelectionStart = textBox_log.Text.Length;
-				textBox_log.ScrollToCaret();
+				textBox_log.Invoke(new Action(() => textBox_log.SelectionStart = textBox_log.Text.Length));
+				textBox_log.Invoke(new Action(() => textBox_log.ScrollToCaret()));
 			}
 			else
 			{
@@ -743,7 +784,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void UpdateFileStateImageForSolution(
+		private void UpdateSolutionStatusImages(
 			int index)
 		{
 			if (index == -1)
@@ -754,12 +795,17 @@ namespace Com.AiricLenz.XTB.Plugin
 			var solution = listBoxSolutions.Items[index].ItemObject as Solution;
 			var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
 
-			var fileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
-			var fileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
+			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
+			var hasFileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
 
-			if (fileManaged)
+			var isVersionOutdated =
+				((solution.Version.ToString() != config.ExportedVersionNumberManaged) && hasFileManaged) ||
+				((solution.Version.ToString() != config.ExportedVersionNumberUnmanaged) && hasFileUnmanaged);
+
+
+			if (hasFileManaged)
 			{
-				if (fileUnmanaged)
+				if (hasFileUnmanaged)
 				{
 					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
 						Properties.Resources.FileStatus_MU;
@@ -772,7 +818,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			else
 			{
-				if (fileUnmanaged)
+				if (hasFileUnmanaged)
 				{
 					(listBoxSolutions.Items[index].ItemObject as Solution).FileStatusImage =
 						Properties.Resources.FileStatus_XU;
@@ -783,7 +829,20 @@ namespace Com.AiricLenz.XTB.Plugin
 						Properties.Resources.FileStatus_XX;
 				}
 			}
+					
+
+			if (isVersionOutdated)
+			{
+				(listBoxSolutions.Items[index].ItemObject as Solution).VersionState =
+					Properties.Resources.Warning;
+			}
+			else
+			{
+				(listBoxSolutions.Items[index].ItemObject as Solution).VersionState =
+					null;
+			}
 		}
+
 
 
 		// ============================================================================
@@ -797,37 +856,42 @@ namespace Com.AiricLenz.XTB.Plugin
 					{
 						Header = "Solution Name",
 						PropertyName = "FriendlyName",
-						Width = 38
+						Width = "55%"
 					},
 
 					new ColumnDefinition
 					{
 						Header = "Logical Name",
 						PropertyName = "UniqueName",
-						Width = 34
+						Width = "45%"
 					},
 
 					new ColumnDefinition
 					{
 						Header = "Version",
 						PropertyName = "Version",
-						Width = 20
+						Width = "150px"
 					},
-
+					
 					new ColumnDefinition
 					{
 						Header = "Files",
 						PropertyName = "FileStatusImage",
-						Width = 8
-					}
+						Width = "45px"
+					},
+
+					new ColumnDefinition
+					{
+						Header = "",
+						PropertyName = "VersionState",
+						Width = "40px"
+					},
 					};
 
 			if (checkButton_showLogicalNames.Checked == false)
 			{
 				newColumnSetup.RemoveAt(1);
-				newColumnSetup[0].Width = 61;
-				newColumnSetup[1].Width = 31;
-				newColumnSetup[2].Width = 8;
+				newColumnSetup[0].Width = "100%";
 			}
 
 			listBoxSolutions.Columns = newColumnSetup;
@@ -1264,7 +1328,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
-			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
 
 			SaveSettings();
 		}
@@ -1281,7 +1345,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
-			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
 
 			SaveSettings();
 		}
@@ -1314,9 +1378,12 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_managed.Text = saveFileDialog1.FileName;
 			}
 
-			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateFileWarningStatus();
+
 			listBoxSolutions.Refresh();
-			//SaveSettings();
+			
+			// No saving needed because the text field update triggers saving already
 		}
 
 		// ============================================================================
@@ -1346,15 +1413,21 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_unmanaged.Text = saveFileDialog1.FileName;
 			}
 
-			UpdateFileStateImageForSolution(listBoxSolutions.SelectedIndex);
+
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateFileWarningStatus();
+
 			listBoxSolutions.Refresh();
-			//SaveSettings();
+
+			// No saving needed because the text field update triggers saving already
 		}
 
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.DeselectAll();
+			UpdateSolutionSettingsScreen();
+
 			textBox_log.Text = string.Empty;
 			_sessionFiles.Clear();
 

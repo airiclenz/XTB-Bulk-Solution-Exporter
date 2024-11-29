@@ -45,6 +45,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
             this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
+            this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
+            this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
             this.textBox_log = new System.Windows.Forms.TextBox();
@@ -69,6 +71,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
             this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
@@ -78,14 +82,14 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishSource = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_updateVersion = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
@@ -107,6 +111,8 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningUnmanaged);
+            this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningManaged);
             this.splitContainer1.Panel2.Controls.Add(this.label_title);
             this.splitContainer1.Panel2.Controls.Add(this.label_Log);
             this.splitContainer1.Panel2.Controls.Add(this.textBox_log);
@@ -249,15 +255,47 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
             // 
+            // pictureBox_warningUnmanaged
+            // 
+            this.pictureBox_warningUnmanaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningUnmanaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningUnmanaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningUnmanaged.BackgroundImage")));
+            this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningUnmanaged.ErrorImage = null;
+            this.pictureBox_warningUnmanaged.InitialImage = null;
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
+            this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
+            this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningUnmanaged.TabIndex = 26;
+            this.pictureBox_warningUnmanaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningUnmanaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningUnmanaged.Visible = false;
+            // 
+            // pictureBox_warningManaged
+            // 
+            this.pictureBox_warningManaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningManaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningManaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningManaged.BackgroundImage")));
+            this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningManaged.ErrorImage = null;
+            this.pictureBox_warningManaged.InitialImage = null;
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
+            this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
+            this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningManaged.TabIndex = 9;
+            this.pictureBox_warningManaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningManaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningManaged.Visible = false;
+            // 
             // label_title
             // 
             this.label_title.AutoSize = true;
             this.label_title.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label_title.Location = new System.Drawing.Point(10, 3);
             this.label_title.Name = "label_title";
-            this.label_title.Size = new System.Drawing.Size(167, 18);
+            this.label_title.Size = new System.Drawing.Size(369, 18);
             this.label_title.TabIndex = 8;
-            this.label_title.Text = "No Solution Selected";
+            this.label_title.Text = "No Solution selected (click a solution in the list)";
             // 
             // label_Log
             // 
@@ -509,6 +547,44 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolTip1.SetToolTip(this.flipSwitch_enableAutomation, "Enable Workflows and Plugin-Steps after import of the solution.");
             this.flipSwitch_enableAutomation.Toggled += new System.EventHandler(this.flipSwitch_enableAutomation_Toggled);
             // 
+            // flipSwitch_exportUnmanaged
+            // 
+            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_exportUnmanaged.IsOn = false;
+            this.flipSwitch_exportUnmanaged.Location = new System.Drawing.Point(15, 130);
+            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_exportUnmanaged.MarginText = 7;
+            this.flipSwitch_exportUnmanaged.Name = "flipSwitch_exportUnmanaged";
+            this.flipSwitch_exportUnmanaged.Size = new System.Drawing.Size(161, 20);
+            this.flipSwitch_exportUnmanaged.SwitchHeight = 18;
+            this.flipSwitch_exportUnmanaged.SwitchWidth = 30;
+            this.flipSwitch_exportUnmanaged.TabIndex = 11;
+            this.flipSwitch_exportUnmanaged.TextOnLeftSide = false;
+            this.flipSwitch_exportUnmanaged.Title = "Export Unmanaged";
+            this.toolTip1.SetToolTip(this.flipSwitch_exportUnmanaged, "Enter a file location for the unmanaged solutions that you want to export");
+            this.flipSwitch_exportUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_exportUnmanaged_Toggled);
+            // 
+            // flipSwitch_exportManaged
+            // 
+            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_exportManaged.IsOn = false;
+            this.flipSwitch_exportManaged.Location = new System.Drawing.Point(15, 105);
+            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_exportManaged.MarginText = 7;
+            this.flipSwitch_exportManaged.Name = "flipSwitch_exportManaged";
+            this.flipSwitch_exportManaged.Size = new System.Drawing.Size(144, 20);
+            this.flipSwitch_exportManaged.SwitchHeight = 18;
+            this.flipSwitch_exportManaged.SwitchWidth = 30;
+            this.flipSwitch_exportManaged.TabIndex = 10;
+            this.flipSwitch_exportManaged.TextOnLeftSide = false;
+            this.flipSwitch_exportManaged.Title = "Export Managed";
+            this.toolTip1.SetToolTip(this.flipSwitch_exportManaged, "Enter a file location for the managed solutions that you want to export");
+            this.flipSwitch_exportManaged.Toggled += new System.EventHandler(this.flipSwitch_exportManaged_Toggled);
+            // 
             // textBox_commitMessage
             // 
             this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -642,42 +718,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_updateVersion.Title = "Update Version(s)";
             this.flipSwitch_updateVersion.Toggled += new System.EventHandler(this.flipSwitch_updateVersion_Toggled);
             // 
-            // flipSwitch_exportUnmanaged
-            // 
-            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_exportUnmanaged.IsOn = false;
-            this.flipSwitch_exportUnmanaged.Location = new System.Drawing.Point(15, 130);
-            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_exportUnmanaged.MarginText = 7;
-            this.flipSwitch_exportUnmanaged.Name = "flipSwitch_exportUnmanaged";
-            this.flipSwitch_exportUnmanaged.Size = new System.Drawing.Size(161, 20);
-            this.flipSwitch_exportUnmanaged.SwitchHeight = 18;
-            this.flipSwitch_exportUnmanaged.SwitchWidth = 30;
-            this.flipSwitch_exportUnmanaged.TabIndex = 11;
-            this.flipSwitch_exportUnmanaged.TextOnLeftSide = false;
-            this.flipSwitch_exportUnmanaged.Title = "Export Unmanaged";
-            this.flipSwitch_exportUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_exportUnmanaged_Toggled);
-            // 
-            // flipSwitch_exportManaged
-            // 
-            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_exportManaged.IsOn = false;
-            this.flipSwitch_exportManaged.Location = new System.Drawing.Point(15, 105);
-            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_exportManaged.MarginText = 7;
-            this.flipSwitch_exportManaged.Name = "flipSwitch_exportManaged";
-            this.flipSwitch_exportManaged.Size = new System.Drawing.Size(144, 20);
-            this.flipSwitch_exportManaged.SwitchHeight = 18;
-            this.flipSwitch_exportManaged.SwitchWidth = 30;
-            this.flipSwitch_exportManaged.TabIndex = 10;
-            this.flipSwitch_exportManaged.TextOnLeftSide = false;
-            this.flipSwitch_exportManaged.Title = "Export Managed";
-            this.flipSwitch_exportManaged.Toggled += new System.EventHandler(this.flipSwitch_exportManaged_Toggled);
-            // 
             // flipSwitch_publishTarget
             // 
             this.flipSwitch_publishTarget.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
@@ -729,6 +769,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.ResumeLayout(false);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).EndInit();
             this.toolStripMenu.ResumeLayout(false);
             this.toolStripMenu.PerformLayout();
@@ -787,5 +829,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripMenuItem checkButton_showLogicalNames;
 		private System.Windows.Forms.ToolStripButton button_sortAsc;
 		private System.Windows.Forms.ToolStripButton button_sortDesc;
+		private System.Windows.Forms.PictureBox pictureBox_warningManaged;
+		private System.Windows.Forms.PictureBox pictureBox_warningUnmanaged;
 	}
 }
