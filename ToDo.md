@@ -13,6 +13,7 @@
 - Better internal code for allowing for defining column width as percent and pixels
 - Better usability by noting that a row need to be selected for adding files
 - New warning for not yet exported or outdated files
+- Added warning if certain file names were not defined before Execution
 
 ## Added in Release 2024.11.11
 

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.ServiceModel;
 using System.Windows.Forms;
+using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
@@ -759,7 +760,72 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 		}
 
+		// ============================================================================
+		private bool CheckIfAllSolutionFilesAreDefined()
+		{
 
+			if (!flipSwitch_exportManaged.IsOn &&
+				!flipSwitch_exportUnmanaged.IsOn)
+			{
+				return true;
+			}
+
+			var problemsFound = false;
+			var message = string.Empty;
+
+			foreach (var item in listBoxSolutions.CheckedItems)
+			{
+				var solution =
+					(item.ItemObject as Solution);
+
+				var solutionConfig =
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier);
+
+
+				if (solutionConfig.FileNameManaged.IsEmpty() &&
+					flipSwitch_exportManaged.IsOn)
+				{
+					if (!message.IsEmpty())
+					{
+						message += "," + Environment.NewLine;
+					}
+					message += "\"" + solution.FriendlyName + "\" (Managed)";
+
+					problemsFound = true;
+				}
+
+				if (solutionConfig.FileNameUnmanaged.IsEmpty() &&
+					flipSwitch_exportUnmanaged.IsOn)
+				{
+					if (!message.IsEmpty())
+					{
+						message += "," + Environment.NewLine;
+					}
+					message += "\"" + solution.FriendlyName + "\" (Unmanaged)";
+
+					problemsFound = true;
+				}
+			}
+
+			if (!problemsFound)
+			{
+				return true;
+			}
+
+			DialogResult result = 
+				MessageBox.Show(
+					"These files were not defined:" + 
+					Environment.NewLine + Environment.NewLine +
+					message + Environment.NewLine + Environment.NewLine +
+					"Do you want to continue anyway?",
+					"Problems were found",
+					MessageBoxButtons.OKCancel,
+					MessageBoxIcon.Warning);
+
+			return result == DialogResult.OK;
+			
+		}
 
 
 		// ============================================================================
@@ -1427,6 +1493,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			listBoxSolutions.DeselectAll();
 			UpdateSolutionSettingsScreen();
+
+			if (!CheckIfAllSolutionFilesAreDefined())
+			{
+				return;
+			}
+
 
 			textBox_log.Text = string.Empty;
 			_sessionFiles.Clear();

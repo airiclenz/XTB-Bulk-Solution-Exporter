@@ -17,8 +17,16 @@ namespace Com.AiricLenz.Extentions
     public static class StringExtention
     {
 
-        // ============================================================================
-        public static string ForceToLength(
+		// ============================================================================
+		public static bool IsEmpty(
+			this string inputString)
+		{
+			return string.IsNullOrWhiteSpace(inputString);
+		}
+
+
+		// ============================================================================
+		public static string ForceToLength(
             this string inputString,
             int length,
             char spacer = ' ')
