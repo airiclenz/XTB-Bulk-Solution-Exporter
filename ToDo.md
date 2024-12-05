@@ -5,8 +5,9 @@
 - save and import config file / alternatively create multiple profiles per connection for easier access
 - show current branch and allow changing
 - add possibility to transfer data
+- allow execution of powershell at any point in the execution flow
+- log execution time
 
-- 
 ## Added in Release 2024.11.<mark>XX</mark>
 
 
