@@ -8,10 +8,11 @@
 - allow execution of powershell at any point in the execution flow
 - log execution time
 - disable UI when execution is running
-- load installed versions when connecting to target and visualize version difference
+
 
 ## Added in Release 2024.11.<mark>XX</mark>
 
+- load installed versions when connecting to target and visualize version difference
 
 ## Added in Release 2024.11.29
 

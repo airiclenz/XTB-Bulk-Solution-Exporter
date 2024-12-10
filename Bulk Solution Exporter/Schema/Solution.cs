@@ -28,7 +28,9 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		private Version _version;
 		private int _sortingIndex = 0;
 		private Bitmap _fileStatusImage;
-		private Bitmap _versionState;
+		private Bitmap _fileVersionState;
+		private Bitmap _targetVersionState;
+
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public Guid SolutionId
@@ -106,18 +108,31 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public Bitmap VersionState
+		public Bitmap FileVersionState
 		{
 			get
 			{
-				return _versionState;
+				return _fileVersionState;
 			}
 			set
 			{
-				_versionState = value;
+				_fileVersionState = value;
 			}
 		}
 
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public Bitmap TargetVersionState
+		{
+			get
+			{
+				return _targetVersionState;
+			}
+			set
+			{
+				_targetVersionState = value;
+			}
+		}
 
 
 		// ============================================================================

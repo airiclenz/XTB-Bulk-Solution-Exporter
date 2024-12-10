@@ -548,6 +548,11 @@ namespace Com.AiricLenz.XTB.Components
 			{
 				foreach (var column in _columns)
 				{
+					if (column.Enabled == false)
+					{
+						continue;
+					}
+
 					var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
 
 					g.DrawString(
@@ -608,6 +613,11 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					foreach (var column in _columns)
 					{
+						if (column.Enabled == false)
+						{
+							continue;
+						}
+
 						var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
 
 						if (!string.IsNullOrWhiteSpace(column.PropertyName))
@@ -935,6 +945,11 @@ namespace Com.AiricLenz.XTB.Components
 
 			foreach (var column in _columns)
 			{
+				if (column.Enabled == false)
+				{
+					continue;
+				}
+				
 				if (column.IsFixedWidth)
 				{
 					fixedWidthUsed += column.GetWithInPixels();
@@ -1261,6 +1276,7 @@ namespace Com.AiricLenz.XTB.Components
 								Invalidate();
 							}
 						}
+										
 
 						// Leave - we are done here...
 						return;
@@ -1354,51 +1370,25 @@ namespace Com.AiricLenz.XTB.Components
 	[Serializable]
 	public class SortableCheckItem : IComparable<SortableCheckItem>
 	{
-		private int _objectHashCode = 0;
-
+		
 		private object _item;
-		private bool _isIdentified;
 		private bool _isChecked;
 		private int _sortingIndex;
 		private string _title;
-		private Image _icon;
-
-
-
+		
 
 		// ============================================================================
 		public SortableCheckItem(
 			object item,
 			int sortingIndex)
 		{
-			_objectHashCode = item.GetHashCode();
 			_item = item;
 			_sortingIndex = sortingIndex;
-			_isIdentified = true;
 			_isChecked = false;
 			_title = item.ToString();
 		}
 
-		// ============================================================================
-		public SortableCheckItem(
-			object item,
-			int sortingIndex,
-			Image icon)
-		{
-			_objectHashCode = item.GetHashCode();
-			_item = item;
-			_sortingIndex = sortingIndex;
-			_isIdentified = true;
-			_isChecked = false;
-			_title = item.ToString();
-			_icon = icon;
-		}
-
-		// ============================================================================
-		public int CompareTo(SortableCheckItem other)
-		{
-			return this.SortingIndex.CompareTo(other.SortingIndex);
-		}
+		
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1428,19 +1418,6 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public Image Icon
-		{
-			get
-			{
-				return _icon;
-			}
-			set
-			{
-				_icon = value;
-			}
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public bool IsChecked
 		{
 			get
@@ -1450,20 +1427,6 @@ namespace Com.AiricLenz.XTB.Components
 			set
 			{
 				_isChecked = value;
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public bool IsIdentified
-		{
-			get
-			{
-				return _isIdentified;
-			}
-			set
-			{
-				_isIdentified = value;
 			}
 		}
 
@@ -1481,9 +1444,9 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 		// ============================================================================
-		public void UnIdentify()
+		public int CompareTo(SortableCheckItem other)
 		{
-			_isIdentified = false;
+			return this.SortingIndex.CompareTo(other.SortingIndex);
 		}
 
 		// ============================================================================
@@ -1506,6 +1469,23 @@ namespace Com.AiricLenz.XTB.Components
 		private int _widthNumber = 100;
 		private string _header = string.Empty;
 		private string _propertyName = string.Empty;
+		private string _toolTipText = string.Empty;
+		private bool _enabled = true;
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool Enabled
+		{
+			get
+			{
+				return _enabled;
+			}
+
+			set
+			{
+				_enabled = value;
+			}
+		}
+
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
@@ -1528,6 +1508,19 @@ namespace Com.AiricLenz.XTB.Components
 					_widthString = widthString;
 					_widthNumber = widthNumber;
 				}
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public string TooltipText
+		{
+			get
+			{
+				return _toolTipText;
+			}
+			set
+			{
+				_toolTipText = value;
 			}
 		}
 

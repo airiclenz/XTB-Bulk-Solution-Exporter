@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Activities.Statements;
+using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.ServiceModel;
 using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
@@ -38,9 +37,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private SolutionConfiguration _currentSolutionConfig;
 
 		private List<string> _sessionFiles = new List<string>();
-		private List<Solution> _solutions = new List<Solution>();
+		private List<Solution> _solutionsOrigin = new List<Solution>();
+		private List<Solution> _solutionsTarget = new List<Solution>();
 
 		private Solution _currentSolution;
+		private object origin;
+		private object target;
 
 
 		// ##################################################
@@ -511,6 +513,162 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void LoadAllSolutions()
 		{
+			WorkAsync(new WorkAsyncInfo
+			{
+				Message = "Getting All Solutions",
+				Work = (worker, args) =>
+				{
+					// ORIGIN SOLUTIONS
+					var queryOrigin = new QueryExpression("solution");
+
+					queryOrigin.Criteria.AddCondition(
+						"ismanaged",
+						ConditionOperator.Equal,
+						false);
+
+					queryOrigin.Criteria.AddCondition(
+						"isvisible",
+						ConditionOperator.Equal,
+						true);
+
+					queryOrigin.ColumnSet.AddColumns(
+						"friendlyname",
+						"solutiontype",
+						"ismanaged",
+						"solutionid",
+						"uniquename",
+						"description",
+						"version");
+
+					// TARGET SOLUTIONS
+					var queryTarget = new QueryExpression("solution");
+
+					queryTarget.Criteria.AddCondition(
+						"isvisible",
+						ConditionOperator.Equal,
+						true);
+
+					queryTarget.ColumnSet.AddColumns(
+						"friendlyname",
+						"solutiontype",
+						"ismanaged",
+						"solutionid",
+						"uniquename",
+						"description",
+						"version");
+
+					LoadSolutionsResult result = 
+						new LoadSolutionsResult();
+
+					if (Service != null)
+					{
+						result.OriginsSolutions = 
+							Service.RetrieveMultiple(
+								queryOrigin);
+					}
+
+					if (_targetServiceClient != null)
+					{
+						result.TargetSolutions = 
+							_targetServiceClient.RetrieveMultiple(
+								queryTarget);
+					}
+						
+					args.Result = result;
+				},
+				PostWorkCallBack = (args) =>
+				{
+					if (args.Error != null)
+					{
+						MessageBox.Show(
+							args.Error.ToString(),
+							"Error",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Error);
+
+						return;
+					}
+
+					var result = args.Result as LoadSolutionsResult;
+
+					if (result == null)
+					{
+						return;
+					}
+
+					if (result.OriginsSolutions != null)
+					{
+						_solutionsOrigin.Clear();
+
+						// sort alphabetically after loading
+						var sortedSolutionsEntities =
+							result.OriginsSolutions.Entities.OrderBy(
+								item => item.GetAttributeValue<string>("friendlyname")).ToList();
+
+						// create our custom solutions records
+						foreach (var entity in sortedSolutionsEntities)
+						{
+							var newSolution =
+								Solution.ConvertFrom(
+									entity,
+									_currentConnectionGuid);
+
+							var config =
+								_settings.GetSolutionConfiguration(
+									newSolution.SolutionIdentifier,
+									true);
+
+							newSolution.SortingIndex = config.SortingIndex;
+
+							_solutionsOrigin.Add(
+								newSolution);
+						}
+					}
+
+
+					if (result.TargetSolutions != null)
+					{
+						_solutionsTarget.Clear();
+
+						// sort alphabetically after loading
+						var sortedSolutionsEntities =
+							result.TargetSolutions.Entities.OrderBy(
+								item => item.GetAttributeValue<string>("friendlyname")).ToList();
+
+						// create our custom solutions records
+						foreach (var entity in sortedSolutionsEntities)
+						{
+							var newSolution =
+								Solution.ConvertFrom(
+									entity,
+									_currentConnectionGuid);
+
+							var config =
+								_settings.GetSolutionConfiguration(
+									newSolution.SolutionIdentifier,
+									true);
+
+							newSolution.SortingIndex = config.SortingIndex;
+
+							_solutionsTarget.Add(
+								newSolution);
+						}
+					}
+					
+					SaveSettings(true);
+					UpdateColumns();
+					UpdateSolutionList();
+					UpdateImportOptionsVisibility();
+					ExportButtonSetState();
+				}
+			});
+
+		}
+
+		/*
+		// ============================================================================
+		private void LoadOriginSolutions()
+		{
 
 			if (Service == null)
 			{
@@ -519,7 +677,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			WorkAsync(new WorkAsyncInfo
 			{
-				Message = "Getting Solutions",
+				Message = "Getting Origin Solutions",
 				Work = (worker, args) =>
 				{
 					var query = new QueryExpression("solution");
@@ -563,7 +721,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					var result = args.Result as EntityCollection;
 					if (result != null)
 					{
-						_solutions.Clear();
+						_solutionsOrigin.Clear();
 												
 						// sort alphabetically after loading
 						var sortedSolutionsEntities =
@@ -585,20 +743,102 @@ namespace Com.AiricLenz.XTB.Plugin
 
 							newSolution.SortingIndex = config.SortingIndex;
 
-							_solutions.Add(
+							_solutionsOrigin.Add(
 								newSolution);
 						}
 					}
 
 					SaveSettings(true);
-					UpdateSolutionList();
 					ExportButtonSetState();
 				}
 			});
 
+		}
+		
 
+
+		// ============================================================================
+		private void LoadTargetSolutions()
+		{
+
+			if (_targetServiceClient == null)
+			{
+				return;
+			}
+
+			WorkAsync(new WorkAsyncInfo
+			{
+				Message = "Getting Target Solutions",
+				Work = (worker, args) =>
+				{
+					var query = new QueryExpression("solution");
+
+					query.Criteria.AddCondition(
+						"isvisible",
+						ConditionOperator.Equal,
+						true);
+
+
+					query.ColumnSet.AddColumns(
+						"friendlyname",
+						"solutiontype",
+						"ismanaged",
+						"solutionid",
+						"uniquename",
+						"description",
+						"version");
+
+					args.Result = _targetServiceClient.RetrieveMultiple(query);
+				},
+				PostWorkCallBack = (args) =>
+				{
+					if (args.Error != null)
+					{
+						MessageBox.Show(
+							args.Error.ToString(),
+							"Error",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Error);
+
+						return;
+					}
+
+					var result = args.Result as EntityCollection;
+					if (result != null)
+					{
+						_solutionsTarget.Clear();
+
+						// sort alphabetically after loading
+						var sortedSolutionsEntities =
+							result.Entities.OrderBy(
+								item => item.GetAttributeValue<string>("friendlyname")).ToList();
+
+						// create our custom solutions records
+						foreach (var entity in sortedSolutionsEntities)
+						{
+							var newSolution =
+								Solution.ConvertFrom(
+									entity,
+									_currentConnectionGuid);
+
+							var config =
+								_settings.GetSolutionConfiguration(
+									newSolution.SolutionIdentifier,
+									true);
+
+							newSolution.SortingIndex = config.SortingIndex;
+
+							_solutionsTarget.Add(
+								newSolution);
+						}
+					}
+
+					ExportButtonSetState();
+				}
+			});
 
 		}
+		*/
 
 		// ============================================================================
 		private void ExportButtonSetState()
@@ -658,11 +898,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			listBoxSolutions.Items.Clear();
 
-			_solutions.Sort();
+			_solutionsOrigin.Sort();
 
-			for (int i = 0; i < _solutions.Count; i++)
+			for (int i = 0; i < _solutionsOrigin.Count; i++)
 			{
-				var solution = _solutions[i];
+				var solution = _solutionsOrigin[i];
 
 				listBoxSolutions.Items.Add(
 					new SortableCheckItem(solution, i));
@@ -693,6 +933,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
+			UpdateTargetVersionStatusImages();
 			listBoxSolutions.Refresh();
 			ExportButtonSetState();
 
@@ -739,7 +980,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					_settings.GetAllSolutionConfigurationdForConnection(
 						_currentConnectionGuid);
 
-			foreach (var solution in _solutions)
+			foreach (var solution in _solutionsOrigin)
 			{
 				var found = false;
 
@@ -899,76 +1140,145 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (isVersionOutdated)
 			{
-				(listBoxSolutions.Items[index].ItemObject as Solution).VersionState =
+				(listBoxSolutions.Items[index].ItemObject as Solution).FileVersionState =
 					Properties.Resources.Warning;
 			}
 			else
 			{
-				(listBoxSolutions.Items[index].ItemObject as Solution).VersionState =
+				(listBoxSolutions.Items[index].ItemObject as Solution).FileVersionState =
 					null;
 			}
 		}
 
 
+		// ============================================================================
+		private void UpdateTargetVersionStatusImages()
+		{
+			if (_solutionsTarget == null ||
+				_solutionsOrigin == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
+			{
+				var found = false;
+				var originSolution = listBoxSolutions.Items[i].ItemObject as Solution;
+				Com.AiricLenz.XTB.Plugin.Schema.Version originVersion = originSolution.Version;
+				Com.AiricLenz.XTB.Plugin.Schema.Version targetVersion = null;
+
+				foreach (var targetSolution in _solutionsTarget)
+				{
+					if (targetSolution.UniqueName != originSolution.UniqueName)
+					{
+						continue;
+					}
+
+					targetVersion = targetSolution.Version;
+					found = true;
+					break;
+				}
+
+				if (found == false)
+				{
+					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
+						Properties.Resources.missing;
+					continue;
+				}
+
+				if (targetVersion.ToString() == originVersion.ToString())
+				{
+					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
+						Properties.Resources.match;
+					continue;
+				}
+				else
+				{
+					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
+						Properties.Resources.missmatch;
+					continue;
+				}
+			}
+		
+		}
 
 		// ============================================================================
-		private void UpdateColumns(
-			bool updateSettings = false)
+		private void UpdateColumns()
 		{
-			var newColumnSetup =
-					new List<ColumnDefinition>
-					{
-					new ColumnDefinition
-					{
-						Header = "Solution Name",
-						PropertyName = "FriendlyName",
-						Width = "55%"
-					},
 
-					new ColumnDefinition
-					{
-						Header = "Logical Name",
-						PropertyName = "UniqueName",
-						Width = "45%"
-					},
+			var colFriendlyName =
+				new ColumnDefinition
+				{
+					Header = "Solution Name",
+					PropertyName = "FriendlyName",
+					TooltipText = "The human readable friendly-name of the solution.",
+					Width = (checkButton_showLogicalNames.Checked ? "55%" : "100%"),
+					Enabled = true,
+				};
 
-					new ColumnDefinition
-					{
-						Header = "Version",
-						PropertyName = "Version",
-						Width = "150px"
-					},
-					
-					new ColumnDefinition
-					{
-						Header = "Files",
-						PropertyName = "FileStatusImage",
-						Width = "45px"
-					},
+			var colLogicalName =
+				new ColumnDefinition
+				{
+					Header = "Logical Name",
+					PropertyName = "UniqueName",
+					TooltipText = "The logical-name of the solution.",
+					Width = "45%",
+					Enabled = checkButton_showLogicalNames.Checked,
+				};
 
-					new ColumnDefinition
-					{
-						Header = "",
-						PropertyName = "VersionState",
-						Width = "40px"
-					},
-					};
+			var colVersion =
+				new ColumnDefinition
+				{
+					Header = "Version",
+					PropertyName = "Version",
+					TooltipText = "The current version number.",
+					Width = "130px",
+					Enabled = true,
+				};
 
-			if (checkButton_showLogicalNames.Checked == false)
-			{
-				newColumnSetup.RemoveAt(1);
-				newColumnSetup[0].Width = "100%";
-			}
+			var colTargetVersionState =
+				new ColumnDefinition
+				{
+					Header = "",
+					PropertyName = "TargetVersionState",
+					TooltipText = "The version of the solution in the target environment.",
+					Width = "50px",
+					Enabled = _targetServiceClient != null,
+				};
 
-			listBoxSolutions.Columns = newColumnSetup;
+			var colFileStatusImage =
+				new ColumnDefinition
+				{
+					Header = "Files",
+					PropertyName = "FileStatusImage",
+					TooltipText = "Indicates if the namaged (M) or unmanaged (U) file have been defined.",
+					Width = "45px",
+					Enabled = true,
+				};
+
+			var colFileVersionState =
+				new ColumnDefinition
+				{
+					Header = "",
+					PropertyName = "FileVersionState",
+					TooltipText = "Indicates if a file was not yet dowbloaded or is outdated (version number missmatch).",
+					Width = "40px",
+					Enabled = true,
+				};
+			
+			listBoxSolutions.Columns =
+				new List<ColumnDefinition>
+				{
+					colFriendlyName,		// 0
+					colLogicalName,			// 1
+					colVersion,				// 2
+					colTargetVersionState,	// 3
+					colFileStatusImage,		// 4
+					colFileVersionState		// 5
+				};
+
 			listBoxSolutions.Refresh();
 
-			if (updateSettings)
-			{
-				_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
-				SaveSettings();
-			}
-			
 		}
 
 		// ============================================================================
@@ -1084,12 +1394,16 @@ namespace Com.AiricLenz.XTB.Plugin
 				checkButton_showLogicalNames.Checked = _settings.ShowLogicalSolutionNames;
 
 				_codeUpdate = false;
-
-				ExportButtonSetState();
 			}
 
 			button_loadSolutions.Enabled = Service != null;
+
 			LoadAllSolutions();
+			//LoadOriginSolutions();
+			//LoadTargetSolutions();
+			//UpdateColumns();
+			//UpdateSolutionList();
+			//ExportButtonSetState();
 
 		}
 
@@ -1130,7 +1444,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (actionName != "AdditionalOrganization")
 			{
-
 				_currentConnectionGuid = detail.ConnectionId.Value;
 
 				if (_settings != null && detail != null)
@@ -1139,10 +1452,12 @@ namespace Com.AiricLenz.XTB.Plugin
 					LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
 				}
 
-				if (Service != null)
-				{
-					LoadAllSolutions();
-				}
+				LoadAllSolutions();
+				//LoadOriginSolutions();
+				//LoadTargetSolutions();
+				//UpdateColumns();
+				//UpdateSolutionList();
+				//UpdateImportOptionsVisibility();
 
 				button_loadSolutions.Enabled = Service != null;
 			}
@@ -1163,7 +1478,12 @@ namespace Com.AiricLenz.XTB.Plugin
 				button_addAdditionalConnection.Enabled = false;
 				button_addAdditionalConnection.Text = "Target is " + detail.ConnectionName;
 
-				UpdateImportOptionsVisibility();
+				LoadAllSolutions();
+				//LoadOriginSolutions();
+				//LoadTargetSolutions();
+				//UpdateColumns();
+				//UpdateSolutionList();
+				//UpdateImportOptionsVisibility();
 			}
 		}
 
@@ -1172,7 +1492,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_loadSolutions_Click(object sender, EventArgs e)
 		{
 			LoadAllSolutions();
-			ExportButtonSetState();
+			//LoadOriginSolutions();
+			//LoadTargetSolutions();
+			//UpdateColumns();
+			//UpdateSolutionList();
+			//UpdateImportOptionsVisibility();
+			//ExportButtonSetState();
 		}
 
 		// ============================================================================
@@ -1395,7 +1720,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-
+			UpdateTargetVersionStatusImages();
 			SaveSettings();
 		}
 
@@ -1412,7 +1737,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-
+			UpdateTargetVersionStatusImages();
 			SaveSettings();
 		}
 
@@ -1445,6 +1770,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
 			UpdateFileWarningStatus();
 
 			listBoxSolutions.Refresh();
@@ -1481,6 +1807,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
 			UpdateFileWarningStatus();
 
 			listBoxSolutions.Refresh();
@@ -1549,13 +1876,14 @@ namespace Com.AiricLenz.XTB.Plugin
 					}
 
 					LoadAllSolutions();
+					//LoadOriginSolutions();
+					//LoadTargetSolutions();
+					//UpdateSolutionList();
+
 					Log("");
 					Log("Done.");
 				}
 			});
-
-
-
 		}
 
 		// ============================================================================
@@ -1610,15 +1938,25 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void checkButton_showLogicalNames_CheckStateChanged(object sender, EventArgs e)
 		{
-			UpdateColumns(true);
+			UpdateColumns();
+
+			_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
 			SaveSettings();
 		}
-
-
-
 
 
 		#endregion
 
 	}
+
+	// ============================================================================
+	// ============================================================================
+	// ============================================================================
+	class LoadSolutionsResult
+	{
+		public EntityCollection OriginsSolutions = null;
+		public EntityCollection TargetSolutions = null;
+	}
+
+
 }

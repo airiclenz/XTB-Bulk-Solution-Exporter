@@ -73,7 +73,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
             this.flipSwitch_pushCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
@@ -803,7 +802,6 @@ namespace Com.AiricLenz.XTB.Plugin
         private System.Windows.Forms.ToolStripButton button_Export;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.ToolTip toolTip2;
         private System.Windows.Forms.Label label_title;
 		private FlipSwitch flipSwitch_gitCommit;
 		private FlipSwitch flipSwitch_publishSource;
