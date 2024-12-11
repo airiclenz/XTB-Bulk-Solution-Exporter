@@ -97,7 +97,17 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		}
 
+		public bool ShowFriendlySolutionNames
+		{
+			get; set;
+		}
+
 		public bool ShowLogicalSolutionNames
+		{
+			get; set;
+		}
+
+		public bool ShowToolTips
 		{
 			get; set;
 		}
@@ -124,13 +134,17 @@ namespace Com.AiricLenz.XTB.Plugin
 			PushCommit = false;
 			ImportManaged = false;
 			ImportUnmanaged = false;
-
+			
 			VersionFormat = "YYYY.MM.DD.+";
 			CommitMessage = "XTB Commit - YYYY.MM.DD";
 			EnableAutomation = true;
 			OverwriteCustomizations = false;
 
 			SolutionConfigurations = new List<string>();
+
+			ShowToolTips = true;
+			ShowFriendlySolutionNames = true;
+			ShowLogicalSolutionNames = false;
 		}
 
 

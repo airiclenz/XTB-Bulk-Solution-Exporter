@@ -43,6 +43,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.checkButton_showToolTips = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.checkButton_showFriendlyNames = new System.Windows.Forms.ToolStripMenuItem();
             this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
@@ -206,6 +209,9 @@ namespace Com.AiricLenz.XTB.Plugin
             // toolStripDropDownButton1
             // 
             this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.checkButton_showToolTips,
+            this.toolStripSeparator3,
+            this.checkButton_showFriendlyNames,
             this.checkButton_showLogicalNames});
             this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
             this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -213,11 +219,32 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(78, 22);
             this.toolStripDropDownButton1.Text = "Settings";
             // 
+            // checkButton_showToolTips
+            // 
+            this.checkButton_showToolTips.CheckOnClick = true;
+            this.checkButton_showToolTips.Name = "checkButton_showToolTips";
+            this.checkButton_showToolTips.Size = new System.Drawing.Size(188, 22);
+            this.checkButton_showToolTips.Text = "Show Tooltips";
+            this.checkButton_showToolTips.CheckStateChanged += new System.EventHandler(this.checkButton_showTooltips_CheckStateChanged);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(185, 6);
+            // 
+            // checkButton_showFriendlyNames
+            // 
+            this.checkButton_showFriendlyNames.CheckOnClick = true;
+            this.checkButton_showFriendlyNames.Name = "checkButton_showFriendlyNames";
+            this.checkButton_showFriendlyNames.Size = new System.Drawing.Size(188, 22);
+            this.checkButton_showFriendlyNames.Text = "Show Friendly Names";
+            this.checkButton_showFriendlyNames.CheckStateChanged += new System.EventHandler(this.checkButton_showFrinedlyNames_CheckStateChanged);
+            // 
             // checkButton_showLogicalNames
             // 
             this.checkButton_showLogicalNames.CheckOnClick = true;
             this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
-            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(184, 22);
+            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(188, 22);
             this.checkButton_showLogicalNames.Text = "Show Logical Names";
             this.checkButton_showLogicalNames.CheckStateChanged += new System.EventHandler(this.checkButton_showLogicalNames_CheckStateChanged);
             // 
@@ -829,5 +856,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripButton button_sortDesc;
 		private System.Windows.Forms.PictureBox pictureBox_warningManaged;
 		private System.Windows.Forms.PictureBox pictureBox_warningUnmanaged;
+		private System.Windows.Forms.ToolStripMenuItem checkButton_showToolTips;
+		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+		private System.Windows.Forms.ToolStripMenuItem checkButton_showFriendlyNames;
 	}
 }

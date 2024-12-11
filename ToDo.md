@@ -6,13 +6,18 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
-- log execution time
-- disable UI when execution is running
 
+## Added in Release 2024.12.<mark>XX</mark>
 
-## Added in Release 2024.11.<mark>XX</mark>
+ 
+## Added in Release 2024.12.11
 
 - load installed versions when connecting to target and visualize version difference
+- added tooltips to sortable check list
+- options for showing/hiding the column for friendly solution names 
+- internal code improvements
+- UI is now disabled when execution is running
+- logging execution time of process steps
 
 ## Added in Release 2024.11.29
 

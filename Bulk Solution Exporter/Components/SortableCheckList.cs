@@ -23,7 +23,13 @@ namespace Com.AiricLenz.XTB.Components
 	public partial class SortableCheckList : Control
 	{
 
-		//private List<object> _items = new List<object>();
+		private ToolTip _toolTip;
+		private string _currentTooltipText;
+		private Timer _toolTipTimer;
+		private Point _lastMousePosition;
+		private bool _isToolTipVisible = false;
+		private bool _showToolTips = true;
+
 		private List<SortableCheckItem> _items = new List<SortableCheckItem>();
 		private List<ColumnDefinition> _columns = new List<ColumnDefinition>();
 
@@ -48,11 +54,12 @@ namespace Com.AiricLenz.XTB.Components
 		private Color _colorOff = Color.FromArgb(150, 150, 150);
 		private Color _colorOn = Color.MediumSlateBlue;
 
-		private const string measureText = "QWypg/#_Ág";
+		private const string MeasureText = "QWypg/#_Ág";
 		private int? _dragStartIndex = null;
 		private int _currentDropIndex = -1;
 		private int _hoveringAboveDragBurgerIndex = -1;
 		private int _hoveringAboveCheckBoxIndex = -1;
+
 
 
 		// ============================================================================
@@ -72,6 +79,22 @@ namespace Com.AiricLenz.XTB.Components
 			DoubleBuffered = true;
 			BackColor = SystemColors.Window;
 
+			// Initialize the tooltip
+			_toolTip = new ToolTip
+			{
+				// effectlively disable automatic timing
+				AutoPopDelay = 999999999,
+				InitialDelay = 999999999,
+				ReshowDelay = 999999999,
+				AutomaticDelay = 999999999,
+				//ShowAlways = true // Always show tooltips
+			};
+
+			// Timer to control tooltip visibility
+			_toolTipTimer = new Timer { Interval = 750 }; 
+			_toolTipTimer.Tick += ShowTooltipTimer_Tick;
+
+			// initialize with one initial columns
 			_columns.Add(
 				new ColumnDefinition
 				{
@@ -79,7 +102,6 @@ namespace Com.AiricLenz.XTB.Components
 					PropertyName = string.Empty,
 					Width = "100px"
 				});
-
 
 			AdjustItemHeight();
 			ResumeLayout();
@@ -472,6 +494,22 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool ShowTooltips
+		{
+			get
+			{
+				return _showToolTips;
+			}
+			set
+			{
+				_showToolTips = value;
+				_toolTip.Active = value;
+			}
+		}	
+
+
+
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		[Browsable(false)]
@@ -487,6 +525,10 @@ namespace Com.AiricLenz.XTB.Components
 				base.Text = value;
 			}
 		}
+
+
+
+
 
 
 		#endregion
@@ -778,6 +820,30 @@ namespace Com.AiricLenz.XTB.Components
 
 		}
 
+		// ============================================================================
+		private void ShowTooltipTimer_Tick(
+			object sender, 
+			EventArgs e)
+		{
+			_toolTipTimer.Stop();
+
+			
+			if (_isToolTipVisible)
+			{
+				return;
+			}
+			
+
+			_toolTip.Show(
+				_currentTooltipText,
+				this, 
+				new Point(
+					_lastMousePosition.X + 15,
+					_lastMousePosition.Y - 3));
+
+			_isToolTipVisible = true;
+		}
+
 
 		// ============================================================================
 		protected virtual void OnSelectedIndexChanged()
@@ -799,12 +865,27 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
-		protected override void OnLeave(EventArgs e)
+		protected override void OnMouseLeave(
+			EventArgs e)
 		{
 			base.OnLeave(e);
 
 			_hoveringAboveCheckBoxIndex = -1;
 			_hoveringAboveDragBurgerIndex = -1;
+
+			_toolTip.Active = false;
+			_toolTip.Hide(this);
+			_toolTipTimer.Stop();
+		}
+
+
+		// ============================================================================
+		protected override void OnMouseEnter(
+			EventArgs e)
+		{
+			base.OnEnter(e);
+						
+			_toolTip.Active = _showToolTips;
 		}
 
 
@@ -1230,18 +1311,82 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			using (Graphics g = CreateGraphics())
 			{
-				SizeF textSize = g.MeasureString(measureText, Font);
+				SizeF textSize = g.MeasureString(MeasureText, Font);
 				_textHeight = textSize.Height;
 				_itemHeight = _textHeight > _itemHeight ? (int) _textHeight : _itemHeight;
 				_itemHeight = _checkBoxSize + 2 > _itemHeight ? _checkBoxSize + 2 : _itemHeight;
 			}
 		}
 
+
+		// ============================================================================
+		private void UpdateToolTipText(
+			Point pointerLocation,
+			int yIndex)
+		{
+			var newTooltipText = "This is some very useful information alright!";
+
+
+			// -------------------------------------
+			// go through all columns
+			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
+			var spaceAvailableForColumns = GetSpaceForColumns(leftMargin);
+			var colPosX = leftMargin;
+						
+			if (_items.Count > 0)
+			{
+				foreach (var column in _columns)
+				{
+					if (column.Enabled == false)
+					{
+						continue;
+					}
+
+					var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
+
+					if (pointerLocation.X > colPosX &&
+						pointerLocation.X <= colPosX + colWidth)
+					{
+						newTooltipText = column.TooltipText;
+						break;
+					}
+					
+					colPosX += (int) colWidth;
+				}
+			}
+
+
+			// Update tooltip only if the text changes
+			if (_currentTooltipText != newTooltipText)
+			{
+				_toolTipTimer.Start();
+				_currentTooltipText = newTooltipText;
+
+				_toolTip.SetToolTip(this, _currentTooltipText);
+				//_toolTip.Active = true;
+			}
+		}
+
+
+
 		// ============================================================================
 		private void HandleMousePointerPosition(
 			Point pointerLocation,
 			bool isClick = false)
 		{
+			// hide the current toolTip
+						
+			if (_lastMousePosition != pointerLocation)
+			{
+				_toolTip.Hide(this);
+				_isToolTipVisible = false;
+				
+				// restart the toolTip timer
+				_toolTipTimer.Stop();
+				_toolTipTimer.Start();
+				_lastMousePosition = pointerLocation;
+			}
+			
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_items.Count, startIndex + ((Height - _itemHeight) / _itemHeight));
 
@@ -1251,82 +1396,107 @@ namespace Com.AiricLenz.XTB.Components
 			_hoveringAboveCheckBoxIndex = -1;
 			_hoveringAboveDragBurgerIndex = -1;
 
-			// check check-boxes
-			if (_isCheckable)
+			var mouseOverRowWithIndex = -1;
+
+			// get row index of mouse position
+			for (int i = startIndex; i < endIndex; i++)
 			{
-				for (int i = startIndex; i < endIndex; i++)
+				int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
+				var checkBoxBoundsRow =
+					new Rectangle(0, yPosition, Width, _itemHeight);
+
+				if (checkBoxBoundsRow.Contains(pointerLocation))
 				{
-					int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
-
-					var checkBoxBoundsCheckBox =
-						new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
-
-					if (checkBoxBoundsCheckBox.Contains(pointerLocation))
-					{
-						if (isClick)
-						{
-							_items[i].Toggle();
-							OnItemChecked();
-						}
-						else
-						{
-							_hoveringAboveCheckBoxIndex = i;
-							if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld)
-							{
-								Invalidate();
-							}
-						}
-										
-
-						// Leave - we are done here...
-						return;
-					}
+					mouseOverRowWithIndex = i;
+					break;
 				}
 			}
 
-
-			if (isClick)
+			// not over a data row? 
+			if (_selectedIndex == -1)
 			{
-				// deselect all
-				_selectedIndex = -1;
+				// we are above the header
+				if (pointerLocation.Y < _itemHeight)
+				{
+					_currentTooltipText = "This is the header with titles for the different columns below.";
+				}
+				else
+				{
+					_currentTooltipText = string.Empty;
+				}
+			}
+
+			// check check-boxes
+			if (_isCheckable &&
+				mouseOverRowWithIndex != -1)
+			{
+				int yPosition = (mouseOverRowWithIndex * _itemHeight) + _itemHeight - _scrollOffset;
+
+				var checkBoxBoundsCheckBox =
+					new Rectangle(10, yPosition, _checkBoxSize, _checkBoxSize);
+
+				if (checkBoxBoundsCheckBox.Contains(pointerLocation))
+				{
+					if (isClick)
+					{
+						_items[mouseOverRowWithIndex].Toggle();
+						OnItemChecked();
+					}
+					else
+					{
+						_hoveringAboveCheckBoxIndex = mouseOverRowWithIndex;
+						if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld)
+						{
+							Invalidate();
+						}
+					}
+
+					_currentTooltipText = "Check this row for adding it to the process execution.";
+
+					// Leave - we are done here...
+					return;
+				}
 			}
 
 
 			// check drag-burger
-			if (_isSortable)
+			if (_isSortable	&&
+				mouseOverRowWithIndex != -1)
 			{
-				for (int i = startIndex; i < endIndex; i++)
+				
+				int yPosition = (mouseOverRowWithIndex * _itemHeight) + _itemHeight - _scrollOffset;
+
+				var checkBoxBoundsCheckBox =
+					new RectangleF(
+						Width - 15f - (_dragBurgerSize * 2f),
+						yPosition,
+						_dragBurgerSize * 2f,
+						_itemHeight);
+
+				if (checkBoxBoundsCheckBox.Contains(pointerLocation))
 				{
-					int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
-
-					var checkBoxBoundsCheckBox =
-						new RectangleF(
-							Width - 15f - (_dragBurgerSize * 2f),
-							yPosition,
-							_dragBurgerSize * 2f,
-							_itemHeight);
-
-					if (checkBoxBoundsCheckBox.Contains(pointerLocation))
+					if (isClick)
 					{
-						if (isClick)
-						{
-							_dragStartIndex = i;
-						}
-						else
-						{
-							_hoveringAboveDragBurgerIndex = i;
-							if (_hoveringAboveDragBurgerIndex != _hoverDragBurgerIndexOld)
-							{
-								Invalidate();
-							}
-						}
-
-						// Leave - we are done here...
-						return;
+						_dragStartIndex = mouseOverRowWithIndex;
 					}
+					else
+					{
+						_hoveringAboveDragBurgerIndex = mouseOverRowWithIndex;
+						if (_hoveringAboveDragBurgerIndex != _hoverDragBurgerIndexOld)
+						{
+							Invalidate();
+						}
+					}
+
+					_currentTooltipText = "You can re-sort the rows here. This will have an effect on the execution order.";
+
+					// Leave - we are done here...
+					return;
 				}
+				
 			}
 
+			// Not a click?
 			if (!isClick)
 			{
 				if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld ||
@@ -1335,26 +1505,26 @@ namespace Com.AiricLenz.XTB.Components
 					Invalidate();
 				}
 
+				if (mouseOverRowWithIndex != -1)
+				{
+					UpdateToolTipText(
+						pointerLocation,
+						mouseOverRowWithIndex);
+				}
+				
 				return;
 			}
 
 
-			// check hole row
-			for (int i = startIndex; i < endIndex; i++)
+			// ..we have a click.
+			// check if the selected index would change:
+			if (_selectedIndex != mouseOverRowWithIndex)
 			{
-				int yPosition = (i * _itemHeight) + _itemHeight - _scrollOffset;
+				_selectedIndex = mouseOverRowWithIndex;
 
-				var checkBoxBoundsRow =
-					new Rectangle(0, yPosition, Width, _itemHeight);
-
-				if (checkBoxBoundsRow.Contains(pointerLocation))
-				{
-					_selectedIndex = i;
-					break;
-				}
+				OnSelectedIndexChanged();
 			}
-
-			OnSelectedIndexChanged();
+			
 		}
 
 

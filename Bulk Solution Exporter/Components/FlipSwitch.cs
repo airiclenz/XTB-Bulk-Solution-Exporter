@@ -19,6 +19,7 @@ namespace Com.AiricLenz.XTB.Components
 	{
 
 		private bool _isOn;
+		private bool _isLocked;
 		private string _title;
 		private int _switchWidth;
 		private int _switchHeight;
@@ -162,7 +163,8 @@ namespace Com.AiricLenz.XTB.Components
 			}
 			set
 			{
-				if (value != _isOn)
+				if (value != _isOn &&
+					!_isLocked)
 				{
 					_isOn = value;
 					Invalidate();
@@ -337,6 +339,20 @@ namespace Com.AiricLenz.XTB.Components
 				Invalidate();
 			}
 		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsLocked
+		{
+			get
+			{
+				return _isLocked;
+			}
+			set
+			{
+				_isLocked = value;
+			}
+		}
+
 
 		#endregion
 
