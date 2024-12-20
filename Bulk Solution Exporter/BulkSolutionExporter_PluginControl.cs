@@ -2,6 +2,7 @@
 using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Data.Odbc;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -13,6 +14,7 @@ using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
@@ -152,18 +154,52 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			
+
 			var duration = GetDurationString(startTime);
-			
+
 			Log("Publish All was completed (" + duration + ").");
 		}
 
 
 		// ============================================================================
+		private void UpdateAllVersionNumbers()
+		{
+			if (!flipSwitch_updateVersion.IsOn ||
+				listBoxSolutions.CheckedItems.Count == 0)
+			{
+				return;
+			}
+
+			Log("Updating version numbers now:");
+
+			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			{
+				var listItem = listBoxSolutions.CheckedItems[i];
+				var solution = listItem.ItemObject as Solution;
+
+				var solutionConfig =
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier);
+
+				Log("|   Updating version number for solution '" + solution.FriendlyName + "'");
+
+				UpdateVersionNumber(solution);
+
+				if (i < listBoxSolutions.CheckedItems.Count - 1)
+				{
+					Log("|");
+				}
+			}
+
+			Log();
+		}
+
+
+
+		// ============================================================================
 		private void ExportAllSolutions()
 		{
-			if (flipSwitch_updateVersion.IsOff &&
-				flipSwitch_exportManaged.IsOff &&
+			if (flipSwitch_exportManaged.IsOff &&
 				flipSwitch_exportUnmanaged.IsOff)
 			{
 				return;
@@ -179,7 +215,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						solution.SolutionIdentifier);
 
 				Log("");
-				Log("Exporting solution '" + solution.FriendlyName + "'");
+				Log("Exporting solution '" + solution.FriendlyName + "':");
 
 				var exportResult =
 					ExportSolution(
@@ -211,7 +247,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool importManagd = flipSwitch_importManaged.IsOn;
 
 			Log("");
-			Log("Importing solutions now");
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
@@ -227,18 +262,20 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				var startTime = DateTime.Now;
 
-				Log("|   Importing solution now: " + solution.FriendlyName);
+				Log("Importing solution '" + solution.FriendlyName + "':");
 
 				if (ImportSolution(solutionFile, importManagd))
 				{
-					var duration = GetDurationString(startTime);
 
-					Log(
-						"|   |   Import done" +
-						" (" + duration + ").");
+					var duration = GetDurationString(startTime);
+					Log("|   The import was succesful.");
+					Log("|   Duration: " + duration);
 				}
 
-
+				if (i < listBoxSolutions.Items.Count - 1)
+				{
+					Log();
+				}
 			}
 		}
 
@@ -249,20 +286,18 @@ namespace Com.AiricLenz.XTB.Plugin
 			Solution solution,
 			SolutionConfiguration solutionConfiguration)
 		{
-			if (flipSwitch_updateVersion.IsOn)
-			{
-				if (!UpdateVersionNumber(solution))
-				{
-					return false;
-				}
-			}
-
 			if (flipSwitch_exportManaged.IsOn)
 			{
 				ExportToFile(
 					solution,
 					solutionConfiguration,
 					true);
+			}
+
+			if (flipSwitch_exportManaged.IsOn &&
+				flipSwitch_exportUnmanaged.IsOn)
+			{
+				Log("|");
 			}
 
 			if (flipSwitch_exportUnmanaged.IsOn)
@@ -284,18 +319,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool isManaged)
 		{
 
+			Log("|   Exporting as " + (isManaged ? "" : "un") + "managed solution now...");
+
+
 			if (isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameManaged) ||
 				!isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameUnmanaged))
 			{
-				if (isManaged)
-				{
-					Log("|   No file name for a managed solution was given!");
-				}
-				else
-				{
-					Log("|   No file name for an unmanaged solution was given!");
-				}
-
+				Log("|   No file name for the " + (isManaged ? "" : "un") + "managed solution was given!");
 				return;
 			}
 
@@ -335,23 +365,19 @@ namespace Com.AiricLenz.XTB.Plugin
 				_settings.GetSolutionConfiguration(
 					solutionConfiguration.SolutionIndentifier);
 
+			var duration = GetDurationString(startTime);
+			Log("|   Exported to file: " + filePath);
+			Log("|   Duration: " + duration);
+
 			if (isManaged)
 			{
-				var duration = GetDurationString(startTime);
-				Log("|   Exported the solution as a managed to: " + filePath + " (" + duration + ")");
-				
 				configToBeUpdated.ExportedVersionNumberManaged =
 					solution.Version.ToString();
-
 			}
 			else
 			{
-				var duration = GetDurationString(startTime);
-				Log("|   Exported the solution as an unmanaged to: " + filePath + " (" + duration + ")");
-
 				configToBeUpdated.ExportedVersionNumberUnmanaged =
 					solution.Version.ToString();
-
 			}
 
 			_settings.UpdateSolutionConfiguration(configToBeUpdated);
@@ -573,23 +599,23 @@ namespace Com.AiricLenz.XTB.Plugin
 						"description",
 						"version");
 
-					LoadSolutionsResult result = 
+					LoadSolutionsResult result =
 						new LoadSolutionsResult();
 
 					if (Service != null)
 					{
-						result.OriginsSolutions = 
+						result.OriginsSolutions =
 							Service.RetrieveMultiple(
 								queryOrigin);
 					}
 
 					if (_targetServiceClient != null)
 					{
-						result.TargetSolutions = 
+						result.TargetSolutions =
 							_targetServiceClient.RetrieveMultiple(
 								queryTarget);
 					}
-						
+
 					args.Result = result;
 				},
 				PostWorkCallBack = (args) =>
@@ -670,7 +696,7 @@ namespace Com.AiricLenz.XTB.Plugin
 								newSolution);
 						}
 					}
-					
+
 					SaveSettings(true);
 					UpdateColumns();
 					UpdateSolutionList();
@@ -806,7 +832,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				config.Checked = listBoxItem.IsChecked;
 				config.SortingIndex = listBoxItem.SortingIndex;
-				
+
 				_settings.UpdateSolutionConfiguration(config);
 			}
 
@@ -896,9 +922,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				return true;
 			}
 
-			DialogResult result = 
+			DialogResult result =
 				MessageBox.Show(
-					"These files were not defined:" + 
+					"These files were not defined:" +
 					Environment.NewLine + Environment.NewLine +
 					message + Environment.NewLine + Environment.NewLine +
 					"Do you want to continue anyway?",
@@ -907,15 +933,15 @@ namespace Com.AiricLenz.XTB.Plugin
 					MessageBoxIcon.Warning);
 
 			return result == DialogResult.OK;
-			
+
 		}
 
 
 		// ============================================================================
-		private void Log(string message)
+		private void Log(string message = "")
 		{
 			message += Environment.NewLine;
-			
+
 			if (textBox_log.InvokeRequired)
 			{
 				textBox_log.Invoke(new Action(() => textBox_log.Text += message));
@@ -940,7 +966,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			// Extract components from the TimeSpan
 			int hours = duration.Hours;
 			int minutes = duration.Minutes;
-			double seconds = duration.TotalSeconds % 60; // Include fractional seconds if necessary
+			double seconds = duration.TotalSeconds % 60;
 
 			// Build the formatted string dynamically
 			string result = "";
@@ -950,15 +976,22 @@ namespace Com.AiricLenz.XTB.Plugin
 				result += $"{hours}h ";
 			}
 
-			if (minutes > 0 || hours > 0) // Include minutes if hours are present
+			if (minutes > 0 || hours > 0)
 			{
 				result += $"{minutes}min ";
 			}
 
-			if (seconds >= 1 || (hours == 0 && minutes == 0)) // Include seconds unless insignificant
+			if (seconds >= 1 || (hours == 0 && minutes == 0))
 			{
-				result += $"{seconds:F1}sec";
-				result = result.Replace(",", ".");
+				if (minutes > 0 || hours > 0)
+				{
+					result += $"{Math.Round(seconds)}sec";
+				}
+				else
+				{
+					result += $"{seconds:F1}sec";
+					result = result.Replace(",", ".");
+				}
 			}
 
 			return result.Trim(); // Remove trailing whitespace
@@ -1012,7 +1045,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						Properties.Resources.FileStatus_XX;
 				}
 			}
-					
+
 
 			if (isVersionOutdated)
 			{
@@ -1075,7 +1108,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					continue;
 				}
 			}
-		
+
 		}
 
 		// ============================================================================
@@ -1107,7 +1140,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Header = "Version",
 					PropertyName = "Version",
-					TooltipText = 
+					TooltipText =
 						"The current version number of the solution\n" +
 						"in the origin environment.",
 					Width = "130px",
@@ -1119,7 +1152,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Header = "",
 					PropertyName = "TargetVersionState",
-					TooltipText = 
+					TooltipText =
 						"Indicates if a file was not yet installed in the target environment,\n" +
 						"if it is outdated (version number missmatch)\n" +
 						"or if the version numbers match up between origin- and target environment.",
@@ -1132,8 +1165,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Header = "Files",
 					PropertyName = "FileStatusImage",
-					TooltipText = 
-						"Indicates if the managed (M) or\n" + 
+					TooltipText =
+						"Indicates if the managed (M) or\n" +
 						"unmanaged (U) file has/have been defined.",
 					Width = "45px",
 					Enabled = true,
@@ -1144,13 +1177,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Header = "",
 					PropertyName = "FileVersionState",
-					TooltipText = 
-						"This indicates if the version in the origin environent\n" + 
+					TooltipText =
+						"This indicates if the version in the origin environent\n" +
 						"is different from the one that was downloaded last.",
 					Width = "40px",
 					Enabled = true,
 				};
-			
+
 			listBoxSolutions.Columns =
 				new List<ColumnDefinition>
 				{
@@ -1281,7 +1314,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				checkButton_showFriendlyNames.Checked = _settings.ShowFriendlySolutionNames;
 				checkButton_showLogicalNames.Checked = _settings.ShowLogicalSolutionNames;
-				
+
 				_codeUpdate = false;
 			}
 
@@ -1518,7 +1551,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.VersionFormat = textBox_versionFormat.Text;
 			ExportButtonSetState();
-			SaveSettings() ;
+			SaveSettings();
 		}
 
 		// ============================================================================
@@ -1641,7 +1674,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			UpdateFileWarningStatus();
 
 			listBoxSolutions.Refresh();
-			
+
 			// No saving needed because the text field update triggers saving already
 		}
 
@@ -1725,6 +1758,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Work = (worker, args) =>
 				{
 					PublishAll(Service, flipSwitch_publishSource.IsOn);
+					UpdateAllVersionNumbers();
 					ExportAllSolutions();
 					HandleGit();
 					ImportAllSolutions();
@@ -1840,7 +1874,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.ShowToolTips = checkButton_showToolTips.Checked;
 			SaveSettings();
 
-			
+
 		}
 
 		// ============================================================================
@@ -1875,7 +1909,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			SaveSettings();
 		}
 
-		
+
 
 		#endregion
 

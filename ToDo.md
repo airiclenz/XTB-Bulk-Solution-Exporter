@@ -6,9 +6,12 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
+- graf import xml and format it properly
+
 
 ## Added in Release 2024.12.<mark>XX</mark>
 
+- unify logging so it is formatted the same everywhere
  
 ## Added in Release 2024.12.11
 
