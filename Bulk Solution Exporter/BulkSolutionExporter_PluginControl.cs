@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Data.Odbc;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -14,7 +12,6 @@ using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
@@ -539,12 +536,22 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			catch (FaultException ex)
 			{
-				Log("|   Error during import: " + ex.Message);
+				var errorMessage =
+					Formatter.FormatErrorStringWithXml(
+						ex.Message);
+
+				Log("|   " + errorMessage);
+
 				return false;
 			}
 			catch (Exception ex)
 			{
-				Log("|   Error during import: " + ex.Message);
+				var errorMessage =
+					Formatter.FormatErrorStringWithXml(
+						ex.Message);
+
+				Log("|   " + errorMessage);
+
 				return false;
 			}
 
