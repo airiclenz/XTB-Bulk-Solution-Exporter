@@ -24,6 +24,13 @@ namespace Com.AiricLenz.Extentions
 			return string.IsNullOrWhiteSpace(inputString);
 		}
 
+		// ============================================================================
+		public static bool HasValue(
+			this string inputString)
+		{
+			return !string.IsNullOrWhiteSpace(inputString);
+		}
+
 
 		// ============================================================================
 		public static string ForceToLength(

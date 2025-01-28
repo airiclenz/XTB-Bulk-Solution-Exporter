@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
@@ -7,8 +6,6 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Windows.Forms;
-using System.Windows.Media.Animation;
-using System.Xml.Serialization;
 using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
@@ -106,7 +103,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateFileWarningStatus()
 		{
-			if (_currentSolution == null)
+			if (_currentSolution == null ||
+				_currentSolutionConfig == null ||
+				_settings.SaveVersionJson == false)
 			{
 				pictureBox_warningManaged.Visible = false;
 				pictureBox_warningUnmanaged.Visible = false;
@@ -114,10 +113,58 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			// TODO
+			var isManagedVersionOutdated = false;
+			var isUnmanagedVersionOutdated = false;
 
-			//pictureBox_warningManaged.Visible = isManagedVersionOutdated;
-			//pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
+
+			if (_currentSolutionConfig.FileNameManaged.HasValue())
+			{
+				var managedSolutionFileExists =
+					File.Exists(_currentSolutionConfig.FileNameManaged);
+
+				var loadedManaged =
+					ExportedSolutionVersions.TryLoadExportedSolution(
+						_currentSolutionConfig.FileNameManaged,
+						_currentSolution,
+						out var exportedSolutionManaged);
+
+				if (exportedSolutionManaged != null)
+				{
+					isManagedVersionOutdated =
+						exportedSolutionManaged.Version != _currentSolution.Version.ToString() ||
+						managedSolutionFileExists == false;
+				}
+				else
+				{
+					isManagedVersionOutdated = !managedSolutionFileExists;
+				}
+			}
+
+			if (_currentSolutionConfig.FileNameUnmanaged.HasValue())
+			{
+				var unmanagedSolutionFileExists =
+					File.Exists(_currentSolutionConfig.FileNameUnmanaged);
+
+				var loadedUnmanaged =
+					ExportedSolutionVersions.TryLoadExportedSolution(
+						_currentSolutionConfig.FileNameManaged,
+						_currentSolution,
+						out var exportedSolutionUnmanaged);
+
+				if (exportedSolutionUnmanaged != null)
+				{
+					isUnmanagedVersionOutdated =
+						exportedSolutionUnmanaged.Version != _currentSolution.Version.ToString() ||
+						unmanagedSolutionFileExists == false;
+				}
+				else
+				{
+					isUnmanagedVersionOutdated = !unmanagedSolutionFileExists;
+				}
+			}
+
+			pictureBox_warningManaged.Visible = isManagedVersionOutdated;
+			pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
 		}
 
 
@@ -157,7 +204,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void UpdatecheckedVersionNumbers()
+		private void UpdateCheckedVersionNumbers()
 		{
 			if (!flipSwitch_updateVersion.IsOn ||
 				listBoxSolutions.CheckedItems.Count == 0)
@@ -1100,8 +1147,23 @@ namespace Com.AiricLenz.XTB.Plugin
 			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
 			var hasFileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
 
+			var managedSolutionFileExists = false;
+			var unmanagedSolutionFileExists = false;
+
 			var managedUpToDate = true;
 			var unmanagedUpToDate = true;
+
+			if (hasFileManaged)
+			{
+				managedSolutionFileExists =
+					File.Exists(config.FileNameManaged);
+			}
+
+			if (hasFileUnmanaged)
+			{
+				unmanagedSolutionFileExists =
+					File.Exists(config.FileNameUnmanaged);
+			}
 
 
 			if (_settings.SaveVersionJson)
@@ -1117,9 +1179,16 @@ namespace Com.AiricLenz.XTB.Plugin
 					if (loadedManaged)
 					{
 						managedUpToDate =
-							exportedSolutionManaged.Version == solution.Version.ToString();
+							exportedSolutionManaged.Version == solution.Version.ToString() &&
+							managedSolutionFileExists;
+					}
+					else
+					{
+						managedUpToDate = managedSolutionFileExists;
 					}
 				}
+				
+
 
 				if (hasFileUnmanaged)
 				{
@@ -1132,7 +1201,12 @@ namespace Com.AiricLenz.XTB.Plugin
 					if (loadedUnmanaged)
 					{
 						unmanagedUpToDate =
-							exportedSolutionUnmanaged.Version == solution.Version.ToString();
+							exportedSolutionUnmanaged.Version == solution.Version.ToString() &&
+							unmanagedSolutionFileExists;
+					}
+					else
+					{
+						unmanagedUpToDate = unmanagedSolutionFileExists;
 					}
 				}
 			}
@@ -1881,7 +1955,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Work = (worker, args) =>
 				{
 					PublishAll(Service, flipSwitch_publishSource.IsOn);
-					UpdatecheckedVersionNumbers();
+					UpdateCheckedVersionNumbers();
 					ExportCheckedSolutions();
 					HandleGit();
 					ImportCheckedSolutions();

@@ -65,7 +65,7 @@ namespace Com.AiricLenz.XTB.Plugin.Properties {
         /// </summary>
         internal static System.Drawing.Bitmap adjustment_32px {
             get {
-                object obj = ResourceManager.GetObject("adjustment.32px", resourceCulture);
+                object obj = ResourceManager.GetObject("adjustment_32px", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
