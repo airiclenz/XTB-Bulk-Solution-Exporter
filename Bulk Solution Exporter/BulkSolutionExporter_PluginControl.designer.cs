@@ -33,32 +33,6 @@ namespace Com.AiricLenz.XTB.Plugin
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BulkSolutionExporter_PluginControl));
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.panelSeparator = new System.Windows.Forms.Panel();
-            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
-            this.button_checkAll = new System.Windows.Forms.ToolStripButton();
-            this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
-            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
-            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this.checkButton_showToolTips = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.checkButton_showFriendlyNames = new System.Windows.Forms.ToolStripMenuItem();
-            this.checkButton_showLogicalNames = new System.Windows.Forms.ToolStripMenuItem();
-            this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
-            this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
-            this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
-            this.label_title = new System.Windows.Forms.Label();
-            this.label_Log = new System.Windows.Forms.Label();
-            this.textBox_log = new System.Windows.Forms.TextBox();
-            this.button_browseUnmananged = new System.Windows.Forms.Button();
-            this.label_unmanaged = new System.Windows.Forms.Label();
-            this.button_browseManaged = new System.Windows.Forms.Button();
-            this.label_Managed = new System.Windows.Forms.Label();
-            this.textBox_unmanaged = new System.Windows.Forms.TextBox();
-            this.textBox_managed = new System.Windows.Forms.TextBox();
             this.label_versionFormat = new System.Windows.Forms.Label();
             this.textBox_versionFormat = new System.Windows.Forms.TextBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
@@ -70,32 +44,457 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu = new System.Windows.Forms.ToolStrip();
             this.button_addAdditionalConnection = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.button_Settings = new System.Windows.Forms.ToolStripButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
             this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
+            this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
+            this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_pushCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_importManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishSource = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_updateVersion = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.flipSwitch_publishTarget = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.panelSeparator = new System.Windows.Forms.Panel();
+            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
+            this.button_checkAll = new System.Windows.Forms.ToolStripButton();
+            this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
+            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
+            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
+            this.label_title = new System.Windows.Forms.Label();
+            this.label_Log = new System.Windows.Forms.Label();
+            this.textBox_log = new System.Windows.Forms.TextBox();
+            this.button_browseUnmananged = new System.Windows.Forms.Button();
+            this.label_unmanaged = new System.Windows.Forms.Label();
+            this.button_browseManaged = new System.Windows.Forms.Button();
+            this.label_Managed = new System.Windows.Forms.Label();
+            this.textBox_unmanaged = new System.Windows.Forms.TextBox();
+            this.textBox_managed = new System.Windows.Forms.TextBox();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
+            this.toolStripMenu.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
-            this.toolStripMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
             this.SuspendLayout();
+            // 
+            // label_versionFormat
+            // 
+            this.label_versionFormat.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_versionFormat.Location = new System.Drawing.Point(750, 57);
+            this.label_versionFormat.Name = "label_versionFormat";
+            this.label_versionFormat.Size = new System.Drawing.Size(150, 16);
+            this.label_versionFormat.TabIndex = 9;
+            this.label_versionFormat.Text = "Version Format";
+            this.label_versionFormat.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // textBox_versionFormat
+            // 
+            this.textBox_versionFormat.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBox_versionFormat.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_versionFormat.Location = new System.Drawing.Point(906, 53);
+            this.textBox_versionFormat.Name = "textBox_versionFormat";
+            this.textBox_versionFormat.Size = new System.Drawing.Size(150, 23);
+            this.textBox_versionFormat.TabIndex = 8;
+            this.textBox_versionFormat.Text = "YYYY.MM.DD.+";
+            this.toolTip1.SetToolTip(this.textBox_versionFormat, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day\r\n");
+            this.textBox_versionFormat.TextChanged += new System.EventHandler(this.textBox_versionFormat_TextChanged);
+            this.textBox_versionFormat.Leave += new System.EventHandler(this.textBox_versionFormat_Leave);
+            // 
+            // saveFileDialog1
+            // 
+            this.saveFileDialog1.Filter = "Solution files (*.zip|*.zip|All files (*.*)|*.*\"";
+            this.saveFileDialog1.FilterIndex = 0;
+            // 
+            // fileSystemWatcher1
+            // 
+            this.fileSystemWatcher1.EnableRaisingEvents = true;
+            this.fileSystemWatcher1.SynchronizingObject = this;
+            // 
+            // button_loadSolutions
+            // 
+            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_loadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("button_loadSolutions.Image")));
+            this.button_loadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_loadSolutions.Margin = new System.Windows.Forms.Padding(0, 1, 10, 2);
+            this.button_loadSolutions.Name = "button_loadSolutions";
+            this.button_loadSolutions.Size = new System.Drawing.Size(143, 39);
+            this.button_loadSolutions.Text = "  Load Solutions";
+            this.button_loadSolutions.ToolTipText = "Load all unmanaged solutions from the environment...";
+            this.button_loadSolutions.Click += new System.EventHandler(this.button_loadSolutions_Click);
+            // 
+            // tssSeparator1
+            // 
+            this.tssSeparator1.Name = "tssSeparator1";
+            this.tssSeparator1.Size = new System.Drawing.Size(6, 42);
+            // 
+            // button_Export
+            // 
+            this.button_Export.Enabled = false;
+            this.button_Export.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_Export.Image = ((System.Drawing.Image)(resources.GetObject("button_Export.Image")));
+            this.button_Export.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_Export.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_Export.Name = "button_Export";
+            this.button_Export.Size = new System.Drawing.Size(99, 39);
+            this.button_Export.Text = " Execute ";
+            this.button_Export.ToolTipText = "Export the Solutions";
+            this.button_Export.Click += new System.EventHandler(this.button_Export_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 42);
+            // 
+            // toolStripMenu
+            // 
+            this.toolStripMenu.AutoSize = false;
+            this.toolStripMenu.ImageScalingSize = new System.Drawing.Size(32, 32);
+            this.toolStripMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.button_loadSolutions,
+            this.tssSeparator1,
+            this.button_addAdditionalConnection,
+            this.toolStripSeparator2,
+            this.button_Export,
+            this.toolStripSeparator1,
+            this.button_Settings});
+            this.toolStripMenu.Location = new System.Drawing.Point(0, 0);
+            this.toolStripMenu.Name = "toolStripMenu";
+            this.toolStripMenu.Padding = new System.Windows.Forms.Padding(0, 0, 2, 0);
+            this.toolStripMenu.Size = new System.Drawing.Size(1500, 42);
+            this.toolStripMenu.TabIndex = 4;
+            this.toolStripMenu.Text = "toolStrip1";
+            // 
+            // button_addAdditionalConnection
+            // 
+            this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_addAdditionalConnection.Image = ((System.Drawing.Image)(resources.GetObject("button_addAdditionalConnection.Image")));
+            this.button_addAdditionalConnection.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_addAdditionalConnection.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_addAdditionalConnection.Name = "button_addAdditionalConnection";
+            this.button_addAdditionalConnection.Size = new System.Drawing.Size(170, 39);
+            this.button_addAdditionalConnection.Text = "  Connect to Target";
+            this.button_addAdditionalConnection.ToolTipText = "  Connect to Target";
+            this.button_addAdditionalConnection.Click += new System.EventHandler(this.button_addAdditionalConnection_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 42);
+            // 
+            // button_Settings
+            // 
+            this.button_Settings.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.button_Settings.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_Settings.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.adjustment_32px;
+            this.button_Settings.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_Settings.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_Settings.Name = "button_Settings";
+            this.button_Settings.Size = new System.Drawing.Size(102, 39);
+            this.button_Settings.Text = " Settings";
+            this.button_Settings.Click += new System.EventHandler(this.button_Settings_Click);
+            // 
+            // pictureBox_arrow
+            // 
+            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
+            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox_arrow.ErrorImage = null;
+            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
+            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
+            this.pictureBox_arrow.Name = "pictureBox_arrow";
+            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
+            this.pictureBox_arrow.TabIndex = 16;
+            this.pictureBox_arrow.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
+            // 
+            // flipSwitch_overwrite
+            // 
+            this.flipSwitch_overwrite.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_overwrite.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_overwrite.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_overwrite.IsLocked = false;
+            this.flipSwitch_overwrite.IsOn = false;
+            this.flipSwitch_overwrite.Location = new System.Drawing.Point(300, 130);
+            this.flipSwitch_overwrite.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_overwrite.MarginText = 2;
+            this.flipSwitch_overwrite.Name = "flipSwitch_overwrite";
+            this.flipSwitch_overwrite.Size = new System.Drawing.Size(193, 20);
+            this.flipSwitch_overwrite.SwitchHeight = 18;
+            this.flipSwitch_overwrite.SwitchWidth = 30;
+            this.flipSwitch_overwrite.TabIndex = 24;
+            this.flipSwitch_overwrite.TextOnLeftSide = false;
+            this.flipSwitch_overwrite.Title = "Overwrite Customizations";
+            this.toolTip1.SetToolTip(this.flipSwitch_overwrite, "Overwrite local customizations with the solution component(s) if existing in the " +
+        "target environment.");
+            this.flipSwitch_overwrite.Toggled += new System.EventHandler(this.flipSwitch_overwrite_Toggled);
+            // 
+            // flipSwitch_enableAutomation
+            // 
+            this.flipSwitch_enableAutomation.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_enableAutomation.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_enableAutomation.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_enableAutomation.IsLocked = false;
+            this.flipSwitch_enableAutomation.IsOn = true;
+            this.flipSwitch_enableAutomation.Location = new System.Drawing.Point(300, 105);
+            this.flipSwitch_enableAutomation.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_enableAutomation.MarginText = 2;
+            this.flipSwitch_enableAutomation.Name = "flipSwitch_enableAutomation";
+            this.flipSwitch_enableAutomation.Size = new System.Drawing.Size(154, 20);
+            this.flipSwitch_enableAutomation.SwitchHeight = 18;
+            this.flipSwitch_enableAutomation.SwitchWidth = 30;
+            this.flipSwitch_enableAutomation.TabIndex = 23;
+            this.flipSwitch_enableAutomation.TextOnLeftSide = false;
+            this.flipSwitch_enableAutomation.Title = "Enable Automation";
+            this.toolTip1.SetToolTip(this.flipSwitch_enableAutomation, "Enable Workflows and Plugin-Steps after import of the solution.");
+            this.flipSwitch_enableAutomation.Toggled += new System.EventHandler(this.flipSwitch_enableAutomation_Toggled);
+            // 
+            // flipSwitch_exportUnmanaged
+            // 
+            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_exportUnmanaged.IsLocked = false;
+            this.flipSwitch_exportUnmanaged.IsOn = false;
+            this.flipSwitch_exportUnmanaged.Location = new System.Drawing.Point(15, 130);
+            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_exportUnmanaged.MarginText = 7;
+            this.flipSwitch_exportUnmanaged.Name = "flipSwitch_exportUnmanaged";
+            this.flipSwitch_exportUnmanaged.Size = new System.Drawing.Size(161, 20);
+            this.flipSwitch_exportUnmanaged.SwitchHeight = 18;
+            this.flipSwitch_exportUnmanaged.SwitchWidth = 30;
+            this.flipSwitch_exportUnmanaged.TabIndex = 11;
+            this.flipSwitch_exportUnmanaged.TextOnLeftSide = false;
+            this.flipSwitch_exportUnmanaged.Title = "Export Unmanaged";
+            this.toolTip1.SetToolTip(this.flipSwitch_exportUnmanaged, "Enter a file location for the unmanaged solutions that you want to export");
+            this.flipSwitch_exportUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_exportUnmanaged_Toggled);
+            // 
+            // flipSwitch_exportManaged
+            // 
+            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_exportManaged.IsLocked = false;
+            this.flipSwitch_exportManaged.IsOn = false;
+            this.flipSwitch_exportManaged.Location = new System.Drawing.Point(15, 105);
+            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_exportManaged.MarginText = 7;
+            this.flipSwitch_exportManaged.Name = "flipSwitch_exportManaged";
+            this.flipSwitch_exportManaged.Size = new System.Drawing.Size(144, 20);
+            this.flipSwitch_exportManaged.SwitchHeight = 18;
+            this.flipSwitch_exportManaged.SwitchWidth = 30;
+            this.flipSwitch_exportManaged.TabIndex = 10;
+            this.flipSwitch_exportManaged.TextOnLeftSide = false;
+            this.flipSwitch_exportManaged.Title = "Export Managed";
+            this.toolTip1.SetToolTip(this.flipSwitch_exportManaged, "Enter a file location for the managed solutions that you want to export");
+            this.flipSwitch_exportManaged.Toggled += new System.EventHandler(this.flipSwitch_exportManaged_Toggled);
+            // 
+            // pictureBox_warningUnmanaged
+            // 
+            this.pictureBox_warningUnmanaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningUnmanaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningUnmanaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningUnmanaged.BackgroundImage")));
+            this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningUnmanaged.ErrorImage = null;
+            this.pictureBox_warningUnmanaged.InitialImage = null;
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
+            this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
+            this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningUnmanaged.TabIndex = 26;
+            this.pictureBox_warningUnmanaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningUnmanaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningUnmanaged.Visible = false;
+            // 
+            // pictureBox_warningManaged
+            // 
+            this.pictureBox_warningManaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningManaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningManaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningManaged.BackgroundImage")));
+            this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningManaged.ErrorImage = null;
+            this.pictureBox_warningManaged.InitialImage = null;
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
+            this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
+            this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningManaged.TabIndex = 9;
+            this.pictureBox_warningManaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningManaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningManaged.Visible = false;
+            // 
+            // textBox_commitMessage
+            // 
+            this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_commitMessage.Location = new System.Drawing.Point(906, 104);
+            this.textBox_commitMessage.Multiline = true;
+            this.textBox_commitMessage.Name = "textBox_commitMessage";
+            this.textBox_commitMessage.Size = new System.Drawing.Size(584, 47);
+            this.textBox_commitMessage.TabIndex = 20;
+            this.textBox_commitMessage.Text = "XTB Commit";
+            this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
+            this.textBox_commitMessage.Leave += new System.EventHandler(this.textBox_commitMessage_Leave);
+            // 
+            // label_commitMessage
+            // 
+            this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_commitMessage.Location = new System.Drawing.Point(750, 107);
+            this.label_commitMessage.Name = "label_commitMessage";
+            this.label_commitMessage.Size = new System.Drawing.Size(150, 16);
+            this.label_commitMessage.TabIndex = 22;
+            this.label_commitMessage.Text = "Commit Message";
+            this.label_commitMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // flipSwitch_publishTarget
+            // 
+            this.flipSwitch_publishTarget.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_publishTarget.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_publishTarget.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_publishTarget.IsLocked = false;
+            this.flipSwitch_publishTarget.IsOn = false;
+            this.flipSwitch_publishTarget.Location = new System.Drawing.Point(550, 55);
+            this.flipSwitch_publishTarget.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_publishTarget.MarginText = 7;
+            this.flipSwitch_publishTarget.Name = "flipSwitch_publishTarget";
+            this.flipSwitch_publishTarget.Size = new System.Drawing.Size(160, 20);
+            this.flipSwitch_publishTarget.SwitchHeight = 18;
+            this.flipSwitch_publishTarget.SwitchWidth = 30;
+            this.flipSwitch_publishTarget.TabIndex = 25;
+            this.flipSwitch_publishTarget.TextOnLeftSide = false;
+            this.flipSwitch_publishTarget.Title = "Publish All (Target)";
+            this.flipSwitch_publishTarget.Toggled += new System.EventHandler(this.flipSwitch_publishTarget_Toggled);
+            // 
+            // flipSwitch_pushCommit
+            // 
+            this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_pushCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_pushCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_pushCommit.IsLocked = false;
+            this.flipSwitch_pushCommit.IsOn = false;
+            this.flipSwitch_pushCommit.Location = new System.Drawing.Point(550, 130);
+            this.flipSwitch_pushCommit.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_pushCommit.MarginText = 7;
+            this.flipSwitch_pushCommit.Name = "flipSwitch_pushCommit";
+            this.flipSwitch_pushCommit.Size = new System.Drawing.Size(126, 20);
+            this.flipSwitch_pushCommit.SwitchHeight = 18;
+            this.flipSwitch_pushCommit.SwitchWidth = 30;
+            this.flipSwitch_pushCommit.TabIndex = 19;
+            this.flipSwitch_pushCommit.TextOnLeftSide = false;
+            this.flipSwitch_pushCommit.Title = "Push Commit";
+            this.flipSwitch_pushCommit.Toggled += new System.EventHandler(this.flipSwitch_pushCommit_Toggled);
+            // 
+            // flipSwitch_importUnmanaged
+            // 
+            this.flipSwitch_importUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_importUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_importUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_importUnmanaged.IsLocked = false;
+            this.flipSwitch_importUnmanaged.IsOn = false;
+            this.flipSwitch_importUnmanaged.Location = new System.Drawing.Point(300, 80);
+            this.flipSwitch_importUnmanaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_importUnmanaged.MarginText = 7;
+            this.flipSwitch_importUnmanaged.Name = "flipSwitch_importUnmanaged";
+            this.flipSwitch_importUnmanaged.Size = new System.Drawing.Size(160, 20);
+            this.flipSwitch_importUnmanaged.SwitchHeight = 18;
+            this.flipSwitch_importUnmanaged.SwitchWidth = 30;
+            this.flipSwitch_importUnmanaged.TabIndex = 18;
+            this.flipSwitch_importUnmanaged.TextOnLeftSide = false;
+            this.flipSwitch_importUnmanaged.Title = "Import Unmanaged";
+            this.flipSwitch_importUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_importUnmanaged_Toggled);
+            // 
+            // flipSwitch_importManaged
+            // 
+            this.flipSwitch_importManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_importManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_importManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_importManaged.IsLocked = false;
+            this.flipSwitch_importManaged.IsOn = false;
+            this.flipSwitch_importManaged.Location = new System.Drawing.Point(300, 55);
+            this.flipSwitch_importManaged.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_importManaged.MarginText = 7;
+            this.flipSwitch_importManaged.Name = "flipSwitch_importManaged";
+            this.flipSwitch_importManaged.Size = new System.Drawing.Size(143, 20);
+            this.flipSwitch_importManaged.SwitchHeight = 18;
+            this.flipSwitch_importManaged.SwitchWidth = 30;
+            this.flipSwitch_importManaged.TabIndex = 17;
+            this.flipSwitch_importManaged.TextOnLeftSide = false;
+            this.flipSwitch_importManaged.Title = "Import Managed";
+            this.flipSwitch_importManaged.Toggled += new System.EventHandler(this.flipSwitch_importManaged_Toggled);
+            // 
+            // flipSwitch_gitCommit
+            // 
+            this.flipSwitch_gitCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_gitCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_gitCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_gitCommit.IsLocked = false;
+            this.flipSwitch_gitCommit.IsOn = false;
+            this.flipSwitch_gitCommit.Location = new System.Drawing.Point(550, 105);
+            this.flipSwitch_gitCommit.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_gitCommit.MarginText = 7;
+            this.flipSwitch_gitCommit.Name = "flipSwitch_gitCommit";
+            this.flipSwitch_gitCommit.Size = new System.Drawing.Size(157, 20);
+            this.flipSwitch_gitCommit.SwitchHeight = 18;
+            this.flipSwitch_gitCommit.SwitchWidth = 30;
+            this.flipSwitch_gitCommit.TabIndex = 15;
+            this.flipSwitch_gitCommit.TextOnLeftSide = false;
+            this.flipSwitch_gitCommit.Title = "Create Git Commit";
+            this.flipSwitch_gitCommit.Toggled += new System.EventHandler(this.flipSwitch_gitCommit_Toggled);
+            // 
+            // flipSwitch_publishSource
+            // 
+            this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_publishSource.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_publishSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_publishSource.IsLocked = false;
+            this.flipSwitch_publishSource.IsOn = false;
+            this.flipSwitch_publishSource.Location = new System.Drawing.Point(15, 55);
+            this.flipSwitch_publishSource.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_publishSource.MarginText = 7;
+            this.flipSwitch_publishSource.Name = "flipSwitch_publishSource";
+            this.flipSwitch_publishSource.Size = new System.Drawing.Size(163, 20);
+            this.flipSwitch_publishSource.SwitchHeight = 18;
+            this.flipSwitch_publishSource.SwitchWidth = 30;
+            this.flipSwitch_publishSource.TabIndex = 14;
+            this.flipSwitch_publishSource.TextOnLeftSide = false;
+            this.flipSwitch_publishSource.Title = "Publish All (Source)";
+            this.flipSwitch_publishSource.Toggled += new System.EventHandler(this.flipSwitch_publish_Toggled);
+            // 
+            // flipSwitch_updateVersion
+            // 
+            this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
+            this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_updateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_updateVersion.IsLocked = false;
+            this.flipSwitch_updateVersion.IsOn = false;
+            this.flipSwitch_updateVersion.Location = new System.Drawing.Point(15, 80);
+            this.flipSwitch_updateVersion.Margin = new System.Windows.Forms.Padding(4);
+            this.flipSwitch_updateVersion.MarginText = 7;
+            this.flipSwitch_updateVersion.Name = "flipSwitch_updateVersion";
+            this.flipSwitch_updateVersion.Size = new System.Drawing.Size(154, 20);
+            this.flipSwitch_updateVersion.SwitchHeight = 18;
+            this.flipSwitch_updateVersion.SwitchWidth = 30;
+            this.flipSwitch_updateVersion.TabIndex = 12;
+            this.flipSwitch_updateVersion.TextOnLeftSide = false;
+            this.flipSwitch_updateVersion.Title = "Update Version(s)";
+            this.flipSwitch_updateVersion.Toggled += new System.EventHandler(this.flipSwitch_updateVersion_Toggled);
             // 
             // splitContainer1
             // 
@@ -144,10 +543,10 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll,
             this.button_checkAll,
             this.button_invertCheck,
+            this.toolStripSeparator3,
             this.button_sortAsc,
             this.button_sortDesc,
-            this.toolStripSeparator5,
-            this.toolStripDropDownButton1});
+            this.toolStripSeparator5});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(671, 25);
@@ -206,48 +605,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator5.Name = "toolStripSeparator5";
             this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
             // 
-            // toolStripDropDownButton1
-            // 
-            this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.checkButton_showToolTips,
-            this.toolStripSeparator3,
-            this.checkButton_showFriendlyNames,
-            this.checkButton_showLogicalNames});
-            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
-            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
-            this.toolStripDropDownButton1.Size = new System.Drawing.Size(78, 22);
-            this.toolStripDropDownButton1.Text = "Settings";
-            // 
-            // checkButton_showToolTips
-            // 
-            this.checkButton_showToolTips.CheckOnClick = true;
-            this.checkButton_showToolTips.Name = "checkButton_showToolTips";
-            this.checkButton_showToolTips.Size = new System.Drawing.Size(188, 22);
-            this.checkButton_showToolTips.Text = "Show Tooltips";
-            this.checkButton_showToolTips.CheckStateChanged += new System.EventHandler(this.checkButton_showTooltips_CheckStateChanged);
-            // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(185, 6);
-            // 
-            // checkButton_showFriendlyNames
-            // 
-            this.checkButton_showFriendlyNames.CheckOnClick = true;
-            this.checkButton_showFriendlyNames.Name = "checkButton_showFriendlyNames";
-            this.checkButton_showFriendlyNames.Size = new System.Drawing.Size(188, 22);
-            this.checkButton_showFriendlyNames.Text = "Show Friendly Names";
-            this.checkButton_showFriendlyNames.CheckStateChanged += new System.EventHandler(this.checkButton_showFrinedlyNames_CheckStateChanged);
-            // 
-            // checkButton_showLogicalNames
-            // 
-            this.checkButton_showLogicalNames.CheckOnClick = true;
-            this.checkButton_showLogicalNames.Name = "checkButton_showLogicalNames";
-            this.checkButton_showLogicalNames.Size = new System.Drawing.Size(188, 22);
-            this.checkButton_showLogicalNames.Text = "Show Logical Names";
-            this.checkButton_showLogicalNames.CheckStateChanged += new System.EventHandler(this.checkButton_showLogicalNames_CheckStateChanged);
-            // 
             // listBoxSolutions
             // 
             this.listBoxSolutions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -274,44 +631,13 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
+            this.listBoxSolutions.ShowTooltips = true;
             this.listBoxSolutions.Size = new System.Drawing.Size(665, 580);
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
             this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
-            // 
-            // pictureBox_warningUnmanaged
-            // 
-            this.pictureBox_warningUnmanaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_warningUnmanaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.pictureBox_warningUnmanaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningUnmanaged.BackgroundImage")));
-            this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox_warningUnmanaged.ErrorImage = null;
-            this.pictureBox_warningUnmanaged.InitialImage = null;
-            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
-            this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
-            this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
-            this.pictureBox_warningUnmanaged.TabIndex = 26;
-            this.pictureBox_warningUnmanaged.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_warningUnmanaged, "The file was not exported yet or is out-dated!");
-            this.pictureBox_warningUnmanaged.Visible = false;
-            // 
-            // pictureBox_warningManaged
-            // 
-            this.pictureBox_warningManaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_warningManaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.pictureBox_warningManaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningManaged.BackgroundImage")));
-            this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox_warningManaged.ErrorImage = null;
-            this.pictureBox_warningManaged.InitialImage = null;
-            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
-            this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
-            this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
-            this.pictureBox_warningManaged.TabIndex = 9;
-            this.pictureBox_warningManaged.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_warningManaged, "The file was not exported yet or is out-dated!");
-            this.pictureBox_warningManaged.Visible = false;
             // 
             // label_title
             // 
@@ -416,351 +742,10 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 
-            // label_versionFormat
+            // toolStripSeparator3
             // 
-            this.label_versionFormat.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_versionFormat.Location = new System.Drawing.Point(750, 57);
-            this.label_versionFormat.Name = "label_versionFormat";
-            this.label_versionFormat.Size = new System.Drawing.Size(150, 16);
-            this.label_versionFormat.TabIndex = 9;
-            this.label_versionFormat.Text = "Version Format";
-            this.label_versionFormat.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // textBox_versionFormat
-            // 
-            this.textBox_versionFormat.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.textBox_versionFormat.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_versionFormat.Location = new System.Drawing.Point(906, 53);
-            this.textBox_versionFormat.Name = "textBox_versionFormat";
-            this.textBox_versionFormat.Size = new System.Drawing.Size(150, 23);
-            this.textBox_versionFormat.TabIndex = 8;
-            this.textBox_versionFormat.Text = "YYYY.MM.DD.+";
-            this.toolTip1.SetToolTip(this.textBox_versionFormat, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day\r\n");
-            this.textBox_versionFormat.TextChanged += new System.EventHandler(this.textBox_versionFormat_TextChanged);
-            this.textBox_versionFormat.Leave += new System.EventHandler(this.textBox_versionFormat_Leave);
-            // 
-            // saveFileDialog1
-            // 
-            this.saveFileDialog1.Filter = "Solution files (*.zip|*.zip|All files (*.*)|*.*\"";
-            this.saveFileDialog1.FilterIndex = 0;
-            // 
-            // fileSystemWatcher1
-            // 
-            this.fileSystemWatcher1.EnableRaisingEvents = true;
-            this.fileSystemWatcher1.SynchronizingObject = this;
-            // 
-            // button_loadSolutions
-            // 
-            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_loadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("button_loadSolutions.Image")));
-            this.button_loadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_loadSolutions.Margin = new System.Windows.Forms.Padding(0, 1, 10, 2);
-            this.button_loadSolutions.Name = "button_loadSolutions";
-            this.button_loadSolutions.Size = new System.Drawing.Size(143, 39);
-            this.button_loadSolutions.Text = "  Load Solutions";
-            this.button_loadSolutions.ToolTipText = "Load all unmanaged solutions from the environment...";
-            this.button_loadSolutions.Click += new System.EventHandler(this.button_loadSolutions_Click);
-            // 
-            // tssSeparator1
-            // 
-            this.tssSeparator1.Name = "tssSeparator1";
-            this.tssSeparator1.Size = new System.Drawing.Size(6, 42);
-            // 
-            // button_Export
-            // 
-            this.button_Export.Enabled = false;
-            this.button_Export.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_Export.Image = ((System.Drawing.Image)(resources.GetObject("button_Export.Image")));
-            this.button_Export.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_Export.Margin = new System.Windows.Forms.Padding(10, 1, 0, 2);
-            this.button_Export.Name = "button_Export";
-            this.button_Export.Size = new System.Drawing.Size(99, 39);
-            this.button_Export.Text = " Execute ";
-            this.button_Export.ToolTipText = "Export the Solutions";
-            this.button_Export.Click += new System.EventHandler(this.button_Export_Click);
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 42);
-            // 
-            // toolStripMenu
-            // 
-            this.toolStripMenu.AutoSize = false;
-            this.toolStripMenu.ImageScalingSize = new System.Drawing.Size(32, 32);
-            this.toolStripMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.button_loadSolutions,
-            this.tssSeparator1,
-            this.button_addAdditionalConnection,
-            this.toolStripSeparator2,
-            this.button_Export,
-            this.toolStripSeparator1});
-            this.toolStripMenu.Location = new System.Drawing.Point(0, 0);
-            this.toolStripMenu.Name = "toolStripMenu";
-            this.toolStripMenu.Padding = new System.Windows.Forms.Padding(0, 0, 2, 0);
-            this.toolStripMenu.Size = new System.Drawing.Size(1500, 42);
-            this.toolStripMenu.TabIndex = 4;
-            this.toolStripMenu.Text = "toolStrip1";
-            // 
-            // button_addAdditionalConnection
-            // 
-            this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_addAdditionalConnection.Image = ((System.Drawing.Image)(resources.GetObject("button_addAdditionalConnection.Image")));
-            this.button_addAdditionalConnection.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_addAdditionalConnection.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
-            this.button_addAdditionalConnection.Name = "button_addAdditionalConnection";
-            this.button_addAdditionalConnection.Size = new System.Drawing.Size(170, 39);
-            this.button_addAdditionalConnection.Text = "  Connect to Target";
-            this.button_addAdditionalConnection.ToolTipText = "  Connect to Target";
-            this.button_addAdditionalConnection.Click += new System.EventHandler(this.button_addAdditionalConnection_Click);
-            // 
-            // toolStripSeparator2
-            // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 42);
-            // 
-            // pictureBox_arrow
-            // 
-            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
-            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox_arrow.ErrorImage = null;
-            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
-            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
-            this.pictureBox_arrow.Name = "pictureBox_arrow";
-            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
-            this.pictureBox_arrow.TabIndex = 16;
-            this.pictureBox_arrow.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
-            // 
-            // flipSwitch_overwrite
-            // 
-            this.flipSwitch_overwrite.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_overwrite.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_overwrite.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_overwrite.IsOn = false;
-            this.flipSwitch_overwrite.Location = new System.Drawing.Point(300, 130);
-            this.flipSwitch_overwrite.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_overwrite.MarginText = 2;
-            this.flipSwitch_overwrite.Name = "flipSwitch_overwrite";
-            this.flipSwitch_overwrite.Size = new System.Drawing.Size(193, 20);
-            this.flipSwitch_overwrite.SwitchHeight = 18;
-            this.flipSwitch_overwrite.SwitchWidth = 30;
-            this.flipSwitch_overwrite.TabIndex = 24;
-            this.flipSwitch_overwrite.TextOnLeftSide = false;
-            this.flipSwitch_overwrite.Title = "Overwrite Customizations";
-            this.toolTip1.SetToolTip(this.flipSwitch_overwrite, "Overwrite local customizations with the solution component(s) if existing in the " +
-        "target environment.");
-            this.flipSwitch_overwrite.Toggled += new System.EventHandler(this.flipSwitch_overwrite_Toggled);
-            // 
-            // flipSwitch_enableAutomation
-            // 
-            this.flipSwitch_enableAutomation.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_enableAutomation.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_enableAutomation.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_enableAutomation.IsOn = true;
-            this.flipSwitch_enableAutomation.Location = new System.Drawing.Point(300, 105);
-            this.flipSwitch_enableAutomation.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_enableAutomation.MarginText = 2;
-            this.flipSwitch_enableAutomation.Name = "flipSwitch_enableAutomation";
-            this.flipSwitch_enableAutomation.Size = new System.Drawing.Size(154, 20);
-            this.flipSwitch_enableAutomation.SwitchHeight = 18;
-            this.flipSwitch_enableAutomation.SwitchWidth = 30;
-            this.flipSwitch_enableAutomation.TabIndex = 23;
-            this.flipSwitch_enableAutomation.TextOnLeftSide = false;
-            this.flipSwitch_enableAutomation.Title = "Enable Automation";
-            this.toolTip1.SetToolTip(this.flipSwitch_enableAutomation, "Enable Workflows and Plugin-Steps after import of the solution.");
-            this.flipSwitch_enableAutomation.Toggled += new System.EventHandler(this.flipSwitch_enableAutomation_Toggled);
-            // 
-            // flipSwitch_exportUnmanaged
-            // 
-            this.flipSwitch_exportUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_exportUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_exportUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_exportUnmanaged.IsOn = false;
-            this.flipSwitch_exportUnmanaged.Location = new System.Drawing.Point(15, 130);
-            this.flipSwitch_exportUnmanaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_exportUnmanaged.MarginText = 7;
-            this.flipSwitch_exportUnmanaged.Name = "flipSwitch_exportUnmanaged";
-            this.flipSwitch_exportUnmanaged.Size = new System.Drawing.Size(161, 20);
-            this.flipSwitch_exportUnmanaged.SwitchHeight = 18;
-            this.flipSwitch_exportUnmanaged.SwitchWidth = 30;
-            this.flipSwitch_exportUnmanaged.TabIndex = 11;
-            this.flipSwitch_exportUnmanaged.TextOnLeftSide = false;
-            this.flipSwitch_exportUnmanaged.Title = "Export Unmanaged";
-            this.toolTip1.SetToolTip(this.flipSwitch_exportUnmanaged, "Enter a file location for the unmanaged solutions that you want to export");
-            this.flipSwitch_exportUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_exportUnmanaged_Toggled);
-            // 
-            // flipSwitch_exportManaged
-            // 
-            this.flipSwitch_exportManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_exportManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_exportManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_exportManaged.IsOn = false;
-            this.flipSwitch_exportManaged.Location = new System.Drawing.Point(15, 105);
-            this.flipSwitch_exportManaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_exportManaged.MarginText = 7;
-            this.flipSwitch_exportManaged.Name = "flipSwitch_exportManaged";
-            this.flipSwitch_exportManaged.Size = new System.Drawing.Size(144, 20);
-            this.flipSwitch_exportManaged.SwitchHeight = 18;
-            this.flipSwitch_exportManaged.SwitchWidth = 30;
-            this.flipSwitch_exportManaged.TabIndex = 10;
-            this.flipSwitch_exportManaged.TextOnLeftSide = false;
-            this.flipSwitch_exportManaged.Title = "Export Managed";
-            this.toolTip1.SetToolTip(this.flipSwitch_exportManaged, "Enter a file location for the managed solutions that you want to export");
-            this.flipSwitch_exportManaged.Toggled += new System.EventHandler(this.flipSwitch_exportManaged_Toggled);
-            // 
-            // textBox_commitMessage
-            // 
-            this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_commitMessage.Location = new System.Drawing.Point(906, 104);
-            this.textBox_commitMessage.Multiline = true;
-            this.textBox_commitMessage.Name = "textBox_commitMessage";
-            this.textBox_commitMessage.Size = new System.Drawing.Size(584, 47);
-            this.textBox_commitMessage.TabIndex = 20;
-            this.textBox_commitMessage.Text = "XTB Commit";
-            this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
-            this.textBox_commitMessage.Leave += new System.EventHandler(this.textBox_commitMessage_Leave);
-            // 
-            // label_commitMessage
-            // 
-            this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_commitMessage.Location = new System.Drawing.Point(750, 107);
-            this.label_commitMessage.Name = "label_commitMessage";
-            this.label_commitMessage.Size = new System.Drawing.Size(150, 16);
-            this.label_commitMessage.TabIndex = 22;
-            this.label_commitMessage.Text = "Commit Message";
-            this.label_commitMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // flipSwitch_pushCommit
-            // 
-            this.flipSwitch_pushCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_pushCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_pushCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_pushCommit.IsOn = false;
-            this.flipSwitch_pushCommit.Location = new System.Drawing.Point(550, 130);
-            this.flipSwitch_pushCommit.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_pushCommit.MarginText = 7;
-            this.flipSwitch_pushCommit.Name = "flipSwitch_pushCommit";
-            this.flipSwitch_pushCommit.Size = new System.Drawing.Size(126, 20);
-            this.flipSwitch_pushCommit.SwitchHeight = 18;
-            this.flipSwitch_pushCommit.SwitchWidth = 30;
-            this.flipSwitch_pushCommit.TabIndex = 19;
-            this.flipSwitch_pushCommit.TextOnLeftSide = false;
-            this.flipSwitch_pushCommit.Title = "Push Commit";
-            this.flipSwitch_pushCommit.Toggled += new System.EventHandler(this.flipSwitch_pushCommit_Toggled);
-            // 
-            // flipSwitch_importUnmanaged
-            // 
-            this.flipSwitch_importUnmanaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_importUnmanaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_importUnmanaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_importUnmanaged.IsOn = false;
-            this.flipSwitch_importUnmanaged.Location = new System.Drawing.Point(300, 80);
-            this.flipSwitch_importUnmanaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_importUnmanaged.MarginText = 7;
-            this.flipSwitch_importUnmanaged.Name = "flipSwitch_importUnmanaged";
-            this.flipSwitch_importUnmanaged.Size = new System.Drawing.Size(160, 20);
-            this.flipSwitch_importUnmanaged.SwitchHeight = 18;
-            this.flipSwitch_importUnmanaged.SwitchWidth = 30;
-            this.flipSwitch_importUnmanaged.TabIndex = 18;
-            this.flipSwitch_importUnmanaged.TextOnLeftSide = false;
-            this.flipSwitch_importUnmanaged.Title = "Import Unmanaged";
-            this.flipSwitch_importUnmanaged.Toggled += new System.EventHandler(this.flipSwitch_importUnmanaged_Toggled);
-            // 
-            // flipSwitch_importManaged
-            // 
-            this.flipSwitch_importManaged.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_importManaged.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_importManaged.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_importManaged.IsOn = false;
-            this.flipSwitch_importManaged.Location = new System.Drawing.Point(300, 55);
-            this.flipSwitch_importManaged.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_importManaged.MarginText = 7;
-            this.flipSwitch_importManaged.Name = "flipSwitch_importManaged";
-            this.flipSwitch_importManaged.Size = new System.Drawing.Size(143, 20);
-            this.flipSwitch_importManaged.SwitchHeight = 18;
-            this.flipSwitch_importManaged.SwitchWidth = 30;
-            this.flipSwitch_importManaged.TabIndex = 17;
-            this.flipSwitch_importManaged.TextOnLeftSide = false;
-            this.flipSwitch_importManaged.Title = "Import Managed";
-            this.flipSwitch_importManaged.Toggled += new System.EventHandler(this.flipSwitch_importManaged_Toggled);
-            // 
-            // flipSwitch_gitCommit
-            // 
-            this.flipSwitch_gitCommit.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_gitCommit.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_gitCommit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_gitCommit.IsOn = false;
-            this.flipSwitch_gitCommit.Location = new System.Drawing.Point(550, 105);
-            this.flipSwitch_gitCommit.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_gitCommit.MarginText = 7;
-            this.flipSwitch_gitCommit.Name = "flipSwitch_gitCommit";
-            this.flipSwitch_gitCommit.Size = new System.Drawing.Size(157, 20);
-            this.flipSwitch_gitCommit.SwitchHeight = 18;
-            this.flipSwitch_gitCommit.SwitchWidth = 30;
-            this.flipSwitch_gitCommit.TabIndex = 15;
-            this.flipSwitch_gitCommit.TextOnLeftSide = false;
-            this.flipSwitch_gitCommit.Title = "Create Git Commit";
-            this.flipSwitch_gitCommit.Toggled += new System.EventHandler(this.flipSwitch_gitCommit_Toggled);
-            // 
-            // flipSwitch_publishSource
-            // 
-            this.flipSwitch_publishSource.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_publishSource.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_publishSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_publishSource.IsOn = false;
-            this.flipSwitch_publishSource.Location = new System.Drawing.Point(15, 55);
-            this.flipSwitch_publishSource.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_publishSource.MarginText = 7;
-            this.flipSwitch_publishSource.Name = "flipSwitch_publishSource";
-            this.flipSwitch_publishSource.Size = new System.Drawing.Size(163, 20);
-            this.flipSwitch_publishSource.SwitchHeight = 18;
-            this.flipSwitch_publishSource.SwitchWidth = 30;
-            this.flipSwitch_publishSource.TabIndex = 14;
-            this.flipSwitch_publishSource.TextOnLeftSide = false;
-            this.flipSwitch_publishSource.Title = "Publish All (Source)";
-            this.flipSwitch_publishSource.Toggled += new System.EventHandler(this.flipSwitch_publish_Toggled);
-            // 
-            // flipSwitch_updateVersion
-            // 
-            this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_updateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_updateVersion.IsOn = false;
-            this.flipSwitch_updateVersion.Location = new System.Drawing.Point(15, 80);
-            this.flipSwitch_updateVersion.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_updateVersion.MarginText = 7;
-            this.flipSwitch_updateVersion.Name = "flipSwitch_updateVersion";
-            this.flipSwitch_updateVersion.Size = new System.Drawing.Size(154, 20);
-            this.flipSwitch_updateVersion.SwitchHeight = 18;
-            this.flipSwitch_updateVersion.SwitchWidth = 30;
-            this.flipSwitch_updateVersion.TabIndex = 12;
-            this.flipSwitch_updateVersion.TextOnLeftSide = false;
-            this.flipSwitch_updateVersion.Title = "Update Version(s)";
-            this.flipSwitch_updateVersion.Toggled += new System.EventHandler(this.flipSwitch_updateVersion_Toggled);
-            // 
-            // flipSwitch_publishTarget
-            // 
-            this.flipSwitch_publishTarget.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_publishTarget.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_publishTarget.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_publishTarget.IsOn = false;
-            this.flipSwitch_publishTarget.Location = new System.Drawing.Point(550, 55);
-            this.flipSwitch_publishTarget.Margin = new System.Windows.Forms.Padding(4);
-            this.flipSwitch_publishTarget.MarginText = 7;
-            this.flipSwitch_publishTarget.Name = "flipSwitch_publishTarget";
-            this.flipSwitch_publishTarget.Size = new System.Drawing.Size(160, 20);
-            this.flipSwitch_publishTarget.SwitchHeight = 18;
-            this.flipSwitch_publishTarget.SwitchWidth = 30;
-            this.flipSwitch_publishTarget.TabIndex = 25;
-            this.flipSwitch_publishTarget.TextOnLeftSide = false;
-            this.flipSwitch_publishTarget.Title = "Publish All (Target)";
-            this.flipSwitch_publishTarget.Toggled += new System.EventHandler(this.flipSwitch_publishTarget_Toggled);
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
             // 
             // BulkSolutionExporter_PluginControl
             // 
@@ -787,6 +772,12 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Name = "BulkSolutionExporter_PluginControl";
             this.Size = new System.Drawing.Size(1500, 800);
             this.Load += new System.EventHandler(this.OnPluginControl_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).EndInit();
+            this.toolStripMenu.ResumeLayout(false);
+            this.toolStripMenu.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).EndInit();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
@@ -795,12 +786,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.ResumeLayout(false);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningUnmanaged)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_warningManaged)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).EndInit();
-            this.toolStripMenu.ResumeLayout(false);
-            this.toolStripMenu.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -849,15 +834,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.Panel panelSeparator;
 		private FlipSwitch flipSwitch_publishTarget;
 		private System.Windows.Forms.ToolStripButton button_invertCheck;
-		private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
-		private System.Windows.Forms.ToolStripMenuItem checkButton_showLogicalNames;
 		private System.Windows.Forms.ToolStripButton button_sortAsc;
 		private System.Windows.Forms.ToolStripButton button_sortDesc;
 		private System.Windows.Forms.PictureBox pictureBox_warningManaged;
 		private System.Windows.Forms.PictureBox pictureBox_warningUnmanaged;
-		private System.Windows.Forms.ToolStripMenuItem checkButton_showToolTips;
+		private System.Windows.Forms.ToolStripButton button_Settings;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-		private System.Windows.Forms.ToolStripMenuItem checkButton_showFriendlyNames;
 	}
 }

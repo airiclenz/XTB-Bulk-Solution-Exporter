@@ -8,12 +8,15 @@
 - allow execution of powershell at any point in the execution flow
 - allow sorting of all columns
 - allow for custom text size in solution list
+- export solution version as *.csv file
+- allow for multiple target envionments
 
 
 ## Added in Release 2024.12.<mark>XX</mark>
 
 - grab import error xml and format it properly in logs
 - unify logging so it is formatted the same everywhere
+- add *.json file to solution storage with exported version information.
  
 ## Added in Release 2024.12.11
 

@@ -36,6 +36,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		ExportMetadata("SecondaryFontColor", "Gray")]
 	public class BulkSolutionExporter_Plugin : PluginBase
 	{
+
+		public const string JsonSettingsFileName = "exported_versions.json";
+
+
+		// ============================================================================
 		public override IXrmToolBoxPluginControl GetControl()
 		{
 			return new BulkSolutionExporter_PluginControl();

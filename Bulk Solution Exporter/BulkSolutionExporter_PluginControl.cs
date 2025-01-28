@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
@@ -6,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Windows.Forms;
+using System.Windows.Media.Animation;
+using System.Xml.Serialization;
 using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
@@ -14,6 +17,7 @@ using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using Newtonsoft.Json;
 using XrmToolBox.Extensibility;
 
 
@@ -110,16 +114,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			var isManagedVersionOutdated =
-				_currentSolutionConfig.ExportedVersionNumberManaged != _currentSolution.Version.ToString() &&
-				!string.IsNullOrWhiteSpace(_currentSolutionConfig.FileNameManaged);
+			// TODO
 
-			var isUnmanagedVersionOutdated =
-				_currentSolutionConfig.ExportedVersionNumberUnmanaged != _currentSolution.Version.ToString() &&
-				!string.IsNullOrWhiteSpace(_currentSolutionConfig.FileNameUnmanaged);
-
-			pictureBox_warningManaged.Visible = isManagedVersionOutdated;
-			pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
+			//pictureBox_warningManaged.Visible = isManagedVersionOutdated;
+			//pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
 		}
 
 
@@ -159,7 +157,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void UpdateAllVersionNumbers()
+		private void UpdatecheckedVersionNumbers()
 		{
 			if (!flipSwitch_updateVersion.IsOn ||
 				listBoxSolutions.CheckedItems.Count == 0)
@@ -194,7 +192,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExportAllSolutions()
+		private void ExportCheckedSolutions()
 		{
 			if (flipSwitch_exportManaged.IsOff &&
 				flipSwitch_exportUnmanaged.IsOff)
@@ -229,8 +227,88 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 		}
 
+
 		// ============================================================================
-		private void ImportAllSolutions()
+		private void SaveVersionJson(
+			string exportedFilePath,
+			Solution solution,
+			bool isManaged)
+		{
+			var exportParth =
+				Path.GetDirectoryName(
+					exportedFilePath);
+
+			var jsonFilePath =
+				Path.Combine(
+					exportParth,
+					BulkSolutionExporter_Plugin.JsonSettingsFileName);
+
+			var exportedSolutions = new ExportedSolutionVersions();
+
+			if (File.Exists(jsonFilePath))
+			{
+				string json = File.ReadAllText(jsonFilePath);
+				exportedSolutions = JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
+			}
+
+			var found = false;
+			var fileName = Path.GetFileName(exportedFilePath);
+
+			if (isManaged)
+			{
+				for (int i = 0; i < exportedSolutions.Managed.Count; i++)
+				{
+					if (exportedSolutions.Managed[i].SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+						exportedSolutions.Managed[i].FileName == fileName)
+					{
+						exportedSolutions.Managed[i].Version = solution.Version.ToString();
+						found = true;
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < exportedSolutions.Unmanaged.Count; i++)
+				{
+					if (exportedSolutions.Unmanaged[i].SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+						exportedSolutions.Unmanaged[i].FileName == fileName)
+					{
+						exportedSolutions.Unmanaged[i].Version = solution.Version.ToString();
+						found = true;
+					}
+				}
+			}
+
+			if (!found)
+			{
+				var newExportSolution = new ExportedSolution
+				{
+					SolutionId = solution.SolutionId.ToString().ToLower(),
+					FileName = fileName,
+					Version = solution.Version.ToString(),
+					LogicalSolutionName = solution.UniqueName
+
+				};
+
+				if (isManaged)
+				{
+					exportedSolutions.Managed.Add(newExportSolution);
+				}
+				else
+				{
+					exportedSolutions.Unmanaged.Add(newExportSolution);
+				}
+			}
+
+			var settings = new JsonSerializerSettings();
+			settings.Formatting = Formatting.Indented;
+			string outputJson = JsonConvert.SerializeObject(exportedSolutions, settings);
+			File.WriteAllText(jsonFilePath, outputJson);
+		}
+
+
+		// ============================================================================
+		private void ImportCheckedSolutions()
 		{
 			if (_targetServiceClient == null ||
 				(
@@ -366,19 +444,16 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("|   Exported to file: " + filePath);
 			Log("|   Duration: " + duration);
 
-			if (isManaged)
+
+			if (_settings.SaveVersionJson)
 			{
-				configToBeUpdated.ExportedVersionNumberManaged =
-					solution.Version.ToString();
-			}
-			else
-			{
-				configToBeUpdated.ExportedVersionNumberUnmanaged =
-					solution.Version.ToString();
+				SaveVersionJson(
+					filePath,
+					solution,
+					isManaged);
 			}
 
-			_settings.UpdateSolutionConfiguration(configToBeUpdated);
-			SaveSettings();
+
 		}
 
 
@@ -1025,9 +1100,46 @@ namespace Com.AiricLenz.XTB.Plugin
 			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
 			var hasFileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
 
+			var managedUpToDate = true;
+			var unmanagedUpToDate = true;
+
+
+			if (_settings.SaveVersionJson)
+			{
+				if (hasFileManaged)
+				{
+					var loadedManaged =
+						ExportedSolutionVersions.TryLoadExportedSolution(
+							config.FileNameManaged,
+							solution,
+							out var exportedSolutionManaged);
+
+					if (loadedManaged)
+					{
+						managedUpToDate =
+							exportedSolutionManaged.Version == solution.Version.ToString();
+					}
+				}
+
+				if (hasFileUnmanaged)
+				{
+					var loadedUnmanaged =
+						ExportedSolutionVersions.TryLoadExportedSolution(
+							config.FileNameManaged,
+							solution,
+							out var exportedSolutionUnmanaged);
+
+					if (loadedUnmanaged)
+					{
+						unmanagedUpToDate =
+							exportedSolutionUnmanaged.Version == solution.Version.ToString();
+					}
+				}
+			}
+
 			var isVersionOutdated =
-				((solution.Version.ToString() != config.ExportedVersionNumberManaged) && hasFileManaged) ||
-				((solution.Version.ToString() != config.ExportedVersionNumberUnmanaged) && hasFileUnmanaged);
+				!managedUpToDate ||
+				!unmanagedUpToDate;
 
 
 			if (hasFileManaged)
@@ -1125,6 +1237,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateColumns()
 		{
+			if (_settings == null)
+			{
+				return;
+			}
 
 			var colFriendlyName =
 				new ColumnDefinition
@@ -1132,8 +1248,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					Header = "Solution Name",
 					PropertyName = "FriendlyName",
 					TooltipText = "The human readable friendly-name of the solution.",
-					Width = (checkButton_showLogicalNames.Checked ? "55%" : "100%"),
-					Enabled = checkButton_showFriendlyNames.Checked,
+					Width = (_settings.ShowLogicalSolutionNames ? "55%" : "100%"),
+					Enabled = _settings.ShowFriendlySolutionNames
 				};
 
 			var colLogicalName =
@@ -1142,8 +1258,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					Header = "Logical Name",
 					PropertyName = "UniqueName",
 					TooltipText = "The logical-name of the solution.",
-					Width = (checkButton_showFriendlyNames.Checked ? "45%" : "100%"),
-					Enabled = checkButton_showLogicalNames.Checked,
+					Width = (_settings.ShowFriendlySolutionNames ? "45%" : "100%"),
+					Enabled = _settings.ShowLogicalSolutionNames,
 				};
 
 			var colVersion =
@@ -1321,10 +1437,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateGitOptionsVisibility();
 
 				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
-				checkButton_showToolTips.Checked = _settings.ShowToolTips;
-
-				checkButton_showFriendlyNames.Checked = _settings.ShowFriendlySolutionNames;
-				checkButton_showLogicalNames.Checked = _settings.ShowLogicalSolutionNames;
 
 				_codeUpdate = false;
 			}
@@ -1769,10 +1881,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				Work = (worker, args) =>
 				{
 					PublishAll(Service, flipSwitch_publishSource.IsOn);
-					UpdateAllVersionNumbers();
-					ExportAllSolutions();
+					UpdatecheckedVersionNumbers();
+					ExportCheckedSolutions();
 					HandleGit();
-					ImportAllSolutions();
+					ImportCheckedSolutions();
 					PublishAll(_targetServiceClient, flipSwitch_publishTarget.IsOn);
 
 					args.Result = null;
@@ -1877,55 +1989,25 @@ namespace Com.AiricLenz.XTB.Plugin
 			SaveSettings();
 		}
 
-		// ============================================================================
-		private void checkButton_showTooltips_CheckStateChanged(object sender, EventArgs e)
-		{
-			listBoxSolutions.ShowTooltips = checkButton_showToolTips.Checked;
 
-			_settings.ShowToolTips = checkButton_showToolTips.Checked;
+		// ============================================================================
+		private void button_Settings_Click(
+			object sender,
+			EventArgs e)
+		{
+			SettingsForm settingsForm = new SettingsForm();
+			settingsForm.Settings = _settings;
+			settingsForm.ShowDialog();
+			_settings = settingsForm.Settings;
+
 			SaveSettings();
-
-
-		}
-
-		// ============================================================================
-		private void checkButton_showFrinedlyNames_CheckStateChanged(object sender, EventArgs e)
-		{
-			if (checkButton_showFriendlyNames.Checked == false &&
-				checkButton_showLogicalNames.Checked == false)
-			{
-				checkButton_showLogicalNames.Checked = true;
-				_settings.ShowLogicalSolutionNames = true;
-			}
-
 			UpdateColumns();
-
-			_settings.ShowFriendlySolutionNames = checkButton_showFriendlyNames.Checked;
-			SaveSettings();
-		}
-
-		// ============================================================================
-		private void checkButton_showLogicalNames_CheckStateChanged(object sender, EventArgs e)
-		{
-			if (checkButton_showFriendlyNames.Checked == false &&
-				checkButton_showLogicalNames.Checked == false)
-			{
-				checkButton_showFriendlyNames.Checked = true;
-				_settings.ShowFriendlySolutionNames = true;
-			}
-
-			UpdateColumns();
-
-			_settings.ShowLogicalSolutionNames = checkButton_showLogicalNames.Checked;
-			SaveSettings();
+			UpdateSolutionList();
 		}
 
 
 
 		#endregion
-
-
-
 
 
 	}

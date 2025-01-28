@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Markup;
-using Com.AiricLenz.Extentions;
-using Com.AiricLenz.XTB.Components;
 using Microsoft.Xrm.Sdk;
+using Newtonsoft.Json;
 
 
 // ============================================================================
@@ -33,18 +26,23 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonProperty("solution_id")]
 		public Guid SolutionId
 		{
 			get; set;
 		}
 
+
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonProperty("unique_name")]
 		public string UniqueName
 		{
 			get; set;
 		}
 
+
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public string FriendlyName
 		{
 			get
@@ -59,6 +57,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonProperty("version")]
 		public Version Version
 		{
 			get
@@ -73,6 +72,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public string SolutionIdentifier
 		{
 			get
@@ -82,6 +82,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public int SortingIndex
 		{
 			get
@@ -95,6 +96,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public Bitmap FileStatusImage
 		{
 			get
@@ -108,6 +110,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		}
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public Bitmap FileVersionState
 		{
 			get
@@ -122,6 +125,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[JsonIgnore]
 		public Bitmap TargetVersionState
 		{
 			get
@@ -133,6 +137,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				_targetVersionState = value;
 			}
 		}
+
 
 
 		// ============================================================================
@@ -168,7 +173,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			Guid connectionGuid,
 			int friendlyNameLength = 40)
 		{
-			
+
 
 			if (record == null)
 			{
