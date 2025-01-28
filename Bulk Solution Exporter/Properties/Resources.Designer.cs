@@ -63,6 +63,16 @@ namespace Com.AiricLenz.XTB.Plugin.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap adjustment_32px {
+            get {
+                object obj = ResourceManager.GetObject("adjustment.32px", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap FileStatus_MU {
             get {
                 object obj = ResourceManager.GetObject("FileStatus_MU", resourceCulture);

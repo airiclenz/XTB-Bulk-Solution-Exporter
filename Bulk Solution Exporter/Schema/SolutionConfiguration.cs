@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 
 // ============================================================================
@@ -48,20 +43,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		{
 			get; set;
 		}
-
-		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public string ExportedVersionNumberManaged
-		{
-			get; set;
-		}
-
-		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		public string ExportedVersionNumberUnmanaged
-		{
-			get; set;
-		}
-
-
 
 
 		// ============================================================================
