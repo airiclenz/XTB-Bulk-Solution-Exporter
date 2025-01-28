@@ -9,6 +9,11 @@
 - grab import error xml and format it properly in logs
 - allow sorting of all columns
 - allow for custom text size in solution list
+- export solution version as *.csv file
+- add *.json file to solution storage with exported version information.
+  This needs to be a setting too to allow disabling.
+  When not enabled, version warnings will not be shown
+
 
 
 ## Added in Release 2024.12.<mark>XX</mark>
