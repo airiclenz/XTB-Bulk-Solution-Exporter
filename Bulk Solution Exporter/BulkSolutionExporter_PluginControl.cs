@@ -536,9 +536,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			catch (FaultException ex)
 			{
+				
+
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
-						ex.Message);
+						ex.Message,
+						"|   ");
 
 				Log("|   " + errorMessage);
 
@@ -548,7 +551,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
-						ex.Message);
+						ex.Message,
+						"|   ");
 
 				Log("|   " + errorMessage);
 

@@ -16,7 +16,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 		// ============================================================================
 		public static string FormatErrorStringWithXml(
-			string errorString)
+			string errorString,
+			string currentIndent = "")
 		{
 			// Use a regex to extract the XML portion
 			var match = Regex.Match(
@@ -60,18 +61,14 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 			// Replace the original XML snippet with the formatted version
 			string result = errorString.Replace(xmlContent, formattedXml);
-
+			
 			result = result.Replace(
 				"Some dependencies are missing. ",
-				"Some dependencies are missing." + Environment.NewLine);
+				"Some dependencies are missing." + Environment.NewLine + currentIndent);
 
 			result = result.Replace(
 				"The missing dependencies are :",
-				"The missing dependencies are:" + Environment.NewLine);
-
-
-
-			// Some dependencies are missing. The missing dependencies are : 
+				"The missing dependencies are:" + Environment.NewLine + currentIndent);
 
 			return result;
 		}

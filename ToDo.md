@@ -6,13 +6,13 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
-- grab import error xml and format it properly in logs
 - allow sorting of all columns
 - allow for custom text size in solution list
 
 
 ## Added in Release 2024.12.<mark>XX</mark>
 
+- grab import error xml and format it properly in logs
 - unify logging so it is formatted the same everywhere
  
 ## Added in Release 2024.12.11
