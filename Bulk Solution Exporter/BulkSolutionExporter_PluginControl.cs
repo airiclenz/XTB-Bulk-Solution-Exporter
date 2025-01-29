@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
@@ -658,7 +659,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			catch (FaultException ex)
 			{
-				
+
 
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
@@ -1187,7 +1188,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						managedUpToDate = managedSolutionFileExists;
 					}
 				}
-				
+
 
 
 				if (hasFileUnmanaged)
@@ -1323,7 +1324,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					PropertyName = "FriendlyName",
 					TooltipText = "The human readable friendly-name of the solution.",
 					Width = (_settings.ShowLogicalSolutionNames ? "55%" : "100%"),
-					Enabled = _settings.ShowFriendlySolutionNames
+					Enabled = _settings.ShowFriendlySolutionNames,
+					IsSortable = true,
 				};
 
 			var colLogicalName =
@@ -1334,6 +1336,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					TooltipText = "The logical-name of the solution.",
 					Width = (_settings.ShowFriendlySolutionNames ? "45%" : "100%"),
 					Enabled = _settings.ShowLogicalSolutionNames,
+					IsSortable = true,
 				};
 
 			var colVersion =
@@ -1346,6 +1349,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						"in the origin environment.",
 					Width = "130px",
 					Enabled = true,
+					IsSortable = true,
 				};
 
 			var colTargetVersionState =
@@ -1359,6 +1363,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						"or if the version numbers match up between origin- and target environment.",
 					Width = "50px",
 					Enabled = _targetServiceClient != null,
+					IsSortable = false,
 				};
 
 			var colFileStatusImage =
@@ -1371,6 +1376,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						"unmanaged (U) file has/have been defined.",
 					Width = "45px",
 					Enabled = true,
+					IsSortable = false,
 				};
 
 			var colFileVersionState =
@@ -1383,6 +1389,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						"is different from the one that was downloaded last.",
 					Width = "40px",
 					Enabled = true,
+					IsSortable = false,
 				};
 
 			listBoxSolutions.Columns =
@@ -1442,6 +1449,50 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_enableAutomation.Enabled = optionEnabled;
 			flipSwitch_overwrite.Enabled = optionEnabled;
 			flipSwitch_publishTarget.Enabled = optionEnabled;
+		}
+
+
+		// ============================================================================
+		private void ExportSolutionCsv(
+			string targetFileName)
+		{
+
+			var separator = ",";
+			var targetConnected = _targetServiceClient == null;
+			var exportSelectedOnly = listBoxSolutions.CheckedItems.Count > 0;
+
+			var resultCsv =
+				"Unique Name, Solution Guid, Version" + Environment.NewLine;
+
+			foreach (var listItem in listBoxSolutions.Items)
+			{
+				var newLine = string.Empty;
+				var solution = listItem.ItemObject as Solution;
+
+				if (exportSelectedOnly)
+				{
+					if (listItem.IsChecked)
+					{
+						newLine =
+							solution.UniqueName + separator +
+							solution.SolutionId + separator +
+							solution.Version.ToString() + Environment.NewLine;
+
+						resultCsv += newLine;
+					}
+				}
+				else
+				{
+					newLine =
+						solution.UniqueName + separator +
+						solution.SolutionId + separator +
+						solution.Version.ToString() + Environment.NewLine;
+
+					resultCsv += newLine;
+				}
+			}
+
+			File.WriteAllText(targetFileName, resultCsv);
 		}
 
 
@@ -1559,7 +1610,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				_currentConnectionGuid = detail.ConnectionId.Value;
 
-				if (_settings != null && detail != null)
+				if (_settings != null &&
+					detail != null)
 				{
 					_settings.LastUsedOrganizationWebappUrl = detail.WebApplicationUrl;
 					LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
@@ -1851,6 +1903,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			saveFileDialog1.Title = "Save Managed file as...";
+			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
 
 			if (!string.IsNullOrWhiteSpace(textBox_managed.Text))
 			{
@@ -1887,6 +1941,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			saveFileDialog1.Title = "Save Unmanaged file as...";
+			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
 
 			if (!string.IsNullOrWhiteSpace(textBox_unmanaged.Text))
 			{
@@ -2080,8 +2136,23 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		private void button_exportCsv_Click(object sender, EventArgs e)
+		{
+			saveFileDialog1.Title = "Save solution information...";
+			saveFileDialog1.FileName = "Solution Information.csv";
+			saveFileDialog1.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
+
+			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+			{
+				ExportSolutionCsv(saveFileDialog1.FileName);
+			}
+		}
+
 
 		#endregion
+
 
 
 	}

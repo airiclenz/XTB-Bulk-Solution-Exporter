@@ -336,6 +336,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bulk solution exporter.ico" />
+    <None Include="Resources\export.16px.png" />
     <None Include="Resources\adjustment.32px.png" />
     <None Include="Resources\missmatch.png" />
     <None Include="Resources\missing.png" />

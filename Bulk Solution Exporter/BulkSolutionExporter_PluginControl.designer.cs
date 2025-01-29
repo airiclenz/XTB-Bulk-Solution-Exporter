@@ -37,20 +37,20 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_versionFormat = new System.Windows.Forms.TextBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.fileSystemWatcher1 = new System.IO.FileSystemWatcher();
-            this.button_loadSolutions = new System.Windows.Forms.ToolStripButton();
             this.tssSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.button_Export = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripMenu = new System.Windows.Forms.ToolStrip();
+            this.button_loadSolutions = new System.Windows.Forms.ToolStripButton();
             this.button_addAdditionalConnection = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.button_Export = new System.Windows.Forms.ToolStripButton();
             this.button_Settings = new System.Windows.Forms.ToolStripButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
             this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
             this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
             this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
@@ -68,9 +68,11 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
             this.button_checkAll = new System.Windows.Forms.ToolStripButton();
             this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
             this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.button_exportCsv = new System.Windows.Forms.ToolStripButton();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
@@ -81,7 +83,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.label_Managed = new System.Windows.Forms.Label();
             this.textBox_unmanaged = new System.Windows.Forms.TextBox();
             this.textBox_managed = new System.Windows.Forms.TextBox();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
@@ -120,7 +121,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // saveFileDialog1
             // 
-            this.saveFileDialog1.Filter = "Solution files (*.zip|*.zip|All files (*.*)|*.*\"";
+            this.saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*\"";
             this.saveFileDialog1.FilterIndex = 0;
             // 
             // fileSystemWatcher1
@@ -128,35 +129,10 @@ namespace Com.AiricLenz.XTB.Plugin
             this.fileSystemWatcher1.EnableRaisingEvents = true;
             this.fileSystemWatcher1.SynchronizingObject = this;
             // 
-            // button_loadSolutions
-            // 
-            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_loadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("button_loadSolutions.Image")));
-            this.button_loadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_loadSolutions.Margin = new System.Windows.Forms.Padding(0, 1, 10, 2);
-            this.button_loadSolutions.Name = "button_loadSolutions";
-            this.button_loadSolutions.Size = new System.Drawing.Size(143, 39);
-            this.button_loadSolutions.Text = "  Load Solutions";
-            this.button_loadSolutions.ToolTipText = "Load all unmanaged solutions from the environment...";
-            this.button_loadSolutions.Click += new System.EventHandler(this.button_loadSolutions_Click);
-            // 
             // tssSeparator1
             // 
             this.tssSeparator1.Name = "tssSeparator1";
             this.tssSeparator1.Size = new System.Drawing.Size(6, 42);
-            // 
-            // button_Export
-            // 
-            this.button_Export.Enabled = false;
-            this.button_Export.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_Export.Image = ((System.Drawing.Image)(resources.GetObject("button_Export.Image")));
-            this.button_Export.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_Export.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
-            this.button_Export.Name = "button_Export";
-            this.button_Export.Size = new System.Drawing.Size(99, 39);
-            this.button_Export.Text = " Execute ";
-            this.button_Export.ToolTipText = "Export the Solutions";
-            this.button_Export.Click += new System.EventHandler(this.button_Export_Click);
             // 
             // toolStripSeparator1
             // 
@@ -182,6 +158,18 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu.TabIndex = 4;
             this.toolStripMenu.Text = "toolStrip1";
             // 
+            // button_loadSolutions
+            // 
+            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_loadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("button_loadSolutions.Image")));
+            this.button_loadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_loadSolutions.Margin = new System.Windows.Forms.Padding(0, 1, 10, 2);
+            this.button_loadSolutions.Name = "button_loadSolutions";
+            this.button_loadSolutions.Size = new System.Drawing.Size(143, 39);
+            this.button_loadSolutions.Text = "  Load Solutions";
+            this.button_loadSolutions.ToolTipText = "Load all unmanaged solutions from the environment...";
+            this.button_loadSolutions.Click += new System.EventHandler(this.button_loadSolutions_Click);
+            // 
             // button_addAdditionalConnection
             // 
             this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -199,31 +187,30 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 42);
             // 
+            // button_Export
+            // 
+            this.button_Export.Enabled = false;
+            this.button_Export.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_Export.Image = ((System.Drawing.Image)(resources.GetObject("button_Export.Image")));
+            this.button_Export.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_Export.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_Export.Name = "button_Export";
+            this.button_Export.Size = new System.Drawing.Size(99, 39);
+            this.button_Export.Text = " Execute ";
+            this.button_Export.ToolTipText = "Export the Solutions";
+            this.button_Export.Click += new System.EventHandler(this.button_Export_Click);
+            // 
             // button_Settings
             // 
             this.button_Settings.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.button_Settings.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_Settings.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.adjustment_32px;
+            this.button_Settings.Image = ((System.Drawing.Image)(resources.GetObject("button_Settings.Image")));
             this.button_Settings.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_Settings.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
             this.button_Settings.Name = "button_Settings";
             this.button_Settings.Size = new System.Drawing.Size(102, 39);
             this.button_Settings.Text = " Settings";
             this.button_Settings.Click += new System.EventHandler(this.button_Settings_Click);
-            // 
-            // pictureBox_arrow
-            // 
-            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
-            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox_arrow.ErrorImage = null;
-            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
-            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
-            this.pictureBox_arrow.Name = "pictureBox_arrow";
-            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
-            this.pictureBox_arrow.TabIndex = 16;
-            this.pictureBox_arrow.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
             // flipSwitch_overwrite
             // 
@@ -305,6 +292,20 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_exportManaged.Title = "Export Managed";
             this.toolTip1.SetToolTip(this.flipSwitch_exportManaged, "Enter a file location for the managed solutions that you want to export");
             this.flipSwitch_exportManaged.Toggled += new System.EventHandler(this.flipSwitch_exportManaged_Toggled);
+            // 
+            // pictureBox_arrow
+            // 
+            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
+            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox_arrow.ErrorImage = null;
+            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
+            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
+            this.pictureBox_arrow.Name = "pictureBox_arrow";
+            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
+            this.pictureBox_arrow.TabIndex = 16;
+            this.pictureBox_arrow.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
             // 
             // pictureBox_warningUnmanaged
             // 
@@ -546,7 +547,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator3,
             this.button_sortAsc,
             this.button_sortDesc,
-            this.toolStripSeparator5});
+            this.toolStripSeparator5,
+            this.button_exportCsv});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(671, 25);
@@ -580,6 +582,11 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_invertCheck.Text = "Invert Check";
             this.button_invertCheck.Click += new System.EventHandler(this.button_invertCheck_Click);
             // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
+            // 
             // button_sortAsc
             // 
             this.button_sortAsc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -604,6 +611,16 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
             this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
+            // 
+            // button_exportCsv
+            // 
+            this.button_exportCsv.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_exportCsv.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.export_16px;
+            this.button_exportCsv.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_exportCsv.Name = "button_exportCsv";
+            this.button_exportCsv.Size = new System.Drawing.Size(23, 22);
+            this.button_exportCsv.Text = "Export to CSV";
+            this.button_exportCsv.Click += new System.EventHandler(this.button_exportCsv_Click);
             // 
             // listBoxSolutions
             // 
@@ -742,11 +759,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
-            // 
             // BulkSolutionExporter_PluginControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -841,5 +853,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.PictureBox pictureBox_warningUnmanaged;
 		private System.Windows.Forms.ToolStripButton button_Settings;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+		private System.Windows.Forms.ToolStripButton button_exportCsv;
 	}
 }

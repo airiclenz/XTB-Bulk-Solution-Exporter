@@ -6,14 +6,14 @@
 - show current branch and allow changing
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
-- allow sorting of all columns
 - allow for custom text size in solution list
-- export solution version as *.csv file
 - allow for multiple target envionments
 
 
-## Added in Release 2024.12.<mark>XX</mark>
+## Added in Release 2025.01.<mark>XX</mark>
 
+- allow for sorting of all text columns in the solution list
+- export solution version as *.csv file
 - grab import error xml and format it properly in logs
 - unify logging so it is formatted the same everywhere
 - add *.json file to solution storage with exported version information.

@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Microsoft.Crm.Sdk.Messages;
@@ -91,7 +93,7 @@ namespace Com.AiricLenz.XTB.Components
 			};
 
 			// Timer to control tooltip visibility
-			_toolTipTimer = new Timer { Interval = 750 }; 
+			_toolTipTimer = new Timer { Interval = 750 };
 			_toolTipTimer.Tick += ShowTooltipTimer_Tick;
 
 			// initialize with one initial columns
@@ -506,7 +508,7 @@ namespace Com.AiricLenz.XTB.Components
 				_showToolTips = value;
 				_toolTip.Active = value;
 			}
-		}	
+		}
 
 
 
@@ -574,7 +576,7 @@ namespace Com.AiricLenz.XTB.Components
 			var marginTopText = (_itemHeight - _textHeight) / 2f;
 			var marginTopBurger = (_itemHeight - _dragBurgerSize) / 2f;
 			var marginTopCheckBox = (_itemHeight - _checkBoxSize) / 2f;
-			
+
 			// -------------------------------------
 			// paint all headers
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
@@ -596,15 +598,28 @@ namespace Com.AiricLenz.XTB.Components
 					}
 
 					var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
+					var headerString = column.Header;
+
+					if (column.IsSortingColumn)
+					{
+						if (column.SortOrder == SortOrder.Ascending)
+						{
+							headerString += " ↑";
+						}
+						else
+						{
+							headerString += " ↓";
+						}
+					}
 
 					g.DrawString(
-						column.Header,
+						headerString,
 						new Font(Font, FontStyle.Bold),
 						Brushes.White,
 						colPosX,
 						marginTopText);
 
-					colPosX += (int) colWidth;
+					colPosX += colWidth;
 				}
 			}
 
@@ -664,16 +679,16 @@ namespace Com.AiricLenz.XTB.Components
 
 						if (!string.IsNullOrWhiteSpace(column.PropertyName))
 						{
-							var propertyObject = _items[i].ItemObject.GetType().GetProperty(column.PropertyName)?.GetValue(_items[i].ItemObject, null);
+							var propertyObject = GetPropertyValue(_items[i].ItemObject, column.PropertyName);
 
 							if (propertyObject is Bitmap)
 							{
 								var propertyBitmap = propertyObject as Bitmap;
 								var imageHeight = Math.Min(_itemHeight - 2, propertyBitmap.Height);
-								var ratio = (float)imageHeight / (float)propertyBitmap.Height;
+								var ratio = imageHeight / (float) propertyBitmap.Height;
 								var imageWidth = propertyBitmap.Width * ratio;
 								var marginTop = (_itemHeight - imageHeight) / 2;
-								
+
 								g.DrawImage(
 									propertyBitmap,
 									colPosX,
@@ -696,9 +711,9 @@ namespace Com.AiricLenz.XTB.Components
 										_textHeight));
 							}
 						}
-						
 
-						colPosX += (int) colWidth;
+
+						colPosX += colWidth;
 					}
 				}
 
@@ -786,7 +801,7 @@ namespace Com.AiricLenz.XTB.Components
 				int clientHeight = this.ClientRectangle.Height - 7;
 
 				// Calculate the length and position of the scrollbar
-				float scrollBarRatio = (float) clientHeight / (float) totalItemsHeight;
+				float scrollBarRatio = clientHeight / (float) totalItemsHeight;
 
 				int scrollBarHeight =
 					scrollBarRatio > 1 ?
@@ -794,7 +809,7 @@ namespace Com.AiricLenz.XTB.Components
 					(int) (clientHeight * scrollBarRatio);
 
 				int scrollBarPos = 3 + (int) ((float) _scrollOffset / totalItemsHeight * clientHeight);
-				
+
 				// white background
 				DrawRoundedRectangle(
 					g,
@@ -822,21 +837,21 @@ namespace Com.AiricLenz.XTB.Components
 
 		// ============================================================================
 		private void ShowTooltipTimer_Tick(
-			object sender, 
+			object sender,
 			EventArgs e)
 		{
 			_toolTipTimer.Stop();
 
-			
+
 			if (_isToolTipVisible)
 			{
 				return;
 			}
-			
+
 
 			_toolTip.Show(
 				_currentTooltipText,
-				this, 
+				this,
 				new Point(
 					_lastMousePosition.X + 15,
 					_lastMousePosition.Y - 3));
@@ -884,7 +899,7 @@ namespace Com.AiricLenz.XTB.Components
 			EventArgs e)
 		{
 			base.OnEnter(e);
-						
+
 			_toolTip.Active = _showToolTips;
 		}
 
@@ -1011,7 +1026,7 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		#endregion
-		
+
 		// ##################################################
 		// ##################################################
 
@@ -1030,7 +1045,7 @@ namespace Com.AiricLenz.XTB.Components
 				{
 					continue;
 				}
-				
+
 				if (column.IsFixedWidth)
 				{
 					fixedWidthUsed += column.GetWithInPixels();
@@ -1332,7 +1347,7 @@ namespace Com.AiricLenz.XTB.Components
 			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
 			var spaceAvailableForColumns = GetSpaceForColumns(leftMargin);
 			var colPosX = leftMargin;
-						
+
 			if (_items.Count > 0)
 			{
 				foreach (var column in _columns)
@@ -1350,8 +1365,8 @@ namespace Com.AiricLenz.XTB.Components
 						newTooltipText = column.TooltipText;
 						break;
 					}
-					
-					colPosX += (int) colWidth;
+
+					colPosX += colWidth;
 				}
 			}
 
@@ -1368,6 +1383,104 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		// ============================================================================
+		private void HandleColumnsResorting(
+			Point pointerLocation)
+		{
+			if (pointerLocation.Y > _itemHeight)
+			{
+				return;
+			}
+
+			// -------------------------------------
+			// go through all columns
+			var leftMargin = 10 + (_isCheckable ? _checkBoxSize + 10 : 0);
+			var spaceAvailableForColumns = GetSpaceForColumns(leftMargin);
+			var colPosX = leftMargin;
+
+			if (_items.Count > 0)
+			{
+				foreach (var column in _columns)
+				{
+					if (column.Enabled == false)
+					{
+						continue;
+					}
+
+					var colWidth = column.GetWithInPixels(_dynamicColumnSpace);
+
+					// diod we click into a columns header?
+					if (pointerLocation.X > colPosX &&
+						pointerLocation.X <= colPosX + colWidth)
+					{
+						if (!column.IsSortable)
+						{
+							return;
+						}
+
+						// reset which coluns is sorted right now
+						ResetSortingColumnToNone();
+						column.IsSortingColumn = true;
+
+						if (column.SortOrder == SortOrder.Ascending)
+						{
+							column.SortOrder = SortOrder.Descending;
+						}
+						else if (column.SortOrder == SortOrder.Descending)
+						{
+							column.SortOrder = SortOrder.Ascending;
+						}
+						else
+						{
+							column.SortOrder = SortOrder.Ascending;
+						}
+
+
+						if (column.SortOrder == SortOrder.Ascending)
+						{
+							// Perform sorting ascending
+							_items = _items.OrderBy(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+						}
+						else
+						{
+							// Perform sorting descending
+							_items = _items.OrderByDescending(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+						}
+
+						return;
+					}
+
+					colPosX += colWidth;
+				}
+			}
+
+		}
+
+
+		// ============================================================================
+		private object GetPropertyValue(
+			object obj,
+			string propertyName)
+		{
+			if (obj == null)
+			{
+				return null;
+			}
+
+			PropertyInfo prop = obj.GetType().GetProperty(propertyName);
+			return prop?.GetValue(obj);
+		}
+
+
+		// ============================================================================
+		private void ResetSortingColumnToNone()
+		{
+			foreach (var column in _columns)
+			{
+				column.IsSortingColumn = false;
+			}
+		}
+
 
 		// ============================================================================
 		private void HandleMousePointerPosition(
@@ -1375,18 +1488,18 @@ namespace Com.AiricLenz.XTB.Components
 			bool isClick = false)
 		{
 			// hide the current toolTip
-						
 			if (_lastMousePosition != pointerLocation)
 			{
 				_toolTip.Hide(this);
 				_isToolTipVisible = false;
-				
+
 				// restart the toolTip timer
 				_toolTipTimer.Stop();
 				_toolTipTimer.Start();
 				_lastMousePosition = pointerLocation;
 			}
-			
+
+			// do some initialization first
 			int startIndex = _scrollOffset / _itemHeight;
 			int endIndex = Math.Min(_items.Count, startIndex + ((Height - _itemHeight) / _itemHeight));
 
@@ -1419,6 +1532,14 @@ namespace Com.AiricLenz.XTB.Components
 				if (pointerLocation.Y < _itemHeight)
 				{
 					_currentTooltipText = "This is the header with titles for the different columns below.";
+
+					if (!isClick)
+					{
+						return;
+					}
+
+					HandleColumnsResorting(
+						pointerLocation);
 				}
 				else
 				{
@@ -1460,10 +1581,10 @@ namespace Com.AiricLenz.XTB.Components
 
 
 			// check drag-burger
-			if (_isSortable	&&
+			if (_isSortable &&
 				mouseOverRowWithIndex != -1)
 			{
-				
+
 				int yPosition = (mouseOverRowWithIndex * _itemHeight) + _itemHeight - _scrollOffset;
 
 				var checkBoxBoundsCheckBox =
@@ -1493,10 +1614,11 @@ namespace Com.AiricLenz.XTB.Components
 					// Leave - we are done here...
 					return;
 				}
-				
+
 			}
 
 			// Not a click?
+			// this is only executed over actual data (not check-ball, drag ha,burger, ...)
 			if (!isClick)
 			{
 				if (_hoveringAboveCheckBoxIndex != _hoverCheckBoxIndexOld ||
@@ -1511,7 +1633,7 @@ namespace Com.AiricLenz.XTB.Components
 						pointerLocation,
 						mouseOverRowWithIndex);
 				}
-				
+
 				return;
 			}
 
@@ -1524,8 +1646,9 @@ namespace Com.AiricLenz.XTB.Components
 
 				OnSelectedIndexChanged();
 			}
-			
+
 		}
+
 
 
 		#endregion
@@ -1540,12 +1663,12 @@ namespace Com.AiricLenz.XTB.Components
 	[Serializable]
 	public class SortableCheckItem : IComparable<SortableCheckItem>
 	{
-		
+
 		private object _item;
 		private bool _isChecked;
 		private int _sortingIndex;
 		private string _title;
-		
+
 
 		// ============================================================================
 		public SortableCheckItem(
@@ -1558,7 +1681,7 @@ namespace Com.AiricLenz.XTB.Components
 			_title = item.ToString();
 		}
 
-		
+
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1671,8 +1794,8 @@ namespace Com.AiricLenz.XTB.Components
 			set
 			{
 				if (TryParseWidthString(
-					value, 
-					out string widthString, 
+					value,
+					out string widthString,
 					out int widthNumber))
 				{
 					_widthString = widthString;
@@ -1731,6 +1854,28 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsSortable
+		{
+			get; set;
+		} = false;
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public SortOrder SortOrder
+		{
+			get; set;
+		} = SortOrder.None;
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public bool IsSortingColumn
+		{
+			get; set;
+		} = false;
+
+
+
 
 		// ============================================================================
 		public int GetWithInPixels(
@@ -1743,7 +1888,7 @@ namespace Com.AiricLenz.XTB.Components
 
 			else if (_widthString.EndsWith("%"))
 			{
-				return (int)((_widthNumber / 100f) * clientWith);
+				return (int) ((_widthNumber / 100f) * clientWith);
 			}
 
 			return _widthNumber;
@@ -1769,7 +1914,7 @@ namespace Com.AiricLenz.XTB.Components
 				workString = workString.Remove(workString.Length - 1, 1);
 			}
 
-			var isSuccess = 
+			var isSuccess =
 				int.TryParse(workString, out int widthNumber);
 
 			if (isSuccess)
