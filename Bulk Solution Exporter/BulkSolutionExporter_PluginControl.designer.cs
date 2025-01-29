@@ -42,6 +42,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripMenu = new System.Windows.Forms.ToolStrip();
             this.button_loadSolutions = new System.Windows.Forms.ToolStripButton();
             this.button_addAdditionalConnection = new System.Windows.Forms.ToolStripButton();
+            this.button_manageConnections = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.button_Export = new System.Windows.Forms.ToolStripButton();
             this.button_Settings = new System.Windows.Forms.ToolStripButton();
@@ -69,9 +70,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_checkAll = new System.Windows.Forms.ToolStripButton();
             this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.button_sortAsc = new System.Windows.Forms.ToolStripButton();
-            this.button_sortDesc = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.button_exportCsv = new System.Windows.Forms.ToolStripButton();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.label_title = new System.Windows.Forms.Label();
@@ -147,6 +145,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_loadSolutions,
             this.tssSeparator1,
             this.button_addAdditionalConnection,
+            this.button_manageConnections,
             this.toolStripSeparator2,
             this.button_Export,
             this.toolStripSeparator1,
@@ -160,27 +159,39 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // button_loadSolutions
             // 
-            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 10.125F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_loadSolutions.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button_loadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("button_loadSolutions.Image")));
             this.button_loadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_loadSolutions.Margin = new System.Windows.Forms.Padding(0, 1, 10, 2);
             this.button_loadSolutions.Name = "button_loadSolutions";
-            this.button_loadSolutions.Size = new System.Drawing.Size(143, 39);
+            this.button_loadSolutions.Size = new System.Drawing.Size(138, 39);
             this.button_loadSolutions.Text = "  Load Solutions";
             this.button_loadSolutions.ToolTipText = "Load all unmanaged solutions from the environment...";
             this.button_loadSolutions.Click += new System.EventHandler(this.button_loadSolutions_Click);
             // 
             // button_addAdditionalConnection
             // 
-            this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_addAdditionalConnection.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button_addAdditionalConnection.Image = ((System.Drawing.Image)(resources.GetObject("button_addAdditionalConnection.Image")));
             this.button_addAdditionalConnection.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_addAdditionalConnection.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
             this.button_addAdditionalConnection.Name = "button_addAdditionalConnection";
-            this.button_addAdditionalConnection.Size = new System.Drawing.Size(170, 39);
-            this.button_addAdditionalConnection.Text = "  Connect to Target";
+            this.button_addAdditionalConnection.Size = new System.Drawing.Size(182, 39);
+            this.button_addAdditionalConnection.Text = " Add Target Connection";
             this.button_addAdditionalConnection.ToolTipText = "  Connect to Target";
             this.button_addAdditionalConnection.Click += new System.EventHandler(this.button_addAdditionalConnection_Click);
+            // 
+            // button_manageConnections
+            // 
+            this.button_manageConnections.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_manageConnections.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.connections_32px;
+            this.button_manageConnections.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_manageConnections.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
+            this.button_manageConnections.Name = "button_manageConnections";
+            this.button_manageConnections.Size = new System.Drawing.Size(171, 39);
+            this.button_manageConnections.Text = " Manage Connections";
+            this.button_manageConnections.ToolTipText = "Manage all connected target environments";
+            this.button_manageConnections.Click += new System.EventHandler(this.button_manageConnections_Click);
             // 
             // toolStripSeparator2
             // 
@@ -545,9 +556,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_checkAll,
             this.button_invertCheck,
             this.toolStripSeparator3,
-            this.button_sortAsc,
-            this.button_sortDesc,
-            this.toolStripSeparator5,
             this.button_exportCsv});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
@@ -584,33 +592,9 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // toolStripSeparator3
             // 
+            this.toolStripSeparator3.Margin = new System.Windows.Forms.Padding(10, 0, 10, 0);
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
-            // 
-            // button_sortAsc
-            // 
-            this.button_sortAsc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.button_sortAsc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortAsc.Image")));
-            this.button_sortAsc.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_sortAsc.Name = "button_sortAsc";
-            this.button_sortAsc.Size = new System.Drawing.Size(23, 22);
-            this.button_sortAsc.Text = "Sort Alphabetically";
-            this.button_sortAsc.Click += new System.EventHandler(this.button_sortAsc_Click);
-            // 
-            // button_sortDesc
-            // 
-            this.button_sortDesc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.button_sortDesc.Image = ((System.Drawing.Image)(resources.GetObject("button_sortDesc.Image")));
-            this.button_sortDesc.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.button_sortDesc.Name = "button_sortDesc";
-            this.button_sortDesc.Size = new System.Drawing.Size(23, 22);
-            this.button_sortDesc.Text = "Sort Alphabetically Descending";
-            this.button_sortDesc.Click += new System.EventHandler(this.button_sortDesc_Click);
-            // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
             // 
             // button_exportCsv
             // 
@@ -846,13 +830,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.Panel panelSeparator;
 		private FlipSwitch flipSwitch_publishTarget;
 		private System.Windows.Forms.ToolStripButton button_invertCheck;
-		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
-		private System.Windows.Forms.ToolStripButton button_sortAsc;
-		private System.Windows.Forms.ToolStripButton button_sortDesc;
 		private System.Windows.Forms.PictureBox pictureBox_warningManaged;
 		private System.Windows.Forms.PictureBox pictureBox_warningUnmanaged;
 		private System.Windows.Forms.ToolStripButton button_Settings;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
 		private System.Windows.Forms.ToolStripButton button_exportCsv;
+		private System.Windows.Forms.ToolStripButton button_manageConnections;
 	}
 }

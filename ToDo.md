@@ -7,11 +7,12 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
-- allow for multiple target envionments
+
 
 
 ## Added in Release 2025.01.<mark>XX</mark>
 
+- allow for multiple target envionments
 - allow for sorting of all text columns in the solution list
 - export solution version as *.csv file
 - grab import error xml and format it properly in logs

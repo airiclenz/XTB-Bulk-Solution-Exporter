@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Messaging;
+using System.Runtime.Serialization;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Microsoft.Crm.Sdk.Messages;
@@ -604,11 +605,11 @@ namespace Com.AiricLenz.XTB.Components
 					{
 						if (column.SortOrder == SortOrder.Ascending)
 						{
-							headerString += " ↑";
+							headerString += " ▲"; //" ↑";
 						}
 						else
 						{
-							headerString += " ↓";
+							headerString += " ▼"; //" ↓";
 						}
 					}
 
@@ -1228,28 +1229,6 @@ namespace Com.AiricLenz.XTB.Components
 			Invalidate();
 		}
 
-		// ============================================================================
-		public void SortAlphabetically(
-			SortOrder sortOrder = SortOrder.Ascending)
-		{
-
-			if (sortOrder == SortOrder.Ascending)
-			{
-				_items = _items.OrderBy(item => item.Title).ToList();
-			}
-			else
-			{
-				_items = _items.OrderByDescending(item => item.Title).ToList();
-			}
-
-			// update the sorting indexes as well:
-			for (int i = 0; i < _items.Count; i++)
-			{
-				_items[i].SortingIndex = i;
-			}
-
-			Invalidate();
-		}
 
 		// ============================================================================
 		public void EnsureItemVisible(
@@ -1418,35 +1397,29 @@ namespace Com.AiricLenz.XTB.Components
 							return;
 						}
 
+						var wasSortingColumnAlready = column.IsSortingColumn;
+
 						// reset which coluns is sorted right now
 						ResetSortingColumnToNone();
 						column.IsSortingColumn = true;
 
-						if (column.SortOrder == SortOrder.Ascending)
+						if (wasSortingColumnAlready)
 						{
-							column.SortOrder = SortOrder.Descending;
-						}
-						else if (column.SortOrder == SortOrder.Descending)
-						{
-							column.SortOrder = SortOrder.Ascending;
-						}
-						else
-						{
-							column.SortOrder = SortOrder.Ascending;
-						}
-
-
-						if (column.SortOrder == SortOrder.Ascending)
-						{
-							// Perform sorting ascending
-							_items = _items.OrderBy(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
-						}
-						else
-						{
-							// Perform sorting descending
-							_items = _items.OrderByDescending(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+							if (column.SortOrder == SortOrder.Ascending)
+							{
+								column.SortOrder = SortOrder.Descending;
+							}
+							else if (column.SortOrder == SortOrder.Descending)
+							{
+								column.SortOrder = SortOrder.Ascending;
+							}
+							else
+							{
+								column.SortOrder = SortOrder.Ascending;
+							}
 						}
 
+						Sort();
 						return;
 					}
 
@@ -1454,6 +1427,32 @@ namespace Com.AiricLenz.XTB.Components
 				}
 			}
 
+		}
+
+
+		// ============================================================================
+		public void Sort()
+		{
+			foreach (var column in _columns)
+			{
+				if (!column.IsSortingColumn)
+				{
+					continue;
+				}
+
+				if (column.SortOrder == SortOrder.Ascending)
+				{
+					// Perform sorting ascending
+					_items = _items.OrderBy(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+				}
+				else
+				{
+					// Perform sorting descending
+					_items = _items.OrderByDescending(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+				}
+			}
+
+			Invalidate();
 		}
 
 
@@ -1756,7 +1755,7 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	[Serializable]
-	public class ColumnDefinition
+	public class ColumnDefinition : ISerializable
 	{
 		private string _widthString = "100px";
 		private int _widthNumber = 100;
@@ -1865,7 +1864,7 @@ namespace Com.AiricLenz.XTB.Components
 		public SortOrder SortOrder
 		{
 			get; set;
-		} = SortOrder.None;
+		} = SortOrder.Ascending;
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1875,6 +1874,42 @@ namespace Com.AiricLenz.XTB.Components
 		} = false;
 
 
+
+		// ============================================================================
+		public ColumnDefinition()
+		{
+			// notting...
+		}
+
+
+		// ============================================================================
+		protected ColumnDefinition(SerializationInfo info, StreamingContext context)
+		{
+			_widthString = info.GetString(nameof(_widthString));
+			_widthNumber = info.GetInt32(nameof(_widthNumber));
+			_header = info.GetString(nameof(_header));
+			_propertyName = info.GetString(nameof(_propertyName));
+			_toolTipText = info.GetString(nameof(_toolTipText));
+			_enabled = info.GetBoolean(nameof(_enabled));
+			IsSortable = info.GetBoolean(nameof(IsSortable));
+			SortOrder = (SortOrder) info.GetValue(nameof(SortOrder), typeof(SortOrder));
+			IsSortingColumn = info.GetBoolean(nameof(IsSortingColumn));
+		}
+
+
+		// ============================================================================
+		public void GetObjectData(SerializationInfo info, StreamingContext context)
+		{
+			info.AddValue(nameof(_widthString), _widthString);
+			info.AddValue(nameof(_widthNumber), _widthNumber);
+			info.AddValue(nameof(_header), _header);
+			info.AddValue(nameof(_propertyName), _propertyName);
+			info.AddValue(nameof(_toolTipText), _toolTipText);
+			info.AddValue(nameof(_enabled), _enabled);
+			info.AddValue(nameof(IsSortable), IsSortable);
+			info.AddValue(nameof(SortOrder), SortOrder);
+			info.AddValue(nameof(IsSortingColumn), IsSortingColumn);
+		}
 
 
 		// ============================================================================

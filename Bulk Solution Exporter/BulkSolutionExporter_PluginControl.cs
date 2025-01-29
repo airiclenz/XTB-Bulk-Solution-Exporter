@@ -30,7 +30,7 @@ namespace Com.AiricLenz.XTB.Plugin
 	// ============================================================================
 	public partial class BulkSolutionExporter_PluginControl : MultipleConnectionsPluginControlBase
 	{
-		private IOrganizationService _targetServiceClient = null;
+		//private IOrganizationService _targetServiceClient = null;
 
 		private Settings _settings;
 		private bool _codeUpdate = true;
@@ -40,16 +40,48 @@ namespace Com.AiricLenz.XTB.Plugin
 		private List<string> _sessionFiles = new List<string>();
 		private List<Solution> _solutionsOrigin = new List<Solution>();
 		private List<Solution> _solutionsTarget = new List<Solution>();
+		private ConnectionManager _connectionManager = null;
+
 
 		private Solution _currentSolution;
 		private object origin;
 		private object target;
 
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public List<ConnectionDetail> TargetConnections
+		{
+			get
+			{
+				return AdditionalConnectionDetails.ToList();
+			}
+		}
+
+
 		// ##################################################
 		// ##################################################
 
 		#region Custom Logic
+
+
+		// ============================================================================
+		public void RemoveConnection(
+			ConnectionDetail connection)
+		{
+			RemoveAdditionalOrganization(connection);
+
+			_connectionManager?.UpdateConnections();
+		}
+
+
+		// ============================================================================
+		public void AddConnection()
+		{
+			AddAdditionalOrganization();
+
+			_connectionManager?.UpdateConnections();
+		}
+
 
 
 		// ============================================================================
@@ -171,14 +203,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void PublishAll(
-			IOrganizationService organizationService,
-			bool isEnabled)
+			IOrganizationService serviceClient)
 		{
-			if (!isEnabled)
-			{
-				return;
-			}
-
 			Log("");
 			Log("Publishing All now...");
 
@@ -189,7 +215,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			try
 			{
-				organizationService.Execute(publishRequest);
+				serviceClient.Execute(publishRequest);
 			}
 			catch (Exception ex)
 			{
@@ -226,7 +252,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("|   Updating version number for solution '" + solution.FriendlyName + "'");
 
-				UpdateVersionNumber(solution);
+				UpdateVersionNumberInSource(
+					solution);
 
 				if (i < listBoxSolutions.CheckedItems.Count - 1)
 				{
@@ -356,9 +383,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ImportCheckedSolutions()
+		private void ImportCheckedSolutions(
+			IOrganizationService targetServiceClient)
 		{
-			if (_targetServiceClient == null ||
+			if (targetServiceClient == null ||
 				(
 					flipSwitch_importManaged.IsOff &&
 					flipSwitch_importUnmanaged.IsOff
@@ -387,7 +415,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("Importing solution '" + solution.FriendlyName + "':");
 
-				if (ImportSolution(solutionFile, importManagd))
+				if (ImportSolution(targetServiceClient, solutionFile, importManagd))
 				{
 
 					var duration = GetDurationString(startTime);
@@ -507,7 +535,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private bool UpdateVersionNumber(
+		private bool UpdateVersionNumberInSource(
 			Solution solution)
 		{
 			var oldVersionString = solution.Version.ToString();
@@ -631,6 +659,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private bool ImportSolution(
+			IOrganizationService targetServiceClient,
 			string solutionPath,
 			bool isManaged = true)
 		{
@@ -655,7 +684,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			// Execute import request
 			try
 			{
-				_targetServiceClient.Execute(importRequest);
+				targetServiceClient.Execute(importRequest);
 			}
 			catch (FaultException ex)
 			{
@@ -743,10 +772,10 @@ namespace Com.AiricLenz.XTB.Plugin
 								queryOrigin);
 					}
 
-					if (_targetServiceClient != null)
+					if (TargetConnections?.Count == 1)
 					{
 						result.TargetSolutions =
-							_targetServiceClient.RetrieveMultiple(
+							TargetConnections[0].GetCrmServiceClient().RetrieveMultiple(
 								queryTarget);
 					}
 
@@ -1326,6 +1355,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Width = (_settings.ShowLogicalSolutionNames ? "55%" : "100%"),
 					Enabled = _settings.ShowFriendlySolutionNames,
 					IsSortable = true,
+					IsSortingColumn = _settings.ShowFriendlySolutionNames,
 				};
 
 			var colLogicalName =
@@ -1337,6 +1367,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Width = (_settings.ShowFriendlySolutionNames ? "45%" : "100%"),
 					Enabled = _settings.ShowLogicalSolutionNames,
 					IsSortable = true,
+					IsSortingColumn = !_settings.ShowFriendlySolutionNames,
 				};
 
 			var colVersion =
@@ -1362,7 +1393,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						"if it is outdated (version number missmatch)\n" +
 						"or if the version numbers match up between origin- and target environment.",
 					Width = "50px",
-					Enabled = _targetServiceClient != null,
+					Enabled = TargetConnections?.Count == 1,
 					IsSortable = false,
 				};
 
@@ -1403,6 +1434,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					colFileVersionState		// 5
 				};
 
+			listBoxSolutions.Sort();
 			listBoxSolutions.Refresh();
 
 		}
@@ -1458,7 +1490,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 
 			var separator = ",";
-			var targetConnected = _targetServiceClient == null;
 			var exportSelectedOnly = listBoxSolutions.CheckedItems.Count > 0;
 
 			var resultCsv =
@@ -1539,9 +1570,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
 
 				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
-				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
+				flipSwitch_importManaged.Enabled = TargetConnections?.Count != 0;
 				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
-				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+				flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count != 0;
 				flipSwitch_enableAutomation.IsOn = _settings.EnableAutomation;
 				flipSwitch_overwrite.IsOn = _settings.OverwriteCustomizations;
 				UpdateImportOptionsVisibility();
@@ -1567,6 +1598,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			button_loadSolutions.Enabled = Service != null;
+			button_manageConnections.Visible = TargetConnections?.Count > 0;
 
 			LoadAllSolutions();
 		}
@@ -1625,21 +1657,18 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+		protected override void ConnectionDetailsUpdated(
+			NotifyCollectionChangedEventArgs e)
 		{
-			if (e.Action.Equals(NotifyCollectionChangedAction.Add))
-			{
-				var detail = (ConnectionDetail) e.NewItems[0];
-				_targetServiceClient = detail.ServiceClient;
+			//var detail = (ConnectionDetail) e.NewItems[0];
 
-				flipSwitch_importManaged.Enabled = _targetServiceClient != null;
-				flipSwitch_importUnmanaged.Enabled = _targetServiceClient != null;
+			flipSwitch_importManaged.Enabled = TargetConnections?.Count > 0;
+			flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count > 0;
+			button_manageConnections.Visible = TargetConnections?.Count > 0;
 
-				button_addAdditionalConnection.Enabled = false;
-				button_addAdditionalConnection.Text = "Target is " + detail.ConnectionName;
+			LoadAllSolutions();
 
-				LoadAllSolutions();
-			}
+			_connectionManager?.UpdateConnections();
 		}
 
 
@@ -1738,7 +1767,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.ImportManaged =
 				flipSwitch_importManaged.IsOn &&
-				_targetServiceClient != null;
+				TargetConnections?.Count > 0;
 
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
@@ -1760,7 +1789,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			_settings.ImportUnmanaged =
 				flipSwitch_importUnmanaged.IsOn &&
-				_targetServiceClient != null;
+				TargetConnections?.Count > 0;
 
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
@@ -2010,12 +2039,31 @@ namespace Com.AiricLenz.XTB.Plugin
 				Message = message,
 				Work = (worker, args) =>
 				{
-					PublishAll(Service, flipSwitch_publishSource.IsOn);
+					if (flipSwitch_publishSource.IsOn)
+					{
+						PublishAll(Service);
+					}
+
 					UpdateCheckedVersionNumbers();
 					ExportCheckedSolutions();
 					HandleGit();
-					ImportCheckedSolutions();
-					PublishAll(_targetServiceClient, flipSwitch_publishTarget.IsOn);
+
+					foreach (var connection in TargetConnections)
+					{
+						var targetConnectionName = connection.ConnectionName;
+						var targetServiceClient = connection.ServiceClient;
+
+						Log("");
+						Log($"Handling Target-Connection {targetConnectionName} now...");
+
+						ImportCheckedSolutions(targetServiceClient);
+
+						if (flipSwitch_publishTarget.IsOn)
+						{
+							PublishAll(targetServiceClient);
+						}
+					}
+
 
 					args.Result = null;
 				},
@@ -2105,20 +2153,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			SaveSettings();
 		}
 
-		// ============================================================================
-		private void button_sortAsc_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.SortAlphabetically(SortOrder.Ascending);
-			SaveSettings();
-		}
-
-		// ============================================================================
-		private void button_sortDesc_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.SortAlphabetically(SortOrder.Descending);
-			SaveSettings();
-		}
-
 
 		// ============================================================================
 		private void button_Settings_Click(
@@ -2151,8 +2185,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
-		#endregion
+		// ============================================================================
+		private void button_manageConnections_Click(object sender, EventArgs e)
+		{
+			_connectionManager = new ConnectionManager(this);
+			var dialogResult = _connectionManager.ShowDialog();
+			_connectionManager = null;
+		}
 
+
+
+		#endregion
 
 
 	}
