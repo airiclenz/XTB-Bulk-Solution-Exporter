@@ -51,6 +51,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private const string ColorFile = "<color=#777700>";
 		private const string ColorIndent = "<color=#DDDDDD>";
 		private const string ColorGreen = "<color=#227700>";
+		private const string ColorConnection = "<color=#337799>";
 
 		private const string ColorEndTag = "</color>";
 
@@ -209,9 +210,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void PublishAll(
-			IOrganizationService serviceClient)
+			ConnectionDetail connection)
 		{
-			Log("**Publishing All now...**");
+			Log("#####Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
 			_logger.IncreaseIndent();
 
 			var startTime = DateTime.Now;
@@ -221,7 +222,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			try
 			{
-				serviceClient.Execute(publishRequest);
+				connection.ServiceClient.Execute(publishRequest);
 			}
 			catch (Exception ex)
 			{
@@ -234,6 +235,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			Log("**Publish All was completed** (" + duration + ").");
 			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -246,7 +248,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			Log("Updating version numbers now:");
+			Log("#####Updating Version Numbers:");
 			_logger.IncreaseIndent();
 
 
@@ -271,6 +273,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -284,6 +287,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
+			Log("#####Exporting:");
+			_logger.IncreaseIndent();
+
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
 				var listItem = listBoxSolutions.CheckedItems[i];
@@ -293,7 +299,6 @@ namespace Com.AiricLenz.XTB.Plugin
 					_settings.GetSolutionConfiguration(
 						solution.SolutionIdentifier);
 
-				Log();
 				Log("**Exporting solution" + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
 				var exportResult =
@@ -307,8 +312,15 @@ namespace Com.AiricLenz.XTB.Plugin
 					LogError("**Export aborted due to an error!**");
 					break;
 				}
-
+								
+				if (i < listBoxSolutions.Items.Count - 1)
+				{
+					Log();	
+				}
 			}
+
+			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -611,7 +623,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			Log();
-			Log("**Now commiting the new files to Git**");
+			Log("#####Commiting the new files to Git:");
 			_logger.IncreaseIndent();
 
 			if (_sessionFiles.Count == 0)
@@ -742,6 +754,26 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_logger.DecreaseIndent();
 			return true;
+		}
+
+
+		// ============================================================================
+		private void UpdateItemSortingIndexesFromListBox()
+		{
+			var index = 0;
+
+			foreach (var item in listBoxSolutions.Items)
+			{
+				(item.ItemObject as Solution).SortingIndex = index;
+
+				var config = _settings.GetSolutionConfiguration((item.ItemObject as Solution).SolutionIdentifier);
+				config.SortingIndex = index;
+
+				_settings.UpdateSolutionConfiguration(
+					config);
+
+				index++;
+			}
 		}
 
 
@@ -1927,6 +1959,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
 		{
+			UpdateItemSortingIndexesFromListBox();
 			SaveSettings();
 		}
 
@@ -2087,29 +2120,27 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					if (flipSwitch_publishSource.IsOn)
 					{
-						PublishAll(Service);
+						PublishAll(ConnectionDetail);
 					}
 
 					UpdateCheckedVersionNumbers();
 					ExportCheckedSolutions();
 					HandleGit();
 
-					foreach (var connection in TargetConnections)
+					foreach (var targetConnection in TargetConnections)
 					{
-						var targetConnectionName = connection.ConnectionName;
-						var targetServiceClient = connection.ServiceClient;
-
+						
 						Log();
-						Log($"**Handling Target-Connection *{targetConnectionName}* now...**");
+						Log($"#####Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag+  "*:");
 						Log(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
 
 						_logger.IncreaseIndent();
 
-						ImportCheckedSolutions(targetServiceClient);
+						ImportCheckedSolutions(targetConnection.ServiceClient);
 
 						if (flipSwitch_publishTarget.IsOn)
 						{
-							PublishAll(targetServiceClient);
+							PublishAll(targetConnection);
 						}
 
 						_logger.DecreaseIndent();

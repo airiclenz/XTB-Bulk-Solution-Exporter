@@ -1524,6 +1524,10 @@ namespace Com.AiricLenz.XTB.Components
 						item => GetPropertyValue(
 							item.ItemObject,
 							column.PropertyName).ToString()).ToList();
+
+					OnItemOrderChanged();
+					Invalidate();
+					return;
 				}
 				else
 				{
@@ -1532,10 +1536,12 @@ namespace Com.AiricLenz.XTB.Components
 						item => GetPropertyValue(
 							item.ItemObject,
 							column.PropertyName).ToString()).ToList();
+
+					OnItemOrderChanged();
+					Invalidate();
+					return;
 				}
 			}
-
-			Invalidate();
 		}
 
 
