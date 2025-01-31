@@ -72,9 +72,10 @@ namespace Com.AiricLenz.XTB.Plugin
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.button_exportCsv = new System.Windows.Forms.ToolStripButton();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.richTextBox_log = new System.Windows.Forms.RichTextBox();
             this.label_title = new System.Windows.Forms.Label();
             this.label_Log = new System.Windows.Forms.Label();
-            this.textBox_log = new System.Windows.Forms.TextBox();
             this.button_browseUnmananged = new System.Windows.Forms.Button();
             this.label_unmanaged = new System.Windows.Forms.Label();
             this.button_browseManaged = new System.Windows.Forms.Button();
@@ -91,6 +92,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // label_versionFormat
@@ -524,11 +526,11 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.panel1);
             this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningUnmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningManaged);
             this.splitContainer1.Panel2.Controls.Add(this.label_title);
             this.splitContainer1.Panel2.Controls.Add(this.label_Log);
-            this.splitContainer1.Panel2.Controls.Add(this.textBox_log);
             this.splitContainer1.Panel2.Controls.Add(this.button_browseUnmananged);
             this.splitContainer1.Panel2.Controls.Add(this.label_unmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.button_browseManaged);
@@ -621,14 +623,13 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.CheckBoxSize = 18;
             this.listBoxSolutions.ColorChecked = System.Drawing.Color.MediumSlateBlue;
             this.listBoxSolutions.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.listBoxSolutions.Columns = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.ColumnDefinition>)(resources.GetObject("listBoxSolutions.Columns")));
+            this.listBoxSolutions.ColumnsJson = "[]";
             this.listBoxSolutions.DragBurgerLineThickness = 1.5F;
             this.listBoxSolutions.DragBurgerSize = 11;
             this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listBoxSolutions.IsCheckable = true;
             this.listBoxSolutions.IsSortable = true;
             this.listBoxSolutions.ItemHeigth = 24;
-            this.listBoxSolutions.Items = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.SortableCheckItem>)(resources.GetObject("listBoxSolutions.Items")));
             this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
@@ -639,6 +640,31 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
             this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
+            // 
+            // panel1
+            // 
+            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.richTextBox_log);
+            this.panel1.Location = new System.Drawing.Point(15, 156);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(795, 459);
+            this.panel1.TabIndex = 28;
+            // 
+            // richTextBox_log
+            // 
+            this.richTextBox_log.BackColor = System.Drawing.SystemColors.Window;
+            this.richTextBox_log.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.richTextBox_log.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.richTextBox_log.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.richTextBox_log.Location = new System.Drawing.Point(0, 0);
+            this.richTextBox_log.Name = "richTextBox_log";
+            this.richTextBox_log.ReadOnly = true;
+            this.richTextBox_log.Size = new System.Drawing.Size(793, 457);
+            this.richTextBox_log.TabIndex = 27;
+            this.richTextBox_log.Text = "";
             // 
             // label_title
             // 
@@ -659,23 +685,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.label_Log.Size = new System.Drawing.Size(30, 16);
             this.label_Log.TabIndex = 7;
             this.label_Log.Text = "Log";
-            // 
-            // textBox_log
-            // 
-            this.textBox_log.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox_log.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.textBox_log.Cursor = System.Windows.Forms.Cursors.Default;
-            this.textBox_log.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_log.Location = new System.Drawing.Point(12, 156);
-            this.textBox_log.Multiline = true;
-            this.textBox_log.Name = "textBox_log";
-            this.textBox_log.ReadOnly = true;
-            this.textBox_log.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBox_log.Size = new System.Drawing.Size(804, 459);
-            this.textBox_log.TabIndex = 6;
-            this.textBox_log.Text = "This is the log...";
             // 
             // button_browseUnmananged
             // 
@@ -782,6 +791,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.ResumeLayout(false);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
+            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -791,7 +801,6 @@ namespace Com.AiricLenz.XTB.Plugin
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TextBox textBox_unmanaged;
         private System.Windows.Forms.TextBox textBox_managed;
-        private System.Windows.Forms.TextBox textBox_log;
         private System.Windows.Forms.Button button_browseUnmananged;
         private System.Windows.Forms.Label label_unmanaged;
         private System.Windows.Forms.Button button_browseManaged;
@@ -836,5 +845,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
 		private System.Windows.Forms.ToolStripButton button_exportCsv;
 		private System.Windows.Forms.ToolStripButton button_manageConnections;
+		private System.Windows.Forms.Panel panel1;
+		private System.Windows.Forms.RichTextBox richTextBox_log;
 	}
 }

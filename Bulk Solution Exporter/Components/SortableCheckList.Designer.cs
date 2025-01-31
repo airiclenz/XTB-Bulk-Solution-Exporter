@@ -44,6 +44,13 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		// ============================================================================
+		/// <summary>
+		private void EnsureAssemblyLoaded()
+		{
+			var type = typeof(Com.AiricLenz.XTB.Components.ColumnDefinition);
+		}
+
 
 	}
 }

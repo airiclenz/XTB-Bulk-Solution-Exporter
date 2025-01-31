@@ -1,4 +1,4 @@
-# To-Dos
+# To-Do's
 
 - add dynamics content for commit message and update information tooltip accordingly
 - allow for dynamic content in the filenames
@@ -7,7 +7,6 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
-
 
 
 ## Added in Release 2025.01.<mark>XX</mark>

@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.Serialization;
+//using System.Text.Json;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
-using Microsoft.Crm.Sdk.Messages;
+using Newtonsoft.Json;
 
 
 // ============================================================================
@@ -23,6 +21,7 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
+	[Serializable]
 	public partial class SortableCheckList : Control
 	{
 
@@ -35,7 +34,6 @@ namespace Com.AiricLenz.XTB.Components
 
 		private List<SortableCheckItem> _items = new List<SortableCheckItem>();
 		private List<ColumnDefinition> _columns = new List<ColumnDefinition>();
-
 
 		private int _itemHeight = 20;
 		private float _textHeight;
@@ -118,6 +116,65 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		public List<SortableCheckItem> Items
+		{
+			get => _items;
+			set
+			{
+				_items = value ?? new List<SortableCheckItem>();
+
+				RecalculateColumnWidths();
+				Invalidate();
+				SyncJsonProperties();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(true)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		public List<ColumnDefinition> Columns
+		{
+			get => _columns;
+			set
+			{
+				_columns = value ?? new List<ColumnDefinition>();
+
+				RecalculateColumnWidths();
+				Invalidate();
+				SyncJsonProperties();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[EditorBrowsable(EditorBrowsableState.Always)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+		[Category("Data")]
+		[DisplayName("ColumnDefinitions")]
+		public string ColumnsJson
+		{
+			get => JsonConvert.SerializeObject(_columns, Formatting.None);
+			set
+			{
+				_columns = string.IsNullOrEmpty(value) ? new List<ColumnDefinition>() :
+						   JsonConvert.DeserializeObject<List<ColumnDefinition>>(value) ?? new List<ColumnDefinition>();
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		private void SyncJsonProperties()
+		{
+			ColumnsJson = JsonConvert.SerializeObject(_columns, Formatting.None);
+		}
+
+
+		/*
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Category("Data")]
+		[DisplayName("Items")]
+		[Editor(typeof(CollectionEditor<SortableCheckItem>), typeof(UITypeEditor))]
 		public List<SortableCheckItem> Items
 		{
 			get
@@ -126,15 +183,9 @@ namespace Com.AiricLenz.XTB.Components
 			}
 			set
 			{
-				if (value == null)
-				{
-					_items = new List<SortableCheckItem>();
-				}
-				else
-				{
-					_items = value;
-				}
+				_items = new List<SortableCheckItem>() ?? new List<SortableCheckItem>();
 
+				UpdateJson();
 				RecalculateColumnWidths();
 				Invalidate();
 			}
@@ -142,6 +193,9 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Category("Data")]
+		[DisplayName("Column Definitions")]
+		[Editor(typeof(CollectionEditor<ColumnDefinition>), typeof(UITypeEditor))]
 		public List<ColumnDefinition> Columns
 		{
 			get
@@ -150,19 +204,42 @@ namespace Com.AiricLenz.XTB.Components
 			}
 			set
 			{
-				if (value == null)
-				{
-					_columns = new List<ColumnDefinition>();
-				}
-				else
-				{
-					_columns = value;
-				}
+				_columns = new List<ColumnDefinition>() ?? new List<ColumnDefinition>();
 
+				UpdateJson();
 				RecalculateColumnWidths();
 				Invalidate();
 			}
 		}
+
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+		public string ItemsJson
+		{
+			get => JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = false });
+			set => _items = string.IsNullOrEmpty(value) ? new List<SortableCheckItem>() :
+							JsonSerializer.Deserialize<List<SortableCheckItem>>(value);
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+		public string ColumnsJson
+		{
+			get => JsonSerializer.Serialize(_columns, new JsonSerializerOptions { WriteIndented = false });
+			set => _columns = string.IsNullOrEmpty(value) ? new List<ColumnDefinition>() :
+							  JsonSerializer.Deserialize<List<ColumnDefinition>>(value);
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		private void UpdateJson()
+		{
+			ItemsJson = JsonSerializer.Serialize(_items);
+			ColumnsJson = JsonSerializer.Serialize(_columns);
+		}
+		*/
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1443,12 +1520,18 @@ namespace Com.AiricLenz.XTB.Components
 				if (column.SortOrder == SortOrder.Ascending)
 				{
 					// Perform sorting ascending
-					_items = _items.OrderBy(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+					_items = _items.OrderBy(
+						item => GetPropertyValue(
+							item.ItemObject,
+							column.PropertyName).ToString()).ToList();
 				}
 				else
 				{
 					// Perform sorting descending
-					_items = _items.OrderByDescending(item => GetPropertyValue(item.ItemObject, column.PropertyName).ToString()).ToList();
+					_items = _items.OrderByDescending(
+						item => GetPropertyValue(
+							item.ItemObject,
+							column.PropertyName).ToString()).ToList();
 				}
 			}
 
@@ -1670,6 +1753,13 @@ namespace Com.AiricLenz.XTB.Components
 
 
 		// ============================================================================
+		public SortableCheckItem()
+		{
+			// nottin...
+		}
+
+
+		// ============================================================================
 		public SortableCheckItem(
 			object item,
 			int sortingIndex)
@@ -1755,13 +1845,10 @@ namespace Com.AiricLenz.XTB.Components
 	// ============================================================================
 	// ============================================================================
 	[Serializable]
-	public class ColumnDefinition : ISerializable
+	public class ColumnDefinition
 	{
 		private string _widthString = "100px";
 		private int _widthNumber = 100;
-		private string _header = string.Empty;
-		private string _propertyName = string.Empty;
-		private string _toolTipText = string.Empty;
 		private bool _enabled = true;
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1806,41 +1893,20 @@ namespace Com.AiricLenz.XTB.Components
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string TooltipText
 		{
-			get
-			{
-				return _toolTipText;
-			}
-			set
-			{
-				_toolTipText = value;
-			}
-		}
+			get; set;
+		} = string.Empty;
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string Header
 		{
-			get
-			{
-				return _header;
-			}
-			set
-			{
-				_header = value;
-			}
-		}
+			get; set;
+		} = string.Empty;
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string PropertyName
 		{
-			get
-			{
-				return _propertyName;
-			}
-			set
-			{
-				_propertyName = value;
-			}
-		}
+			get; set;
+		} = string.Empty;
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1879,36 +1945,6 @@ namespace Com.AiricLenz.XTB.Components
 		public ColumnDefinition()
 		{
 			// notting...
-		}
-
-
-		// ============================================================================
-		protected ColumnDefinition(SerializationInfo info, StreamingContext context)
-		{
-			_widthString = info.GetString(nameof(_widthString));
-			_widthNumber = info.GetInt32(nameof(_widthNumber));
-			_header = info.GetString(nameof(_header));
-			_propertyName = info.GetString(nameof(_propertyName));
-			_toolTipText = info.GetString(nameof(_toolTipText));
-			_enabled = info.GetBoolean(nameof(_enabled));
-			IsSortable = info.GetBoolean(nameof(IsSortable));
-			SortOrder = (SortOrder) info.GetValue(nameof(SortOrder), typeof(SortOrder));
-			IsSortingColumn = info.GetBoolean(nameof(IsSortingColumn));
-		}
-
-
-		// ============================================================================
-		public void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue(nameof(_widthString), _widthString);
-			info.AddValue(nameof(_widthNumber), _widthNumber);
-			info.AddValue(nameof(_header), _header);
-			info.AddValue(nameof(_propertyName), _propertyName);
-			info.AddValue(nameof(_toolTipText), _toolTipText);
-			info.AddValue(nameof(_enabled), _enabled);
-			info.AddValue(nameof(IsSortable), IsSortable);
-			info.AddValue(nameof(SortOrder), SortOrder);
-			info.AddValue(nameof(IsSortingColumn), IsSortingColumn);
 		}
 
 
@@ -1966,6 +2002,16 @@ namespace Com.AiricLenz.XTB.Components
 			return isSuccess;
 		}
 
+	}
+
+	// ============================================================================
+	// ============================================================================
+	// ============================================================================
+	public class CollectionEditor<T> : CollectionEditor
+	{
+		public CollectionEditor(Type type) : base(type) { }
+
+		protected override Type CreateCollectionItemType() => typeof(T);
 	}
 
 

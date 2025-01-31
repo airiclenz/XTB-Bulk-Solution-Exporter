@@ -109,6 +109,5 @@ namespace Com.AiricLenz.XTB.Plugin
 				listBoxConnections.SelectedItem as ConnectionDetail);
 		}
 
-
 	}
 }

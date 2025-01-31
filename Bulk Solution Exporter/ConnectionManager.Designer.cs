@@ -1,4 +1,7 @@
-﻿namespace Com.AiricLenz.XTB.Plugin
+﻿using Microsoft.Xrm.Sdk.Query;
+using System.Collections.Generic;
+
+namespace Com.AiricLenz.XTB.Plugin
 {
 	partial class ConnectionManager
 	{
@@ -29,42 +32,13 @@
 		private void InitializeComponent()
 		{
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConnectionManager));
-            this.listBoxConnections = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.button_ok = new System.Windows.Forms.Button();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.button_addConnection = new System.Windows.Forms.ToolStripButton();
             this.button_removeConnection = new System.Windows.Forms.ToolStripButton();
+            this.listBoxConnections = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // listBoxConnections
-            // 
-            this.listBoxConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.listBoxConnections.BackColor = System.Drawing.SystemColors.Window;
-            this.listBoxConnections.BorderColor = System.Drawing.SystemColors.ControlDark;
-            this.listBoxConnections.BorderThickness = 1F;
-            this.listBoxConnections.CheckBoxMargin = 4;
-            this.listBoxConnections.CheckBoxRadius = 18;
-            this.listBoxConnections.CheckBoxSize = 18;
-            this.listBoxConnections.ColorChecked = System.Drawing.Color.MediumSlateBlue;
-            this.listBoxConnections.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.listBoxConnections.Columns = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.ColumnDefinition>)(resources.GetObject("listBoxConnections.Columns")));
-            this.listBoxConnections.DragBurgerLineThickness = 1.5F;
-            this.listBoxConnections.DragBurgerSize = 11;
-            this.listBoxConnections.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.listBoxConnections.IsCheckable = false;
-            this.listBoxConnections.IsSortable = false;
-            this.listBoxConnections.ItemHeigth = 24;
-            this.listBoxConnections.Items = ((System.Collections.Generic.List<Com.AiricLenz.XTB.Components.SortableCheckItem>)(resources.GetObject("listBoxConnections.Items")));
-            this.listBoxConnections.Location = new System.Drawing.Point(6, 38);
-            this.listBoxConnections.Name = "listBoxConnections";
-            this.listBoxConnections.ShowScrollBar = true;
-            this.listBoxConnections.ShowTooltips = true;
-            this.listBoxConnections.Size = new System.Drawing.Size(466, 274);
-            this.listBoxConnections.TabIndex = 0;
-            this.listBoxConnections.SelectedIndexChanged += new System.EventHandler(this.listBoxConnections_SelectedIndexChanged);
             // 
             // button_ok
             // 
@@ -112,6 +86,36 @@
             this.button_removeConnection.Text = " Disconnect Target Connection";
             this.button_removeConnection.Click += new System.EventHandler(this.button_removeConnection_Click);
             // 
+            // listBoxConnections
+            // 
+            this.listBoxConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listBoxConnections.BackColor = System.Drawing.SystemColors.Window;
+            this.listBoxConnections.BorderColor = System.Drawing.SystemColors.ControlDark;
+            this.listBoxConnections.BorderThickness = 1F;
+            this.listBoxConnections.CheckBoxMargin = 4;
+            this.listBoxConnections.CheckBoxRadius = 18;
+            this.listBoxConnections.CheckBoxSize = 18;
+            this.listBoxConnections.ColorChecked = System.Drawing.Color.MediumSlateBlue;
+            this.listBoxConnections.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.listBoxConnections.ColumnsJson = "[{\"Enabled\":true,\"Width\":\"100%\",\"TooltipText\":\"\",\"Header\":\"Target Connection Name" +
+    "\",\"PropertyName\":\"ConnectionName\",\"IsFixedWidth\":false,\"IsSortable\":true,\"SortOr" +
+    "der\":1,\"IsSortingColumn\":true}]";
+            this.listBoxConnections.DragBurgerLineThickness = 1.5F;
+            this.listBoxConnections.DragBurgerSize = 11;
+            this.listBoxConnections.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listBoxConnections.IsCheckable = false;
+            this.listBoxConnections.IsSortable = false;
+            this.listBoxConnections.ItemHeigth = 24;
+            this.listBoxConnections.Location = new System.Drawing.Point(6, 38);
+            this.listBoxConnections.Name = "listBoxConnections";
+            this.listBoxConnections.ShowScrollBar = true;
+            this.listBoxConnections.ShowTooltips = true;
+            this.listBoxConnections.Size = new System.Drawing.Size(466, 274);
+            this.listBoxConnections.TabIndex = 0;
+            this.listBoxConnections.SelectedIndexChanged += new System.EventHandler(this.listBoxConnections_SelectedIndexChanged);
+            // 
             // ConnectionManager
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -134,6 +138,7 @@
 
 		}
 
+
 		#endregion
 
 		private Components.SortableCheckList listBoxConnections;
@@ -141,5 +146,6 @@
 		private System.Windows.Forms.ToolStrip toolStrip1;
 		private System.Windows.Forms.ToolStripButton button_removeConnection;
 		private System.Windows.Forms.ToolStripButton button_addConnection;
+
 	}
 }

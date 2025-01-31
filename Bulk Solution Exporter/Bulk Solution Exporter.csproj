@@ -295,6 +295,8 @@
       <DependentUpon>ConnectionManager.cs</DependentUpon>
     </Compile>
     <Compile Include="Extentions\StringExtention.cs" />
+    <Compile Include="Helpers\Logger.cs" />
+    <Compile Include="Helpers\MarkdownParser.cs" />
     <Compile Include="Schema\ExportedSolutionVersions.cs" />
     <Compile Include="SettingsForm.cs">
       <SubType>Form</SubType>
