@@ -301,7 +301,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					_settings.GetSolutionConfiguration(
 						solution.SolutionIdentifier);
 
-				Log("**Exporting solution" + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
+				Log("**Exporting solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
 				var exportResult =
 					ExportSolution(

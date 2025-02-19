@@ -39,6 +39,12 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			Solution solution,
 			out ExportedSolution exportedSolutionResult)
 		{
+			if (string.IsNullOrWhiteSpace(exportFilePath))
+			{
+				exportedSolutionResult = null;
+				return false;
+			}
+
 			var exportParth =
 				Path.GetDirectoryName(
 					exportFilePath);
