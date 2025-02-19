@@ -55,6 +55,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private const string ColorEndTag = "</color>";
 
+
+
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public List<ConnectionDetail> TargetConnections
 		{
@@ -312,10 +314,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					LogError("**Export aborted due to an error!**");
 					break;
 				}
-								
+
 				if (i < listBoxSolutions.Items.Count - 1)
 				{
-					Log();	
+					Log();
 				}
 			}
 
@@ -760,19 +762,18 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateItemSortingIndexesFromListBox()
 		{
-			var index = 0;
-
-			foreach (var item in listBoxSolutions.Items)
+			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
-				(item.ItemObject as Solution).SortingIndex = index;
+				(listBoxSolutions.Items[i].ItemObject as Solution).SortingIndex = i;
 
-				var config = _settings.GetSolutionConfiguration((item.ItemObject as Solution).SolutionIdentifier);
-				config.SortingIndex = index;
+				var config =
+					_settings.GetSolutionConfiguration(
+						(listBoxSolutions.Items[i].ItemObject as Solution).SolutionIdentifier);
+
+				config.SortingIndex = i;
 
 				_settings.UpdateSolutionConfiguration(
 					config);
-
-				index++;
 			}
 		}
 
@@ -923,6 +924,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					}
 
 					SaveSettings(true);
+
 					UpdateColumns();
 					UpdateSolutionList();
 					UpdateImportOptionsVisibility();
@@ -1430,7 +1432,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Width = (_settings.ShowLogicalSolutionNames ? "55%" : "100%"),
 					Enabled = _settings.ShowFriendlySolutionNames,
 					IsSortable = true,
-					IsSortingColumn = _settings.ShowFriendlySolutionNames,
+					//IsSortingColumn = _settings.ShowFriendlySolutionNames,
 				};
 
 			var colLogicalName =
@@ -1442,7 +1444,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Width = (_settings.ShowFriendlySolutionNames ? "45%" : "100%"),
 					Enabled = _settings.ShowLogicalSolutionNames,
 					IsSortable = true,
-					IsSortingColumn = !_settings.ShowFriendlySolutionNames,
+					//IsSortingColumn = !_settings.ShowFriendlySolutionNames,
 				};
 
 			var colVersion =
@@ -1498,6 +1500,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					IsSortable = false,
 				};
 
+			_codeUpdate = true;
+
 			listBoxSolutions.Columns =
 				new List<ColumnDefinition>
 				{
@@ -1509,9 +1513,12 @@ namespace Com.AiricLenz.XTB.Plugin
 					colFileVersionState		// 5
 				};
 
-			listBoxSolutions.Sort();
-			listBoxSolutions.Refresh();
+			listBoxSolutions.SortingColumnIndex = _settings.SortingColumnIndex;
+			listBoxSolutions.SortingColumnOrder = _settings.SortingColumnOrder;
 
+			_codeUpdate = false;
+
+			//listBoxSolutions.Refresh();
 		}
 
 		// ============================================================================
@@ -2129,9 +2136,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					foreach (var targetConnection in TargetConnections)
 					{
-						
+
 						Log();
-						Log($"#####Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag+  "*:");
+						Log($"#####Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
 						Log(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
 
 						_logger.IncreaseIndent();
@@ -2275,6 +2282,20 @@ namespace Com.AiricLenz.XTB.Plugin
 			_connectionManager = null;
 		}
 
+
+		// ============================================================================
+		private void listBoxSolutions_SortingColumnChanged(object sender, EventArgs e)
+		{
+			if (_codeUpdate)
+			{
+				return;
+			}
+
+			_settings.SortingColumnIndex = listBoxSolutions.SortingColumnIndex;
+			_settings.SortingColumnOrder = listBoxSolutions.SortingColumnOrder;
+
+			SaveSettings();
+		}
 
 
 		#endregion

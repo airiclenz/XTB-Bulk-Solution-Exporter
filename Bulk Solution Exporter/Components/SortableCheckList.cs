@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 
 // ============================================================================
@@ -142,6 +143,7 @@ namespace Com.AiricLenz.XTB.Components
 				_columns = value ?? new List<ColumnDefinition>();
 
 				RecalculateColumnWidths();
+				OnSortingColumnChanged();
 				Invalidate();
 				SyncJsonProperties();
 			}
@@ -168,79 +170,6 @@ namespace Com.AiricLenz.XTB.Components
 		{
 			ColumnsJson = JsonConvert.SerializeObject(_columns, Formatting.None);
 		}
-
-
-		/*
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		[Category("Data")]
-		[DisplayName("Items")]
-		[Editor(typeof(CollectionEditor<SortableCheckItem>), typeof(UITypeEditor))]
-		public List<SortableCheckItem> Items
-		{
-			get
-			{
-				return _items;
-			}
-			set
-			{
-				_items = new List<SortableCheckItem>() ?? new List<SortableCheckItem>();
-
-				UpdateJson();
-				RecalculateColumnWidths();
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		[Category("Data")]
-		[DisplayName("Column Definitions")]
-		[Editor(typeof(CollectionEditor<ColumnDefinition>), typeof(UITypeEditor))]
-		public List<ColumnDefinition> Columns
-		{
-			get
-			{
-				return _columns;
-			}
-			set
-			{
-				_columns = new List<ColumnDefinition>() ?? new List<ColumnDefinition>();
-
-				UpdateJson();
-				RecalculateColumnWidths();
-				Invalidate();
-			}
-		}
-
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		[Browsable(false)]
-		[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-		public string ItemsJson
-		{
-			get => JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = false });
-			set => _items = string.IsNullOrEmpty(value) ? new List<SortableCheckItem>() :
-							JsonSerializer.Deserialize<List<SortableCheckItem>>(value);
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		[Browsable(false)]
-		[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-		public string ColumnsJson
-		{
-			get => JsonSerializer.Serialize(_columns, new JsonSerializerOptions { WriteIndented = false });
-			set => _columns = string.IsNullOrEmpty(value) ? new List<ColumnDefinition>() :
-							  JsonSerializer.Deserialize<List<ColumnDefinition>>(value);
-		}
-
-		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		private void UpdateJson()
-		{
-			ItemsJson = JsonSerializer.Serialize(_items);
-			ColumnsJson = JsonSerializer.Serialize(_columns);
-		}
-		*/
-
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
@@ -293,7 +222,6 @@ namespace Com.AiricLenz.XTB.Components
 				return resultList;
 			}
 		}
-
 
 
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -607,6 +535,127 @@ namespace Com.AiricLenz.XTB.Components
 		}
 
 
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public int SortingColumnIndex
+		{
+			get
+			{
+				int index = 0;
+
+				for (int i = 0; i < _columns.Count; i++)
+				{
+					if (_columns[i].Enabled)
+					{
+						if (_columns[i].IsSortingColumn)
+						{
+							return index;
+						}
+						index++;
+					}
+				}
+
+				return -1;
+			}
+
+			set
+			{
+				if (value == -1)
+				{
+					ResetSortingColumnToNone();
+					OnSortingColumnChanged();
+					Invalidate();
+					return;
+				}
+
+				int index = 0;
+
+				for (int i = 0; i < _columns.Count; i++)
+				{
+					if (_columns[i].Enabled)
+					{
+						if (index == value &&
+							_columns[i].IsSortable)
+						{
+							ResetSortingColumnToNone();
+							_columns[i].IsSortingColumn = true;
+
+							Sort();
+							OnSortingColumnChanged();
+							Invalidate();
+							return;
+						}
+
+						index++;
+					}
+				}
+			}
+		}
+
+		//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		[Browsable(false)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public SortOrder SortingColumnOrder
+		{
+			get
+			{
+				int sortingColumnIndex = SortingColumnIndex;
+
+				if (sortingColumnIndex == -1)
+				{
+					return SortOrder.None;
+				}
+
+				int index = 0;
+
+				for (int i = 0; i < _columns.Count; i++)
+				{
+					if (_columns[i].Enabled)
+					{
+						if (index == sortingColumnIndex)
+						{
+							return _columns[i].SortOrder;
+						}
+
+						index++;
+					}
+				}
+
+				return SortOrder.None;
+			}
+
+			set
+			{
+				if (value == SortOrder.None)
+				{
+					return;
+				}
+
+				int sortingColumnIndex = SortingColumnIndex;
+				int index = 0;
+
+				for (int i = 0; i < _columns.Count; i++)
+				{
+					if (_columns[i].Enabled)
+					{
+						if (index == sortingColumnIndex &&
+							_columns[i].IsSortable)
+						{
+							_columns[i].SortOrder = value;
+
+							Sort();
+							OnSortingColumnChanged();
+							Invalidate();
+							return;
+						}
+
+						index++;
+					}
+				}
+
+			}
+		}
 
 
 
@@ -632,6 +681,11 @@ namespace Com.AiricLenz.XTB.Components
 		/// Triggers if the order of the items has be changed.
 		/// </summary>
 		public event EventHandler ItemOrderChanged;
+
+		/// <summary>
+		/// Triggers if the sorting column changed
+		/// </summary>
+		public event EventHandler SortingColumnChanged;
 
 
 
@@ -956,6 +1010,12 @@ namespace Com.AiricLenz.XTB.Components
 			ItemOrderChanged?.Invoke(this, ItemCheckEventArgs.Empty);
 		}
 
+		// ============================================================================
+		protected virtual void OnSortingColumnChanged()
+		{
+			SortingColumnChanged?.Invoke(this, ItemCheckEventArgs.Empty);
+		}
+
 
 		// ============================================================================
 		protected override void OnMouseLeave(
@@ -1047,9 +1107,12 @@ namespace Com.AiricLenz.XTB.Components
 					item.SortingIndex = index++;
 				}
 
+				ResetSortingColumnToNone();
+
 				// Trigger events
 				OnItemOrderChanged();
 				OnSelectedIndexChanged();
+				OnSortingColumnChanged();
 			}
 			else
 			{
@@ -1496,6 +1559,8 @@ namespace Com.AiricLenz.XTB.Components
 							}
 						}
 
+						OnSortingColumnChanged();
+
 						Sort();
 						return;
 					}
@@ -1524,10 +1589,6 @@ namespace Com.AiricLenz.XTB.Components
 						item => GetPropertyValue(
 							item.ItemObject,
 							column.PropertyName).ToString()).ToList();
-
-					OnItemOrderChanged();
-					Invalidate();
-					return;
 				}
 				else
 				{
@@ -1536,11 +1597,19 @@ namespace Com.AiricLenz.XTB.Components
 						item => GetPropertyValue(
 							item.ItemObject,
 							column.PropertyName).ToString()).ToList();
-
-					OnItemOrderChanged();
-					Invalidate();
-					return;
 				}
+
+
+				// update all sorting indexes
+				int index = 0;
+				foreach (var item in _items)
+				{
+					item.SortingIndex = index++;
+				}
+
+				OnItemOrderChanged();
+				Invalidate();
+				break;
 			}
 		}
 

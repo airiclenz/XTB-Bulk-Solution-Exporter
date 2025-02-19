@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Activities.Expressions;
-using System.Activities.Statements;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Com.AiricLenz.Extentions;
+using System.Windows.Forms;
 using Com.AiricLenz.XTB.Plugin.Schema;
-using Newtonsoft.Json;
 
 
 // ============================================================================
@@ -116,6 +110,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			get; set;
 		}
+
+		public int SortingColumnIndex
+		{
+			get; set;
+		}
+
+		public SortOrder SortingColumnOrder
+		{
+			get; set;
+		}
+
 
 
 

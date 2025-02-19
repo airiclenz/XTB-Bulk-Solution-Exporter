@@ -640,6 +640,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
             this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
+            this.listBoxSolutions.SortingColumnChanged += new System.EventHandler(this.listBoxSolutions_SortingColumnChanged);
             // 
             // panel1
             // 

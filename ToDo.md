@@ -8,9 +8,12 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
+ 
+## Added in Release 2025.02.<mark>XX</mark>
 
-## Added in Release 2025.01.<mark>XX</mark>
+## Added in Release 2025.02.19
 
+- added rich text logging
 - allow for multiple target envionments
 - allow for sorting of all text columns in the solution list
 - export solution version as *.csv file
