@@ -33,6 +33,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		public bool ExecuteCommand(
 			string arguments,
+			out string output,
 			out string errorMessage)
 		{
 			ProcessStartInfo processStartInfo = new ProcessStartInfo()
@@ -50,8 +51,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			{
 				process.WaitForExit();
 
-				string output = process.StandardOutput.ReadToEnd();
-				string error = process.StandardError.ReadToEnd();
+				output = process.StandardOutput.ReadToEnd();
+				errorMessage = process.StandardError.ReadToEnd();
 				int exitCode = process.ExitCode;
 
 				if (exitCode == 0)
@@ -59,15 +60,60 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 					errorMessage = string.Empty;
 					return true;
 				}
-				else
-				{
-					//Console.WriteLine($"Error: {error}");
-					//Console.WriteLine($"Exit Code: {exitCode}");
-
-					errorMessage = error;
-					return false;
-				}
+				
+				return false;
 			};
 		}
+
+		// ============================================================================
+		public List<string> GetAllBranches()
+		{
+			if (ExecuteCommand("branch", out string output, out _))
+			{
+				List<string> branches = output
+					.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+					.Select(branch => branch.Trim().TrimStart('*').Trim())
+					.ToList();
+
+				return branches;
+			}
+			
+			return new List<string>();
+		}
+
+
+		// ============================================================================
+		public string GetActiveBranch()
+		{
+			if (ExecuteCommand("branch", out string output, out _))
+			{
+				string activeBranch = output
+					.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+					.FirstOrDefault(branch => branch.Trim().StartsWith("*"));
+
+				if (activeBranch != null)
+				{
+					return activeBranch.Trim().TrimStart('*').Trim();
+				}
+				else
+				{
+					return string.Empty;
+				}
+			}
+			
+			return string.Empty;
+		}
+
+		// ============================================================================
+		public bool SwitchToBranch(
+			string branchName,
+			out string errorMessage
+			)
+		{
+			string command = $"checkout {branchName}";
+			return ExecuteCommand(command, out _, out errorMessage);
+		}
+
+
 	}
 }

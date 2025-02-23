@@ -82,6 +82,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.label_Managed = new System.Windows.Forms.Label();
             this.textBox_unmanaged = new System.Windows.Forms.TextBox();
             this.textBox_managed = new System.Windows.Forms.TextBox();
+            this.comboBox_gitBranches = new System.Windows.Forms.ComboBox();
+            this.label_gitBranch = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
@@ -108,6 +110,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // textBox_versionFormat
             // 
             this.textBox_versionFormat.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBox_versionFormat.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textBox_versionFormat.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_versionFormat.Location = new System.Drawing.Point(906, 53);
             this.textBox_versionFormat.Name = "textBox_versionFormat";
@@ -357,11 +360,13 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBox_commitMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_commitMessage.Location = new System.Drawing.Point(906, 104);
+            this.textBox_commitMessage.Location = new System.Drawing.Point(906, 109);
             this.textBox_commitMessage.Multiline = true;
             this.textBox_commitMessage.Name = "textBox_commitMessage";
-            this.textBox_commitMessage.Size = new System.Drawing.Size(584, 47);
+            this.textBox_commitMessage.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.textBox_commitMessage.Size = new System.Drawing.Size(581, 42);
             this.textBox_commitMessage.TabIndex = 20;
             this.textBox_commitMessage.Text = "XTB Commit";
             this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
@@ -370,7 +375,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // label_commitMessage
             // 
             this.label_commitMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_commitMessage.Location = new System.Drawing.Point(750, 107);
+            this.label_commitMessage.Location = new System.Drawing.Point(750, 110);
             this.label_commitMessage.Name = "label_commitMessage";
             this.label_commitMessage.Size = new System.Drawing.Size(150, 16);
             this.label_commitMessage.TabIndex = 22;
@@ -635,6 +640,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.ShowScrollBar = true;
             this.listBoxSolutions.ShowTooltips = true;
             this.listBoxSolutions.Size = new System.Drawing.Size(665, 580);
+            this.listBoxSolutions.SortingColumnIndex = -1;
+            this.listBoxSolutions.SortingColumnOrder = System.Windows.Forms.SortOrder.None;
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
@@ -753,10 +760,34 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 
+            // comboBox_gitBranches
+            // 
+            this.comboBox_gitBranches.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBox_gitBranches.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.comboBox_gitBranches.FormattingEnabled = true;
+            this.comboBox_gitBranches.Location = new System.Drawing.Point(906, 81);
+            this.comboBox_gitBranches.Name = "comboBox_gitBranches";
+            this.comboBox_gitBranches.Size = new System.Drawing.Size(581, 23);
+            this.comboBox_gitBranches.TabIndex = 26;
+            this.comboBox_gitBranches.SelectedIndexChanged += new System.EventHandler(this.comboBox_gitBranches_SelectedIndexChanged);
+            // 
+            // label_gitBranch
+            // 
+            this.label_gitBranch.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_gitBranch.Location = new System.Drawing.Point(750, 84);
+            this.label_gitBranch.Name = "label_gitBranch";
+            this.label_gitBranch.Size = new System.Drawing.Size(150, 16);
+            this.label_gitBranch.TabIndex = 27;
+            this.label_gitBranch.Text = "GIT Branch";
+            this.label_gitBranch.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
             // BulkSolutionExporter_PluginControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label_gitBranch);
+            this.Controls.Add(this.comboBox_gitBranches);
             this.Controls.Add(this.flipSwitch_publishTarget);
             this.Controls.Add(this.flipSwitch_overwrite);
             this.Controls.Add(this.flipSwitch_enableAutomation);
@@ -848,5 +879,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStripButton button_manageConnections;
 		private System.Windows.Forms.Panel panel1;
 		private System.Windows.Forms.RichTextBox richTextBox_log;
+		private System.Windows.Forms.Label label_gitBranch;
+		private System.Windows.Forms.ComboBox comboBox_gitBranches;
 	}
 }

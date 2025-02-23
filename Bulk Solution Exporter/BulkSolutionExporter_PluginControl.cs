@@ -40,6 +40,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		private List<Solution> _solutionsOrigin = new List<Solution>();
 		private List<Solution> _solutionsTarget = new List<Solution>();
 		private ConnectionManager _connectionManager = null;
+		private GitHelper _gitHelper = null;
+		private List<string> _gitBranches = new List<string>();
 		private Logger _logger = null;
 
 		private Solution _currentSolution;
@@ -617,9 +619,69 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		private void InitializeGitHelper()
+		{
+			string filePath = string.Empty;
+
+			foreach (var configString in _settings.SolutionConfigurations)
+			{
+				var config = SolutionConfiguration.GetConfigFromJson(configString);
+
+				if (config.FileNameManaged.HasValue())
+				{
+					filePath = config.FileNameManaged;
+					break;
+				}
+
+				if (config.FileNameUnmanaged.HasValue())
+				{
+					filePath = config.FileNameUnmanaged;
+					break;
+				}
+			}
+
+			if (filePath.IsEmpty())
+			{
+				return;
+			}
+
+			var gitRootPath =
+				FileAndFolderHelper.FindRepositoryRootPath(filePath);
+
+			if (gitRootPath.IsEmpty())
+			{
+				return;
+			}
+
+			_gitHelper = new GitHelper(gitRootPath);
+
+			UpdateGitBranches();
+		}
+
+
+		// ============================================================================
+		private void UpdateGitBranches()
+		{
+			if (_gitHelper == null)
+			{
+				return;
+			}
+
+			_gitBranches = _gitHelper.GetAllBranches();
+
+			_codeUpdate = true;
+			comboBox_gitBranches.Items.Clear();
+			comboBox_gitBranches.Items.AddRange(_gitBranches.ToArray());
+			comboBox_gitBranches.SelectedIndex = _gitBranches.IndexOf(_gitHelper.GetActiveBranch());
+			_codeUpdate = false;
+		}
+
+
+		// ============================================================================
 		private void HandleGit()
 		{
-			if (flipSwitch_gitCommit.IsOff)
+			if (flipSwitch_gitCommit.IsOff ||
+				_gitHelper == null)
 			{
 				return;
 			}
@@ -634,23 +696,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				_logger.DecreaseIndent();
 				return;
 			}
-
-			var gitRootPath =
-				FileAndFolderHelper.FindRepositoryRootPath(_sessionFiles.First());
-
-			if (gitRootPath == string.Empty)
-			{
-				LogError("No GIT repository was found where the files were saved.");
-				_logger.DecreaseIndent();
-				return;
-			}
-
-			GitHelper gitHelper = new GitHelper(gitRootPath);
+			
+						
 			string errorMessage;
 
 			foreach (var file in _sessionFiles)
 			{
-				var fileShortened = file.Replace(gitRootPath, "");
+				var fileShortened = file.Replace(_gitHelper.GitRootDirectory, "");
 
 				if (fileShortened.StartsWith("\\"))
 				{
@@ -658,7 +710,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					fileShortened = fileShortened.Substring(1);
 				}
 
-				if (!gitHelper.ExecuteCommand("add \"" + fileShortened + "\"", out errorMessage))
+				if (!_gitHelper.ExecuteCommand("add \"" + fileShortened + "\"", out _, out errorMessage))
 				{
 					LogError("Error staging: *" + errorMessage + "*");
 				}
@@ -667,7 +719,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			var message = textBox_commitMessage.Text;
 
 
-			if (!gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out errorMessage))
+			if (!_gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out _, out errorMessage))
 			{
 				LogError("Error commiting: *" + errorMessage + "*");
 			}
@@ -683,7 +735,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			if (!gitHelper.ExecuteCommand("push", out errorMessage))
+			if (!_gitHelper.ExecuteCommand("push", out _, out errorMessage))
 			{
 				LogError("Error pushing: *" + errorMessage + "*");
 			}
@@ -1524,6 +1576,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void UpdateGitOptionsVisibility()
 		{
+			InitializeGitHelper();
+
 			textBox_commitMessage.Enabled = flipSwitch_gitCommit.IsOn;
 			textBox_commitMessage.BackColor = (
 				flipSwitch_gitCommit.IsOn ?
@@ -1535,6 +1589,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_gitCommit.IsOn ?
 				SystemColors.ControlText :
 				SystemColors.ControlDarkDark);
+
+			comboBox_gitBranches.Enabled = flipSwitch_gitCommit.IsOn;
 		}
 
 		// ============================================================================
@@ -1686,6 +1742,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_manageConnections.Visible = TargetConnections?.Count > 0;
 
 			LoadAllSolutions();
+			InitializeGitHelper();
 		}
 
 
@@ -1761,6 +1818,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_loadSolutions_Click(object sender, EventArgs e)
 		{
 			LoadAllSolutions();
+			InitializeGitHelper();
 		}
 
 		// ============================================================================
@@ -2297,6 +2355,22 @@ namespace Com.AiricLenz.XTB.Plugin
 			SaveSettings();
 		}
 
+
+		// ============================================================================
+		private void comboBox_gitBranches_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (_codeUpdate)
+			{
+				return;
+			}
+
+			if (!_gitHelper.SwitchToBranch(comboBox_gitBranches.SelectedItem.ToString(), out string errorMessage))
+			{
+				UpdateGitBranches();
+				
+				// TODO: Show error message
+			}
+		}
 
 		#endregion
 
