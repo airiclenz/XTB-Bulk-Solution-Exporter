@@ -702,7 +702,7 @@ namespace Com.AiricLenz.XTB.Components
 
 			Brush brushCheckedRow =
 				new SolidBrush(
-					Color.FromArgb(30, ColorHelper.MixColors(_colorOn, 0.6, Color.Black)));
+					Color.FromArgb(10, ColorHelper.MixColors(_colorOn, 0.7, Color.Black)));
 
 			var checkerRadius = _checkBoxRadius * 0.5f;
 			var marginTopText = (_itemHeight - _textHeight) / 2f;
@@ -780,7 +780,6 @@ namespace Com.AiricLenz.XTB.Components
 				var brushText = isSelected ? new SolidBrush(SystemColors.HighlightText) : new SolidBrush(ForeColor);
 				var hoveringThisCheckBox = _hoveringAboveCheckBoxIndex == i;
 
-				//var checkBoxBrush = new SolidBrush(
 				var checkBoxFillColor =
 					isChecked ?
 					ColorHelper.MixColors(_colorOn, (isSelected ? 0.2 : 0), Color.White) :
@@ -791,8 +790,9 @@ namespace Com.AiricLenz.XTB.Components
 					new Pen(Color.FromArgb(120, 0, 0, 0), isChecked ? (hoveringThisCheckBox ? 2f : 1.5f) : (hoveringThisCheckBox ? 2f : 1f));
 
 				// paint the row
+				var penRowFrame = new Pen(Color.FromArgb(50, Color.LightGray));
 				g.FillRectangle(brushRow, new Rectangle(0, yPosition, this.Width, _itemHeight));
-				g.DrawRectangle(Pens.LightGray, new Rectangle(0, yPosition, this.Width, _itemHeight));
+				g.DrawRectangle(penRowFrame, new Rectangle(0, yPosition, this.Width, _itemHeight));
 
 
 				// write the text
