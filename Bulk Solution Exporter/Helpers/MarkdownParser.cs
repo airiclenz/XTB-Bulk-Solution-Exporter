@@ -86,14 +86,23 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			_richTextBox.SelectionStart = _richTextBox.TextLength;
 			_richTextBox.SelectionLength = 0;
 
-			string[] lines = markdown.Split(new[] { Environment.NewLine, "\n" },
-				StringSplitOptions.None);
+			/*
+			string[] lines = 
+				markdown.Split(
+					new[] { Environment.NewLine, "\n" },
+					StringSplitOptions.None);
+			
 
 			foreach (string line in lines)
 			{
 				ProcessLine(line.TrimEnd());
 				_richTextBox.AppendText(Environment.NewLine);
 			}
+			*/
+
+			ProcessLine(markdown.TrimEnd());
+			_richTextBox.AppendText(Environment.NewLine);
+
 
 			_richTextBox.SelectionStart = originalSelectionStart;
 			_richTextBox.SelectionLength = originalSelectionLength;

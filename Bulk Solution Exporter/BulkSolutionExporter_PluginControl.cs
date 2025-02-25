@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
+using System.Web.Services.Description;
 using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
@@ -324,7 +325,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_logger.DecreaseIndent();
-			Log();
 		}
 
 
@@ -433,25 +433,17 @@ namespace Com.AiricLenz.XTB.Plugin
 					_settings.GetSolutionConfiguration(
 						solution.SolutionIdentifier);
 
-				var solutionFile =
-					importManagd ? solutionConfig.FileNameManaged : solutionConfig.FileNameUnmanaged;
-
 				var startTime = DateTime.Now;
 
 				Log("**Importing solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
-				if (ImportSolution(targetServiceClient, solutionFile, importManagd))
+				if (ImportSolution(targetServiceClient, solution, importManagd))
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
 					Log("The import was succesful.");
 					Log("Duration: " + duration);
 					_logger.DecreaseIndent();
-				}
-
-				if (i < listBoxSolutions.Items.Count - 1)
-				{
-					Log();
 				}
 			}
 		}
@@ -686,7 +678,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			Log();
 			Log("#####Commiting the new files to Git:");
 			_logger.IncreaseIndent();
 
@@ -696,8 +687,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				_logger.DecreaseIndent();
 				return;
 			}
-			
-						
+
+
 			string errorMessage;
 
 			foreach (var file in _sessionFiles)
@@ -751,40 +742,77 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private bool ImportSolution(
 			IOrganizationService targetServiceClient,
-			string solutionPath,
+			Solution solution,
 			bool isManaged = true)
 		{
 			_logger.IncreaseIndent();
 
+			var config =
+				_settings.GetSolutionConfiguration(
+					solution.SolutionIdentifier);
+
+			if (config == null)
+			{
+				_logger.DecreaseIndent();
+				return false;
+			}
+
+			string solutionPath;
+
+			if (isManaged)
+			{
+				solutionPath = config.FileNameManaged;
+			}
+			else
+			{
+				solutionPath = config.FileNameUnmanaged;
+			}
+
 			if (!File.Exists(solutionPath))
 			{
-
 				LogError("The file '" + solutionPath + "' does not exist.");
 				_logger.DecreaseIndent();
 				return false;
 			}
 
-			byte[] solutionBytes = File.ReadAllBytes(solutionPath);
+			var solutionBytes = File.ReadAllBytes(solutionPath);
+			var isHolding = isManaged && flipSwitch_upgrade.IsOn;
 
-			// Create import request
-			var importRequest = new ImportSolutionRequest()
-			{
-				CustomizationFile = solutionBytes,
-				PublishWorkflows = flipSwitch_enableAutomation.IsOn,
-				OverwriteUnmanagedCustomizations = flipSwitch_overwrite.IsOn,
-				ConvertToManaged = isManaged,
-				ImportJobId = Guid.NewGuid(), // Optional: Track the import job
-			};
-
-			// Execute import request
 			try
 			{
+
+				// Create import request
+				var importRequest = new ImportSolutionRequest()
+				{
+					CustomizationFile = solutionBytes,
+					PublishWorkflows = flipSwitch_enableAutomation.IsOn,
+					OverwriteUnmanagedCustomizations = flipSwitch_overwrite.IsOn,
+					ConvertToManaged = isManaged,
+					HoldingSolution = isHolding,
+				};
+
+				if (isHolding)
+				{
+					Log("Installing the solution upgrade...");
+				}
+
 				targetServiceClient.Execute(importRequest);
+
+				if (isHolding)
+				{
+					Log("Applying the solution upgrade...");
+
+					var applyUpgradeRequest = new DeleteAndPromoteRequest
+					{
+						UniqueName = solution.UniqueName,
+					};
+
+					targetServiceClient.Execute(applyUpgradeRequest);
+				}
 			}
+
 			catch (FaultException ex)
 			{
-
-
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
 						ex.Message,
@@ -1616,6 +1644,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_importManaged.IsOn ||
 				flipSwitch_importUnmanaged.IsOn;
 
+			flipSwitch_upgrade.Enabled = optionEnabled;
 			flipSwitch_enableAutomation.Enabled = optionEnabled;
 			flipSwitch_overwrite.Enabled = optionEnabled;
 			flipSwitch_publishTarget.Enabled = optionEnabled;
@@ -1697,6 +1726,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
 			{
 				_settings = new Settings();
+				_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
 				_codeUpdate = false;
 
 				SaveSettings();
@@ -1715,6 +1745,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
 				flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count != 0;
 				flipSwitch_enableAutomation.IsOn = _settings.EnableAutomation;
+				flipSwitch_upgrade.IsOn = _settings.Upgrade;
 				flipSwitch_overwrite.IsOn = _settings.OverwriteCustomizations;
 				UpdateImportOptionsVisibility();
 
@@ -1734,6 +1765,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateGitOptionsVisibility();
 
 				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
+
+				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
 
 				_codeUpdate = false;
 			}
@@ -1946,6 +1979,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateImportOptionsVisibility();
 			ExportButtonSetState();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_upgrade_Toggled(object sender, EventArgs e)
+		{
+			_settings.Upgrade =
+				flipSwitch_upgrade.IsOn;
+
 			SaveSettings();
 		}
 
@@ -2367,10 +2410,23 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!_gitHelper.SwitchToBranch(comboBox_gitBranches.SelectedItem.ToString(), out string errorMessage))
 			{
 				UpdateGitBranches();
-				
-				// TODO: Show error message
+
+				LogError(errorMessage);
 			}
 		}
+
+		// ============================================================================
+		private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
+		{
+			if (_settings == null)
+			{
+				return;
+			}
+
+			_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
+			SaveSettings();
+		}
+
 
 		#endregion
 

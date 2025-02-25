@@ -3,13 +3,18 @@
 - add dynamics content for commit message and update information tooltip accordingly
 - allow for dynamic content in the filenames
 - save and import config file / alternatively create multiple profiles per connection for easier access
-- show current branch and allow changing
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
- 
+
 ## Added in Release 2025.02.<mark>XX</mark>
+ 
+## Added in Release 2025.02.25
+
+- show current branch and allow changing
+- added option to import solutions with Upgrade / Update
+- Saving splitter position in settings now
 
 ## Added in Release 2025.02.19
 

@@ -71,6 +71,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		}
 
+		public bool Upgrade
+		{
+			get; set;
+		} = true;
+
 		public string CommitMessage
 		{
 			get; set;
@@ -84,7 +89,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool EnableAutomation
 		{
 			get; set;
-		}
+		} = true;
 
 		public bool OverwriteCustomizations
 		{
@@ -120,6 +125,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			get; set;
 		}
+
+		public int SplitContainerPosition
+		{
+			get; set;
+		} = 500;
 
 
 
