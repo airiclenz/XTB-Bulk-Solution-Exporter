@@ -2,7 +2,10 @@
 
 ## Summary
 
-A Plugin foor the **XrmToolBox** that helps to bulk export solution files as managed and/or unmanaged and save them as specific files including version number updates.
+A Bulk-Solution-Manager tool for the XrmToolBox that can export and import multiple solutions into multiple target encironments. 
+Before each export, the version number of the solutions can be automatically updated following to a specific format.
+The tool supports manged- and unmanaged solution where each file is saved in its specific target location. 
+Downloaded solution files can automatically be commited to a git repository.
 
 ## Description
 
