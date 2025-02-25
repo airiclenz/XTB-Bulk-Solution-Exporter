@@ -1,5 +1,7 @@
 # Bulk Solution Exporter
 
+<img src="https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/refs/heads/master/Images/bulk%20solution%20exporter.svg" alt="Logo" width="110"/>
+
 ## Summary
 
 A Bulk-Solution-Manager tool for the XrmToolBox that can export and import multiple solutions into multiple target encironments. 
