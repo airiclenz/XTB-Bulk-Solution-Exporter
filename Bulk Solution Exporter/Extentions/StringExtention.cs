@@ -18,6 +18,11 @@ namespace Com.AiricLenz.Extentions
     {
 
 		// ============================================================================
+		/// <summary>
+		/// Checks if a string value has content or is empty or null.
+		/// </summary>
+		/// <param name="inputString"></param>
+		/// <returns>Return true if the string is null, empty or contains only white-spaces.</returns>
 		public static bool IsEmpty(
 			this string inputString)
 		{

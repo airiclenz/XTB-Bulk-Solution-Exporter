@@ -86,23 +86,12 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			_richTextBox.SelectionStart = _richTextBox.TextLength;
 			_richTextBox.SelectionLength = 0;
 
-			/*
-			string[] lines = 
-				markdown.Split(
-					new[] { Environment.NewLine, "\n" },
-					StringSplitOptions.None);
-			
+			ProcessFormattedText(
+				markdown.TrimEnd(),
+				Array.Empty<FontStyle>(),
+				_richTextBox.Font.Size);
 
-			foreach (string line in lines)
-			{
-				ProcessLine(line.TrimEnd());
-				_richTextBox.AppendText(Environment.NewLine);
-			}
-			*/
-
-			ProcessLine(markdown.TrimEnd());
 			_richTextBox.AppendText(Environment.NewLine);
-
 
 			_richTextBox.SelectionStart = originalSelectionStart;
 			_richTextBox.SelectionLength = originalSelectionLength;
@@ -110,53 +99,103 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 
 		// ============================================================================
-		private void ProcessLine(string line)
+		private void ProcessFormattedText(
+			string text, 
+			FontStyle[] 
+			currentStyles, 
+			float fontSize, 
+			Color? textColor = null)
 		{
-			if (line.StartsWith("#"))
-			{
-				int headerLevel = 0;
-				while (headerLevel < line.Length && headerLevel < 6 && line[headerLevel] == '#')
-				{
-					headerLevel++;
-				}
-
-				if (headerLevel > 0 && headerLevel <= 6)
-				{
-					float fontSize = _richTextBox.Font.Size + (6 - headerLevel) * 2;
-					string headerText = line.Substring(headerLevel).Trim();
-					ProcessFormattedText(headerText, new FontStyle[] { FontStyle.Bold }, fontSize);
-					return;
-				}
-			}
-
-			ProcessFormattedText(line, Array.Empty<FontStyle>(), _richTextBox.Font.Size);
-		}
-
-
-		// ============================================================================
-		private void ProcessFormattedText(string text, FontStyle[] currentStyles, float fontSize, Color? textColor = null)
-		{
+			
 			int currentPos = 0;
 
 			while (currentPos < text.Length)
 			{
-				// Find the next formatting marker
+
+				// -----------------------------------------------------------
+				// 1) Check if there's a heading (#) at the current position
+				//    (e.g. "### heading text")
+				// -----------------------------------------------------------
+				if (text[currentPos] == '#')
+				{
+					int headingScan = currentPos;
+					int headingCount = 0;
+
+					// Count up to 6 '#' characters
+					while (headingScan < text.Length && headingCount < 6 && text[headingScan] == '#')
+					{
+						headingCount++;
+						headingScan++;
+					}
+										
+					// (Optional) typical Markdown requires a space or end-of-line after the #'s
+					bool hasSpaceOrEOL = (headingScan >= text.Length
+										  || text[headingScan] == ' '
+										  || text[headingScan] == '\r'
+										  || text[headingScan] == '\n');
+					
+
+					if (headingCount > 0 && 
+						hasSpaceOrEOL)
+					{
+						// Skip a single space if present
+						if (headingScan < text.Length && text[headingScan] == ' ')
+						{
+							headingScan++;
+						}
+
+						// Now figure out how far the heading text goes.
+						// For a multi-line scenario, you might parse until newline (or end of text).
+						int nextLineBreak = text.IndexOfAny(new[] { '\r', '\n' }, headingScan);
+						if (nextLineBreak < 0)
+							nextLineBreak = text.Length;
+
+						// Extract the heading substring
+						string headingContent = text.Substring(headingScan, nextLineBreak - headingScan);
+
+						// Example: heading size = base size + (6 - headingCount)*2
+						float headingSize = _richTextBox.Font.Size + (6 - headingCount) * 2;
+
+						// Bold is typical for headings, so add FontStyle.Bold
+						var headingStyles = currentStyles.Concat(new[] { FontStyle.Bold }).ToArray();
+
+						// Recursively parse the heading text so we still detect **bold**, <color=...>, etc.
+						ProcessFormattedText(headingContent, headingStyles, headingSize, textColor);
+
+						// Advance currentPos past the heading text
+						currentPos = nextLineBreak;
+						continue; // Move on to the next iteration
+					}
+				}
+
+				// -----------------------------------------------------------
+				// 2) If no heading found, fall back to your existing marker logic
+				// -----------------------------------------------------------
 				var nextMarker = FindNextMarker(text, currentPos);
 
 				if (!nextMarker.found)
 				{
-					// No more markers, append the rest as plain text with current styles
-					AppendWithStyles(text.Substring(currentPos), currentStyles, fontSize, textColor);
+					// No more markers => append remainder as-is
+					AppendWithStyles(
+						text.Substring(currentPos),
+						currentStyles, 
+						fontSize, 
+						textColor);
+
 					break;
 				}
 
 				// Append text before the marker
 				if (nextMarker.position > currentPos)
 				{
-					AppendWithStyles(text.Substring(currentPos, nextMarker.position - currentPos),
-						currentStyles, fontSize, textColor);
+					AppendWithStyles(
+						text.Substring(currentPos, nextMarker.position - currentPos),
+						currentStyles,
+						fontSize, 
+						textColor);
 				}
 
+				// Then handle the marker (bold, italic, code, or color) as in your original code
 				if (nextMarker.marker.IsColorToken)
 				{
 					// Handle color token

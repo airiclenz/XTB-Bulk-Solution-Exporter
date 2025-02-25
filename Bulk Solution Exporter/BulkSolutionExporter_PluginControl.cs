@@ -55,6 +55,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private const string ColorIndent = "<color=#DDDDDD>";
 		private const string ColorGreen = "<color=#227700>";
 		private const string ColorConnection = "<color=#337799>";
+		private const string ColorTeeth = "<color=#CCCCCE>";
 
 		private const string ColorEndTag = "</color>";
 
@@ -217,7 +218,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void PublishAll(
 			ConnectionDetail connection)
 		{
-			Log("#####Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
+			if (flipSwitch_publishTarget.IsOff)
+			{
+				return;
+			}
+
+			Log("##### Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
 			_logger.IncreaseIndent();
 
 			var startTime = DateTime.Now;
@@ -238,7 +244,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			var duration = GetDurationString(startTime);
 
-			Log("**Publish All was completed** (" + duration + ").");
+			Log("Publish All was completed.");
+			Log($"Duration: {duration}");
+
 			_logger.DecreaseIndent();
 			Log();
 		}
@@ -253,7 +261,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			Log("#####Updating Version Numbers:");
+			Log("##### Updating Version Numbers:");
 			_logger.IncreaseIndent();
 
 
@@ -292,7 +300,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			Log("#####Exporting:");
+			Log("##### Exporting:");
 			_logger.IncreaseIndent();
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
@@ -318,13 +326,14 @@ namespace Com.AiricLenz.XTB.Plugin
 					break;
 				}
 
-				if (i < listBoxSolutions.Items.Count - 1)
+				if (i < listBoxSolutions.CheckedItems.Count - 1)
 				{
 					Log();
 				}
 			}
 
 			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -422,7 +431,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			bool importManagd = flipSwitch_importManaged.IsOn;
 
-			Log();
+			Log("##### Importing:");
+			_logger.IncreaseIndent();
 
 			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
 			{
@@ -443,9 +453,18 @@ namespace Com.AiricLenz.XTB.Plugin
 					var duration = GetDurationString(startTime);
 					Log("The import was succesful.");
 					Log("Duration: " + duration);
+
+					if (i < listBoxSolutions.CheckedItems.Count - 1)
+					{
+						Log();
+					}
+
 					_logger.DecreaseIndent();
 				}
 			}
+
+			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -678,13 +697,14 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			Log("#####Commiting the new files to Git:");
+			Log("##### Commiting the new files to Git:");
 			_logger.IncreaseIndent();
 
 			if (_sessionFiles.Count == 0)
 			{
 				Log("No files need to be committed.");
 				_logger.DecreaseIndent();
+				Log();
 				return;
 			}
 
@@ -723,6 +743,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (flipSwitch_pushCommit.IsOff)
 			{
 				_logger.DecreaseIndent();
+				Log();
 				return;
 			}
 
@@ -736,6 +757,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_logger.DecreaseIndent();
+			Log();
 		}
 
 
@@ -2238,20 +2260,18 @@ namespace Com.AiricLenz.XTB.Plugin
 					foreach (var targetConnection in TargetConnections)
 					{
 
-						Log();
-						Log($"#####Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-						Log(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
 
-						_logger.IncreaseIndent();
+						Log();
+
+						//_logger.IncreaseIndent();
 
 						ImportCheckedSolutions(targetConnection.ServiceClient);
+						PublishAll(targetConnection);
 
-						if (flipSwitch_publishTarget.IsOn)
-						{
-							PublishAll(targetConnection);
-						}
-
-						_logger.DecreaseIndent();
+						//_logger.DecreaseIndent();
 					}
 
 
@@ -2270,9 +2290,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					LoadAllSolutions();
 
-					Log();
-					Log(ColorGreen + "**Done.**" + ColorEndTag);
-
+					Log(ColorGreen + "##### Done." + ColorEndTag);
 
 					SetUiEnabledState(true);
 				}
@@ -2294,6 +2312,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_importUnmanaged.IsLocked = !state;
 			flipSwitch_enableAutomation.IsLocked = !state;
 			flipSwitch_overwrite.IsLocked = !state;
+			flipSwitch_upgrade.IsLocked = !state;
 
 			flipSwitch_publishTarget.IsLocked = !state;
 			flipSwitch_gitCommit.IsLocked = !state;
@@ -2306,6 +2325,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			textBox_commitMessage.Enabled = state;
 			textBox_managed.Enabled = state;
 			textBox_unmanaged.Enabled = state;
+
+			comboBox_gitBranches.Enabled = state;
 		}
 
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Com.AiricLenz.Extentions;
 using Microsoft.Crm.Sdk.Messages;
 
 // ============================================================================
@@ -55,8 +56,16 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		public void Log(string message)
 		{
-			var indent = GenerateIndent();
-			_markdownParser.ParseAndAppend(indent + message);
+			if (message.IsEmpty())
+			{
+				_markdownParser.ParseAndAppend(string.Empty);
+			}
+			else
+			{
+				var indent = GenerateIndent();
+				_markdownParser.ParseAndAppend(indent + message);
+			}
+			
 		}
 
 		// ============================================================================
