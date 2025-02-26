@@ -78,6 +78,16 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 
 		// ============================================================================
+		/// <summary>
+		/// A simplified parser that tries to handle a few basic tokens:
+		/// - **bold** text
+		/// - *italic* text
+		/// - `code` (colored)
+		/// - # Heading (rest of line in bold, bigger font)
+		/// - <color=#000066>colored</color> text
+		/// - Regular text
+		/// </summary>
+		/// <param name="message"></param>
 		public void ParseAndAppend(string markdown)
 		{
 			int originalSelectionStart = _richTextBox.SelectionStart;
@@ -86,12 +96,20 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			_richTextBox.SelectionStart = _richTextBox.TextLength;
 			_richTextBox.SelectionLength = 0;
 
-			ProcessFormattedText(
-				markdown.TrimEnd(),
-				Array.Empty<FontStyle>(),
-				_richTextBox.Font.Size);
+			string[] lines =
+				markdown.Split(
+					new[] { Environment.NewLine, "\n" },
+					StringSplitOptions.None);
 
-			_richTextBox.AppendText(Environment.NewLine);
+			foreach (string line in lines)
+			{
+				ProcessFormattedText(
+					line.TrimEnd(),
+					Array.Empty<FontStyle>(),
+					_richTextBox.Font.Size);
+
+				_richTextBox.AppendText(Environment.NewLine);
+			}
 
 			_richTextBox.SelectionStart = originalSelectionStart;
 			_richTextBox.SelectionLength = originalSelectionLength;
@@ -100,13 +118,13 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 		// ============================================================================
 		private void ProcessFormattedText(
-			string text, 
-			FontStyle[] 
-			currentStyles, 
-			float fontSize, 
+			string text,
+			FontStyle[]
+			currentStyles,
+			float fontSize,
 			Color? textColor = null)
 		{
-			
+
 			int currentPos = 0;
 
 			while (currentPos < text.Length)
@@ -127,15 +145,15 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 						headingCount++;
 						headingScan++;
 					}
-										
+
 					// (Optional) typical Markdown requires a space or end-of-line after the #'s
 					bool hasSpaceOrEOL = (headingScan >= text.Length
 										  || text[headingScan] == ' '
 										  || text[headingScan] == '\r'
 										  || text[headingScan] == '\n');
-					
 
-					if (headingCount > 0 && 
+
+					if (headingCount > 0 &&
 						hasSpaceOrEOL)
 					{
 						// Skip a single space if present
@@ -178,8 +196,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 					// No more markers => append remainder as-is
 					AppendWithStyles(
 						text.Substring(currentPos),
-						currentStyles, 
-						fontSize, 
+						currentStyles,
+						fontSize,
 						textColor);
 
 					break;
@@ -191,7 +209,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 					AppendWithStyles(
 						text.Substring(currentPos, nextMarker.position - currentPos),
 						currentStyles,
-						fontSize, 
+						fontSize,
 						textColor);
 				}
 
