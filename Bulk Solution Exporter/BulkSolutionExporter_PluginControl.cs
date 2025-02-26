@@ -1748,7 +1748,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
 			{
 				_settings = new Settings();
-				_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
 				_codeUpdate = false;
 
 				SaveSettings();
@@ -1758,6 +1757,10 @@ namespace Com.AiricLenz.XTB.Plugin
 			else
 			{
 				LogInfo("Settings found and loaded");
+
+				_codeUpdate = true;
+
+				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
 
 				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
 				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
@@ -1787,8 +1790,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateGitOptionsVisibility();
 
 				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
-
-				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
 
 				_codeUpdate = false;
 			}
@@ -2327,6 +2328,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			textBox_unmanaged.Enabled = state;
 
 			comboBox_gitBranches.Enabled = state;
+
+			button_loadSolutions.Enabled = state;
+			button_Export.Enabled = state;
+			button_addAdditionalConnection.Enabled = state;
+			button_manageConnections.Enabled = state;
+			button_Settings.Enabled = state;
 		}
 
 
@@ -2408,7 +2415,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void listBoxSolutions_SortingColumnChanged(object sender, EventArgs e)
 		{
-			if (_codeUpdate)
+			if (_settings == null ||
+				_codeUpdate)
 			{
 				return;
 			}
@@ -2439,7 +2447,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
 		{
-			if (_settings == null)
+			if (_settings == null ||
+				_codeUpdate)
 			{
 				return;
 			}

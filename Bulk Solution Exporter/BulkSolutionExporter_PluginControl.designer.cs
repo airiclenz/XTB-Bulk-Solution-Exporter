@@ -433,7 +433,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Panel2.Controls.Add(this.textBox_unmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.textBox_managed);
             this.splitContainer1.Size = new System.Drawing.Size(1494, 604);
-            this.splitContainer1.SplitterDistance = 671;
+            this.splitContainer1.SplitterDistance = 650;
             this.splitContainer1.TabIndex = 6;
             this.splitContainer1.SplitterMoved += new System.Windows.Forms.SplitterEventHandler(this.splitContainer1_SplitterMoved);
             // 
@@ -457,7 +457,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_exportCsv});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(671, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(650, 25);
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -530,7 +530,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.Name = "listBoxSolutions";
             this.listBoxSolutions.ShowScrollBar = true;
             this.listBoxSolutions.ShowTooltips = true;
-            this.listBoxSolutions.Size = new System.Drawing.Size(665, 564);
+            this.listBoxSolutions.Size = new System.Drawing.Size(644, 564);
             this.listBoxSolutions.SortingColumnIndex = -1;
             this.listBoxSolutions.SortingColumnOrder = System.Windows.Forms.SortOrder.None;
             this.listBoxSolutions.TabIndex = 7;
