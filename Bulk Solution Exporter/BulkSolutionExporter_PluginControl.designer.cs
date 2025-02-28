@@ -432,6 +432,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Panel2.Controls.Add(this.label_Managed);
             this.splitContainer1.Panel2.Controls.Add(this.textBox_unmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.textBox_managed);
+            this.splitContainer1.Panel2MinSize = 300;
             this.splitContainer1.Size = new System.Drawing.Size(1494, 604);
             this.splitContainer1.SplitterDistance = 650;
             this.splitContainer1.TabIndex = 6;
@@ -831,6 +832,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.Controls.Add(this.flipSwitch_exportManaged);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStripMenu);
+            this.MinimumSize = new System.Drawing.Size(700, 600);
             this.Name = "BulkSolutionExporter_PluginControl";
             this.Size = new System.Drawing.Size(1500, 800);
             this.Load += new System.EventHandler(this.OnPluginControl_Load);

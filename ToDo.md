@@ -10,6 +10,8 @@
 
 ## Added in Release 2025.02.<mark>XX</mark>
  
+- fixed bug where splitter-pos restore would fail
+
 ## Added in Release 2025.02.25
 
 - show current branch and allow changing

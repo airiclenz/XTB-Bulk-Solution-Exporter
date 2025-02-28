@@ -5,7 +5,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
-using System.Web.Services.Description;
 using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
 using Com.AiricLenz.XTB.Components;
@@ -32,8 +31,11 @@ namespace Com.AiricLenz.XTB.Plugin
 	{
 		//private IOrganizationService _targetServiceClient = null;
 
+		private bool isDebugMode = false;
+
 		private Settings _settings;
-		private bool _codeUpdate = true;
+		private bool _codeUpdate = false;
+		private bool _codeUpdateSplitter = false;
 		private Guid _currentConnectionGuid;
 		private SolutionConfiguration _currentSolutionConfig;
 
@@ -70,6 +72,36 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 		}
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		private bool CodeUpdate
+		{
+			get
+			{
+				return _codeUpdate;
+			}
+
+			set
+			{
+				_codeUpdate = value;
+				LogDebug($"CodeUpdate = {_codeUpdate}");
+			}
+		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		private bool CodeUpdateSplitter
+		{
+			get
+			{
+				return _codeUpdateSplitter;
+			}
+
+			set
+			{
+				_codeUpdateSplitter = value;
+				LogDebug($"CodeUpdateSplitter = {_codeUpdateSplitter}");
+			}
+		}
+
 
 		// ##################################################
 		// ##################################################
@@ -102,7 +134,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			if (listBoxSolutions.SelectedIndex == -1)
 			{
-				_codeUpdate = true;
+				CodeUpdate = true;
 
 				_currentSolution = null;
 				_currentSolutionConfig = null;
@@ -114,7 +146,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_unmanaged.Text = string.Empty;
 
 				label_title.Text = "No Solution selected (click a solution in the list)";
-				_codeUpdate = false;
+				CodeUpdate = false;
 
 				return;
 			}
@@ -132,10 +164,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					_currentSolution.SolutionIdentifier);
 			}
 
-			_codeUpdate = true;
+			CodeUpdate = true;
 			textBox_managed.Text = _currentSolutionConfig.FileNameManaged;
 			textBox_unmanaged.Text = _currentSolutionConfig.FileNameUnmanaged;
-			_codeUpdate = false;
+			CodeUpdate = false;
 
 			button_browseManaged.Enabled = true;
 			button_browseUnmananged.Enabled = true;
@@ -680,11 +712,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_gitBranches = _gitHelper.GetAllBranches();
 
-			_codeUpdate = true;
+			CodeUpdate = true;
 			comboBox_gitBranches.Items.Clear();
 			comboBox_gitBranches.Items.AddRange(_gitBranches.ToArray());
 			comboBox_gitBranches.SelectedIndex = _gitBranches.IndexOf(_gitHelper.GetActiveBranch());
-			_codeUpdate = false;
+			CodeUpdate = false;
 		}
 
 
@@ -1025,12 +1057,12 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-					SaveSettings(true);
+					SaveSettings("LoadAllSolutions", true);
 
 					UpdateColumns();
 					UpdateSolutionList();
 					UpdateImportOptionsVisibility();
-					ExportButtonSetState();
+					SetExportButtonState();
 				}
 			});
 
@@ -1038,7 +1070,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExportButtonSetState()
+		private void SetExportButtonState()
 		{
 			var versionIsInvalid =
 				!Com.AiricLenz.XTB.Plugin.Schema.Version.ValidateFormat(
@@ -1130,16 +1162,17 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateTargetVersionStatusImages();
 			listBoxSolutions.Refresh();
-			ExportButtonSetState();
+			SetExportButtonState();
 
 		}
 
 
 		// ============================================================================
 		private void SaveSettings(
+			string caller,
 			bool cleanUpNonExistingSolutions = false)
 		{
-			if (_codeUpdate)
+			if (CodeUpdate)
 			{
 				return;
 			}
@@ -1165,6 +1198,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			// Save
 			SettingsManager.Instance.Save(GetType(), _settings);
+
+			LogDebug($"Settings have been saved ({caller}): ({_settings.SplitContainerPosition})");
 		}
 
 
@@ -1289,6 +1324,21 @@ namespace Com.AiricLenz.XTB.Plugin
 				richTextBox_log.SelectionStart = richTextBox_log.Text.Length;
 				richTextBox_log.ScrollToCaret();
 			}
+		}
+
+		// ============================================================================
+		private void LogDebug(string message = "")
+		{
+			// only allow debug messages when compiled as debug
+#if DEBUG
+
+			if (!isDebugMode)
+			{
+				return;
+			}
+
+			Log(message);
+#endif
 		}
 
 
@@ -1602,7 +1652,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					IsSortable = false,
 				};
 
-			_codeUpdate = true;
+			CodeUpdate = true;
 
 			listBoxSolutions.Columns =
 				new List<ColumnDefinition>
@@ -1618,7 +1668,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			listBoxSolutions.SortingColumnIndex = _settings.SortingColumnIndex;
 			listBoxSolutions.SortingColumnOrder = _settings.SortingColumnOrder;
 
-			_codeUpdate = false;
+			CodeUpdate = false;
 
 			//listBoxSolutions.Refresh();
 		}
@@ -1734,8 +1784,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger = new Logger(richTextBox_log);
 			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
 
+			ParentChanged += MyPlugin_ParentChanged;
+
 			UpdateColumns();
 		}
+
+
 
 
 		// ============================================================================
@@ -1748,9 +1802,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
 			{
 				_settings = new Settings();
-				_codeUpdate = false;
+				CodeUpdate = false;
 
-				SaveSettings();
+				SaveSettings("OnPluginControl_Load");
 
 				LogWarning("Settings not found => a new settings file has been created!");
 			}
@@ -1758,9 +1812,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				LogInfo("Settings found and loaded");
 
-				_codeUpdate = true;
-
-				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
+				CodeUpdate = true;
+				CodeUpdateSplitter = true;
 
 				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
 				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
@@ -1791,7 +1844,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
 
-				_codeUpdate = false;
+				UpdateSolutionSettingsScreen();
+				SetExportButtonState();
+
+				CodeUpdate = false;
 			}
 
 			button_loadSolutions.Enabled = Service != null;
@@ -1803,10 +1859,54 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		private void MyPlugin_ParentChanged(object sender, EventArgs e)
+		{
+			if (this.Parent != null)
+			{
+				if (this.IsHandleCreated)
+				{
+					this.BeginInvoke((MethodInvoker) delegate
+					{
+						CodeUpdate = true;
+						splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
+						splitContainer1.Update();  // Forces immediate UI update
+						splitContainer1.Refresh(); // Ensures repaint
+						Application.DoEvents();    // Processes pending UI messages
+						CodeUpdate = false;
+						CodeUpdateSplitter = false;
+						LogDebug($"After ParentChanged: {splitContainer1.SplitterDistance}");
+					});
+				}
+				else
+				{
+					this.HandleCreated += MyPlugin_HandleCreated;
+				}
+			}
+		}
+
+		// ============================================================================
+		private void MyPlugin_HandleCreated(object sender, EventArgs e)
+		{
+			this.HandleCreated -= MyPlugin_HandleCreated; // Unsubscribe to avoid multiple calls
+			this.BeginInvoke((MethodInvoker) delegate
+			{
+				CodeUpdate = true;
+				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
+				splitContainer1.Update();  // Forces immediate UI update
+				splitContainer1.Refresh(); // Ensures repaint
+				Application.DoEvents();    // Processes pending UI messages
+				CodeUpdate = false;
+				CodeUpdateSplitter = false;
+
+				LogDebug($"After HandleCreated: {splitContainer1.SplitterDistance}");
+			});
+		}
+
+		// ============================================================================
 		public override void ClosingPlugin(PluginCloseInfo info)
 		{
 			base.ClosingPlugin(info);
-			SaveSettings();
+			SaveSettings("ClosingPlugin");
 		}
 
 		// ============================================================================
@@ -1820,7 +1920,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			EventArgs e)
 		{
 			// Before leaving, save the settings
-			SaveSettings(true);
+			SaveSettings("MyPluginControl_OnCloseTool", true);
 		}
 
 
@@ -1880,31 +1980,45 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_publish_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.PublishAllPreExport = flipSwitch_publishSource.IsOn;
 
-			SaveSettings();
-			ExportButtonSetState();
+			SaveSettings("flipSwitch_publish_Toggled");
+			SetExportButtonState();
 		}
 
 
 		// ============================================================================
 		private void flipSwitch_updateVersion_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
 
 			UpdateVersionOptionsVisibility();
-
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_updateVersion_Toggled");
 		}
 
 
 		// ============================================================================
 		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
 
-			_codeUpdate = true;
+			CodeUpdate = true;
 
 			var gitEnabeld =
 				flipSwitch_exportManaged.IsOn ||
@@ -1913,18 +2027,23 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_gitCommit.Enabled = gitEnabeld;
 			flipSwitch_pushCommit.Enabled = gitEnabeld;
 
-			_codeUpdate = false;
+			CodeUpdate = false;
 
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_exportManaged_Toggled");
 		}
 
 		// ============================================================================
 		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
 
-			_codeUpdate = true;
+			CodeUpdate = true;
 
 			var gitEnabeld =
 				flipSwitch_exportManaged.IsOn ||
@@ -1933,30 +2052,40 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_gitCommit.Enabled = gitEnabeld;
 			flipSwitch_pushCommit.Enabled = gitEnabeld;
 
-			_codeUpdate = false;
+			CodeUpdate = false;
 
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_exportUnmanaged_Toggled");
 		}
 
 
 		// ============================================================================
 		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
 			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
 
 			UpdateGitOptionsVisibility();
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_gitCommit_Toggled");
 		}
 
 		// ============================================================================
 		private void flipSwitch_pushCommit_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.PushCommit = flipSwitch_pushCommit.IsOn;
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_pushCommit_Toggled");
 
 		}
 
@@ -1964,117 +2093,176 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.ImportManaged =
 				flipSwitch_importManaged.IsOn &&
 				TargetConnections?.Count > 0;
 
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
-				!_codeUpdate)
+				!CodeUpdate)
 			{
-				_codeUpdate = true;
+				CodeUpdate = true;
+
 				flipSwitch_importUnmanaged.IsOn = false;
 				_settings.ImportUnmanaged = false;
-				_codeUpdate = false;
+
+				CodeUpdate = false;
 			}
 
 			UpdateImportOptionsVisibility();
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_importManaged_Toggled");
 		}
 
 		// ============================================================================
 		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.ImportUnmanaged =
 				flipSwitch_importUnmanaged.IsOn &&
 				TargetConnections?.Count > 0;
 
 			if (flipSwitch_importManaged.IsOn &&
 				flipSwitch_importUnmanaged.IsOn &&
-				!_codeUpdate)
+				!CodeUpdate)
 			{
-				_codeUpdate = true;
+				CodeUpdate = true;
+
 				flipSwitch_importManaged.IsOn = false;
 				_settings.ImportManaged = false;
-				_codeUpdate = false;
+
+				CodeUpdate = false;
 			}
 
 			UpdateImportOptionsVisibility();
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("flipSwitch_importUnmanaged_Toggled");
 		}
 
 
 		// ============================================================================
 		private void flipSwitch_upgrade_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.Upgrade =
 				flipSwitch_upgrade.IsOn;
 
-			SaveSettings();
+			SaveSettings("flipSwitch_upgrade_Toggled");
 		}
 
 
 		// ============================================================================
 		private void textBox_commitMessage_TextChanged(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.CommitMessage = textBox_commitMessage.Text;
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("textBox_commitMessage_TextChanged");
 		}
 
 
 		// ============================================================================
 		private void textBox_commitMessage_Leave(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
 			_settings.CommitMessage = textBox_commitMessage.Text;
-			SaveSettings();
+			SaveSettings("textBox_commitMessage_Leave");
 		}
 
 
 		// ============================================================================
 		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
 			_settings.VersionFormat = textBox_versionFormat.Text;
-			ExportButtonSetState();
-			SaveSettings();
+			SetExportButtonState();
+			SaveSettings("textBox_versionFormat_TextChanged");
 		}
 
 		// ============================================================================
 		private void textBox_versionFormat_Leave(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.VersionFormat = textBox_versionFormat.Text;
-			SaveSettings();
+			SaveSettings("textBox_versionFormat_Leave");
 		}
 
 
 		// ============================================================================
 		private void flipSwitch_enableAutomation_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			_settings.EnableAutomation = flipSwitch_enableAutomation.IsOn;
-			SaveSettings();
+			SaveSettings("flipSwitch_enableAutomation_Toggled");
 		}
 
 		// ============================================================================
 		private void flipSwitch_overwrite_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
 			_settings.OverwriteCustomizations = flipSwitch_overwrite.IsOn;
-			SaveSettings();
+			SaveSettings("flipSwitch_overwrite_Toggled");
 
 		}
 
 		// ============================================================================
 		private void flipSwitch_publishTarget_Toggled(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
 			_settings.PublishAllPostImport = flipSwitch_publishTarget.IsOn;
-			SaveSettings();
+			SaveSettings("flipSwitch_publishTarget_Toggled");
 		}
 
 
 		// ============================================================================
 		private void listSolutions_SelectedIndexChanged(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			UpdateSolutionSettingsScreen();
 
 			var rowIsSelected = listBoxSolutions.SelectedIndex != -1;
@@ -2082,16 +2270,22 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
 
-			ExportButtonSetState();
+			SetExportButtonState();
 
 		}
+
 
 
 		// ============================================================================
 		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
 		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
 			UpdateItemSortingIndexesFromListBox();
-			SaveSettings();
+			SaveSettings("listBoxSolutions_ItemOrderChanged");
 		}
 
 
@@ -2099,7 +2293,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void textBox_managed_TextChanged(object sender, EventArgs e)
 		{
 			if (listBoxSolutions.SelectedIndex == -1 ||
-				_codeUpdate)
+				CodeUpdate)
 			{
 				return;
 			}
@@ -2109,14 +2303,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
 			UpdateTargetVersionStatusImages();
-			SaveSettings();
+			SaveSettings("textBox_managed_TextChanged");
 		}
 
 		// ============================================================================
 		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
 		{
 			if (listBoxSolutions.SelectedIndex == -1 ||
-				_codeUpdate)
+				CodeUpdate)
 			{
 				return;
 			}
@@ -2126,7 +2320,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
 			UpdateTargetVersionStatusImages();
-			SaveSettings();
+			SaveSettings("textBox_unmanaged_TextChanged");
 		}
 
 
@@ -2340,8 +2534,13 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void listSolutions_ItemCheck(object sender, EventArgs e)
 		{
-			ExportButtonSetState();
-			SaveSettings();
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			SetExportButtonState();
+			SaveSettings("listSolutions_ItemCheck");
 		}
 
 		// ============================================================================
@@ -2354,21 +2553,21 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void button_checkAll_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.CheckAllItems();
-			SaveSettings();
+			SaveSettings("button_checkAll_Click");
 		}
 
 		// ============================================================================
 		private void button_invertCheck_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.InvertCheckOfAllItems();
-			SaveSettings();
+			SaveSettings("InvertCheckOfAllItems");
 		}
 
 		// ============================================================================
 		private void button_uncheckAll_Click(object sender, EventArgs e)
 		{
 			listBoxSolutions.UnCheckAllItems();
-			SaveSettings();
+			SaveSettings("UnCheckAllItems");
 		}
 
 
@@ -2382,7 +2581,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			settingsForm.ShowDialog();
 			_settings = settingsForm.Settings;
 
-			SaveSettings();
+			SaveSettings("button_Settings_Click");
 			UpdateColumns();
 			UpdateSolutionList();
 		}
@@ -2416,7 +2615,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void listBoxSolutions_SortingColumnChanged(object sender, EventArgs e)
 		{
 			if (_settings == null ||
-				_codeUpdate)
+				CodeUpdate)
 			{
 				return;
 			}
@@ -2424,14 +2623,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			_settings.SortingColumnIndex = listBoxSolutions.SortingColumnIndex;
 			_settings.SortingColumnOrder = listBoxSolutions.SortingColumnOrder;
 
-			SaveSettings();
+			SaveSettings("listBoxSolutions_SortingColumnChanged");
 		}
 
 
 		// ============================================================================
 		private void comboBox_gitBranches_SelectedIndexChanged(object sender, EventArgs e)
 		{
-			if (_codeUpdate)
+			if (CodeUpdate)
 			{
 				return;
 			}
@@ -2448,13 +2647,16 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
 		{
 			if (_settings == null ||
-				_codeUpdate)
+				CodeUpdate ||
+				CodeUpdateSplitter)
 			{
+				LogDebug($"OnSplitterMoved not executing - settingsNull: {_settings == null}, codeUpdate: {CodeUpdate}, codeUpdateSplitter {CodeUpdateSplitter}");
 				return;
 			}
 
+			LogDebug("OnSplitterMoved: " + splitContainer1.SplitterDistance);
 			_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
-			SaveSettings();
+			SaveSettings("splitContainer1_SplitterMoved");
 		}
 
 
