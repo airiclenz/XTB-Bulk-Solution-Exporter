@@ -7,10 +7,13 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
+## Added in Release 2025.03.<mark>XX</mark>
 
-## Added in Release 2025.02.<mark>XX</mark>
+
+## Added in Release 2025.03.01
  
 - fixed bug where splitter-pos restore would fail
+- better / cleaner logging
 
 ## Added in Release 2025.02.25
 

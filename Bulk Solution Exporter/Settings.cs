@@ -84,7 +84,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		public string VersionFormat
 		{
 			get; set;
-		}
+		} = "YYYY.MM.DD.+";
 
 		public bool EnableAutomation
 		{
@@ -94,12 +94,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool OverwriteCustomizations
 		{
 			get; set;
-		}
+		} = false;
 
 		public bool SaveVersionJson
 		{
 			get; set;
-		}
+		} = true;
 
 		public bool ShowFriendlySolutionNames
 		{
@@ -114,7 +114,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool ShowToolTips
 		{
 			get; set;
-		}
+		} = true;
 
 		public int SortingColumnIndex
 		{
