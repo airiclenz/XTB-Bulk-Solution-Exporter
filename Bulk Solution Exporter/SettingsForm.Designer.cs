@@ -31,11 +31,13 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
             this.button_ok = new System.Windows.Forms.Button();
             this.groupBox_generalSettings = new System.Windows.Forms.GroupBox();
+            this.flipSwitch_saveVersionJson = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.groupBox_solutionListBoxSettings = new System.Windows.Forms.GroupBox();
             this.flipSwitch_showLogicalNames = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_showFriendlyNames = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_showTooltips = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.flipSwitch_saveVersionJson = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.label_connectiontimeout = new System.Windows.Forms.Label();
+            this.textBox_connectionTimeout = new System.Windows.Forms.TextBox();
             this.groupBox_generalSettings.SuspendLayout();
             this.groupBox_solutionListBoxSettings.SuspendLayout();
             this.SuspendLayout();
@@ -55,13 +57,35 @@
             // 
             this.groupBox_generalSettings.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox_generalSettings.Controls.Add(this.textBox_connectionTimeout);
+            this.groupBox_generalSettings.Controls.Add(this.label_connectiontimeout);
             this.groupBox_generalSettings.Controls.Add(this.flipSwitch_saveVersionJson);
             this.groupBox_generalSettings.Location = new System.Drawing.Point(12, 12);
             this.groupBox_generalSettings.Name = "groupBox_generalSettings";
-            this.groupBox_generalSettings.Size = new System.Drawing.Size(560, 68);
+            this.groupBox_generalSettings.Size = new System.Drawing.Size(560, 96);
             this.groupBox_generalSettings.TabIndex = 1;
             this.groupBox_generalSettings.TabStop = false;
             this.groupBox_generalSettings.Text = "General Settings";
+            // 
+            // flipSwitch_saveVersionJson
+            // 
+            this.flipSwitch_saveVersionJson.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.flipSwitch_saveVersionJson.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+            this.flipSwitch_saveVersionJson.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_saveVersionJson.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipSwitch_saveVersionJson.IsLocked = false;
+            this.flipSwitch_saveVersionJson.IsOn = false;
+            this.flipSwitch_saveVersionJson.Location = new System.Drawing.Point(6, 29);
+            this.flipSwitch_saveVersionJson.MarginText = 7;
+            this.flipSwitch_saveVersionJson.Name = "flipSwitch_saveVersionJson";
+            this.flipSwitch_saveVersionJson.Size = new System.Drawing.Size(459, 20);
+            this.flipSwitch_saveVersionJson.SwitchHeight = 18;
+            this.flipSwitch_saveVersionJson.SwitchWidth = 32;
+            this.flipSwitch_saveVersionJson.TabIndex = 0;
+            this.flipSwitch_saveVersionJson.TextOnLeftSide = false;
+            this.flipSwitch_saveVersionJson.Title = "Save a JSON-file alongside the exported solutions with version information.";
+            this.flipSwitch_saveVersionJson.Toggled += new System.EventHandler(this.flipSwitch_saveVersionJson_Toggled);
             // 
             // groupBox_solutionListBoxSettings
             // 
@@ -70,9 +94,9 @@
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showLogicalNames);
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showFriendlyNames);
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showTooltips);
-            this.groupBox_solutionListBoxSettings.Location = new System.Drawing.Point(12, 86);
+            this.groupBox_solutionListBoxSettings.Location = new System.Drawing.Point(12, 114);
             this.groupBox_solutionListBoxSettings.Name = "groupBox_solutionListBoxSettings";
-            this.groupBox_solutionListBoxSettings.Size = new System.Drawing.Size(560, 116);
+            this.groupBox_solutionListBoxSettings.Size = new System.Drawing.Size(560, 122);
             this.groupBox_solutionListBoxSettings.TabIndex = 2;
             this.groupBox_solutionListBoxSettings.TabStop = false;
             this.groupBox_solutionListBoxSettings.Text = "Solution List Settings";
@@ -137,25 +161,27 @@
             this.flipSwitch_showTooltips.Title = "Show Tooltips";
             this.flipSwitch_showTooltips.Toggled += new System.EventHandler(this.flipSwitch_showTooltips_Toggled);
             // 
-            // flipSwitch_saveVersionJson
+            // label_connectiontimeout
             // 
-            this.flipSwitch_saveVersionJson.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.flipSwitch_saveVersionJson.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-            this.flipSwitch_saveVersionJson.ColorOn = System.Drawing.Color.MediumSlateBlue;
-            this.flipSwitch_saveVersionJson.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipSwitch_saveVersionJson.IsLocked = false;
-            this.flipSwitch_saveVersionJson.IsOn = false;
-            this.flipSwitch_saveVersionJson.Location = new System.Drawing.Point(6, 29);
-            this.flipSwitch_saveVersionJson.MarginText = 7;
-            this.flipSwitch_saveVersionJson.Name = "flipSwitch_saveVersionJson";
-            this.flipSwitch_saveVersionJson.Size = new System.Drawing.Size(459, 20);
-            this.flipSwitch_saveVersionJson.SwitchHeight = 18;
-            this.flipSwitch_saveVersionJson.SwitchWidth = 32;
-            this.flipSwitch_saveVersionJson.TabIndex = 0;
-            this.flipSwitch_saveVersionJson.TextOnLeftSide = false;
-            this.flipSwitch_saveVersionJson.Title = "Save a JSON-file alongside the exported solutions with version information.";
-            this.flipSwitch_saveVersionJson.Toggled += new System.EventHandler(this.flipSwitch_saveVersionJson_Toggled);
+            this.label_connectiontimeout.AutoSize = true;
+            this.label_connectiontimeout.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_connectiontimeout.Location = new System.Drawing.Point(48, 58);
+            this.label_connectiontimeout.Name = "label_connectiontimeout";
+            this.label_connectiontimeout.Size = new System.Drawing.Size(219, 15);
+            this.label_connectiontimeout.TabIndex = 1;
+            this.label_connectiontimeout.Text = "Default Connection Timeout in Minutes";
+            // 
+            // textBox_connectionTimeout
+            // 
+            this.textBox_connectionTimeout.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox_connectionTimeout.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_connectionTimeout.Location = new System.Drawing.Point(6, 55);
+            this.textBox_connectionTimeout.Name = "textBox_connectionTimeout";
+            this.textBox_connectionTimeout.Size = new System.Drawing.Size(35, 23);
+            this.textBox_connectionTimeout.TabIndex = 2;
+            this.textBox_connectionTimeout.Text = "10";
+            this.textBox_connectionTimeout.WordWrap = false;
+            this.textBox_connectionTimeout.TextChanged += new System.EventHandler(this.textBox_connectionTimeout_TextChanged);
             // 
             // SettingsForm
             // 
@@ -175,6 +201,7 @@
             this.Text = "Settings";
             this.TopMost = true;
             this.groupBox_generalSettings.ResumeLayout(false);
+            this.groupBox_generalSettings.PerformLayout();
             this.groupBox_solutionListBoxSettings.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -189,5 +216,7 @@
 		private Components.FlipSwitch flipSwitch_showFriendlyNames;
 		private Components.FlipSwitch flipSwitch_showTooltips;
 		private Components.FlipSwitch flipSwitch_showLogicalNames;
+		private System.Windows.Forms.TextBox textBox_connectionTimeout;
+		private System.Windows.Forms.Label label_connectiontimeout;
 	}
 }

@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.ServiceModel;
 using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
@@ -14,6 +15,7 @@ using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Tooling.Connector;
 using Newtonsoft.Json;
 using XrmToolBox.Extensibility;
 
@@ -29,7 +31,8 @@ namespace Com.AiricLenz.XTB.Plugin
 	// ============================================================================
 	public partial class BulkSolutionExporter_PluginControl : MultipleConnectionsPluginControlBase
 	{
-		//private IOrganizationService _targetServiceClient = null;
+
+		#region Variables and Properties
 
 		private bool isDebugMode = false;
 
@@ -61,6 +64,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private const string ColorEndTag = "</color>";
 
+		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -83,7 +87,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			set
 			{
 				_codeUpdate = value;
-				LogDebug($"CodeUpdate = {_codeUpdate}");
+				//LogDebug($"CodeUpdate = {_codeUpdate}");
 			}
 		}
 
@@ -98,10 +102,959 @@ namespace Com.AiricLenz.XTB.Plugin
 			set
 			{
 				_codeUpdateSplitter = value;
-				LogDebug($"CodeUpdateSplitter = {_codeUpdateSplitter}");
+				//LogDebug($"CodeUpdateSplitter = {_codeUpdateSplitter}");
 			}
 		}
 
+
+		#endregion
+
+		// ##################################################
+		// ##################################################
+
+		#region Plugin Events
+
+
+		// ============================================================================
+		public BulkSolutionExporter_PluginControl()
+		{
+			InitializeComponent();
+
+			richTextBox_log.Text = string.Empty;
+
+			_logger = new Logger(richTextBox_log);
+			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
+
+			ParentChanged += MyPlugin_ParentChanged;
+
+			UpdateColumns();
+		}
+
+
+
+		// ============================================================================
+		private void OnPluginControl_Load(
+			object sender,
+			EventArgs e)
+		{
+
+			// Loads or creates the settings for the plugin
+			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
+			{
+				_settings = new Settings();
+				CodeUpdate = false;
+
+				SaveSettings();
+
+				LogWarning("Settings not found => a new settings file has been created!");
+			}
+			else
+			{
+				LogInfo("Settings found and loaded");
+
+				CodeUpdate = true;
+				CodeUpdateSplitter = true;
+
+				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
+				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
+
+				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
+				flipSwitch_importManaged.Enabled = TargetConnections?.Count != 0;
+				flipSwitch_importUnmanaged.IsOn = _settings.ImportUnmanaged && _settings.ImportManaged != true;
+				flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count != 0;
+				flipSwitch_enableAutomation.IsOn = _settings.EnableAutomation;
+				flipSwitch_upgrade.IsOn = _settings.Upgrade;
+				flipSwitch_overwrite.IsOn = _settings.OverwriteCustomizations;
+				UpdateImportOptionsVisibility();
+
+				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
+				flipSwitch_publishTarget.IsOn = _settings.PublishAllPostImport;
+				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
+				textBox_versionFormat.Text = _settings.VersionFormat;
+				UpdateVersionOptionsVisibility();
+
+				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
+				flipSwitch_gitCommit.Enabled =
+					flipSwitch_exportManaged.IsOn || flipSwitch_exportUnmanaged.IsOn;
+
+				flipSwitch_pushCommit.IsOn = _settings.PushCommit && _settings.GitCommit != false;
+				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
+				textBox_commitMessage.Text = _settings.CommitMessage;
+				UpdateGitOptionsVisibility();
+
+				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
+
+				UpdateSolutionSettingsScreen();
+				SetExportButtonState();
+
+				CodeUpdate = false;
+			}
+
+			button_loadSolutions.Enabled = Service != null;
+			button_manageConnections.Visible = TargetConnections?.Count > 0;
+
+			LoadAllSolutions();
+			InitializeGitHelper();
+			UpdateAllConnectionTimeouts();
+		}
+
+
+		// ============================================================================
+		private void MyPlugin_ParentChanged(object sender, EventArgs e)
+		{
+			if (this.Parent != null)
+			{
+				if (this.IsHandleCreated)
+				{
+					this.BeginInvoke((MethodInvoker) delegate
+					{
+						CodeUpdate = true;
+						splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
+						splitContainer1.Update();  // Forces immediate UI update
+						splitContainer1.Refresh(); // Ensures repaint
+						Application.DoEvents();    // Processes pending UI messages
+						CodeUpdate = false;
+						CodeUpdateSplitter = false;
+						LogDebug($"After ParentChanged: {splitContainer1.SplitterDistance}");
+					});
+				}
+				else
+				{
+					this.HandleCreated += MyPlugin_HandleCreated;
+				}
+			}
+		}
+
+		// ============================================================================
+		private void MyPlugin_HandleCreated(object sender, EventArgs e)
+		{
+			this.HandleCreated -= MyPlugin_HandleCreated; // Unsubscribe to avoid multiple calls
+			this.BeginInvoke((MethodInvoker) delegate
+			{
+				CodeUpdate = true;
+				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
+				splitContainer1.Update();  // Forces immediate UI update
+				splitContainer1.Refresh(); // Ensures repaint
+				Application.DoEvents();    // Processes pending UI messages
+				CodeUpdate = false;
+				CodeUpdateSplitter = false;
+
+				LogDebug($"After HandleCreated: {splitContainer1.SplitterDistance}");
+			});
+		}
+
+		// ============================================================================
+		/// <summary>
+		/// This occurs when the plugin is closing.
+		/// </summary>
+		/// <param name="info"></param>
+		public override void ClosingPlugin(PluginCloseInfo info)
+		{
+			base.ClosingPlugin(info);
+			SaveSettings();
+		}
+
+		// ============================================================================
+		/// <summary>
+		/// This event occurs when the plugin is closed
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void MyPluginControl_OnCloseTool(
+			object sender,
+			EventArgs e)
+		{
+			// Before leaving, save the settings
+			SaveSettings(cleanUpNonExistingSolutions: true);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// This event occurs when the connection has been updated in XrmToolBox
+		/// </summary>
+		public override void UpdateConnection(
+			IOrganizationService newService,
+			ConnectionDetail detail,
+			string actionName,
+			object parameter)
+		{
+			if (actionName != "AdditionalOrganization")
+			{
+				_currentConnectionGuid = detail.ConnectionId.Value;
+
+				if (_settings != null &&
+					detail != null)
+				{
+					_settings.LastUsedOrganizationWebappUrl = detail.WebApplicationUrl;
+					LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
+
+					// Set the timeout for the connection
+					if (detail != null)
+					{
+						UpdateConnectionTimout(
+							ref detail,
+							_settings.ConnectionTimeoutInMinutes);
+					}
+				}
+
+				LoadAllSolutions();
+
+				button_loadSolutions.Enabled = Service != null;
+			}
+
+			base.UpdateConnection(newService, detail, actionName, parameter);
+		}
+
+
+		// ============================================================================
+		protected override void ConnectionDetailsUpdated(
+			NotifyCollectionChangedEventArgs e)
+		{
+			//var detail = (ConnectionDetail) e.NewItems[0];
+
+			flipSwitch_importManaged.Enabled = TargetConnections?.Count > 0;
+			flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count > 0;
+			button_manageConnections.Visible = TargetConnections?.Count > 0;
+
+			LoadAllSolutions();
+
+			_connectionManager?.UpdateConnections();
+
+			UpdateAllConnectionTimeouts();
+		}
+
+
+		// ============================================================================
+		private void UpdateAllConnectionTimeouts()
+		{
+			// Update the source connection
+			if (ConnectionDetail != null)
+			{
+				var connectionDetail = ConnectionDetail;
+
+				UpdateConnectionTimout(
+					ref connectionDetail,
+					_settings.ConnectionTimeoutInMinutes);
+			}
+
+
+			// Update the target connections
+			for (int i = 0; i < TargetConnections.Count; i++)
+			{
+				var targetConnection = TargetConnections[i];
+
+				UpdateConnectionTimout(
+					ref targetConnection,
+					_settings.ConnectionTimeoutInMinutes);
+			}
+		}
+
+
+		// ============================================================================
+		private void button_loadSolutions_Click(object sender, EventArgs e)
+		{
+			LoadAllSolutions();
+			InitializeGitHelper();
+		}
+
+		// ============================================================================
+		private void flipSwitch_publish_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.PublishAllPreExport = flipSwitch_publishSource.IsOn;
+
+			SaveSettings();
+			SetExportButtonState();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_updateVersion_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
+
+			UpdateVersionOptionsVisibility();
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
+
+			CodeUpdate = true;
+
+			var gitEnabeld =
+				flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn;
+
+			flipSwitch_gitCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld;
+
+			CodeUpdate = false;
+
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
+
+			CodeUpdate = true;
+
+			var gitEnabeld =
+				flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn;
+
+			flipSwitch_gitCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld;
+
+			CodeUpdate = false;
+
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
+			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
+
+			UpdateGitOptionsVisibility();
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_pushCommit_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.PushCommit = flipSwitch_pushCommit.IsOn;
+			SetExportButtonState();
+			SaveSettings();
+
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.ImportManaged =
+				flipSwitch_importManaged.IsOn &&
+				TargetConnections?.Count > 0;
+
+			if (flipSwitch_importManaged.IsOn &&
+				flipSwitch_importUnmanaged.IsOn &&
+				!CodeUpdate)
+			{
+				CodeUpdate = true;
+
+				flipSwitch_importUnmanaged.IsOn = false;
+				_settings.ImportUnmanaged = false;
+
+				CodeUpdate = false;
+			}
+
+			UpdateImportOptionsVisibility();
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.ImportUnmanaged =
+				flipSwitch_importUnmanaged.IsOn &&
+				TargetConnections?.Count > 0;
+
+			if (flipSwitch_importManaged.IsOn &&
+				flipSwitch_importUnmanaged.IsOn &&
+				!CodeUpdate)
+			{
+				CodeUpdate = true;
+
+				flipSwitch_importManaged.IsOn = false;
+				_settings.ImportManaged = false;
+
+				CodeUpdate = false;
+			}
+
+			UpdateImportOptionsVisibility();
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_upgrade_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.Upgrade =
+				flipSwitch_upgrade.IsOn;
+
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void textBox_commitMessage_TextChanged(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.CommitMessage = textBox_commitMessage.Text;
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void textBox_commitMessage_Leave(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
+			_settings.CommitMessage = textBox_commitMessage.Text;
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
+			_settings.VersionFormat = textBox_versionFormat.Text;
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void textBox_versionFormat_Leave(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.VersionFormat = textBox_versionFormat.Text;
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void flipSwitch_enableAutomation_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.EnableAutomation = flipSwitch_enableAutomation.IsOn;
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void flipSwitch_overwrite_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
+			_settings.OverwriteCustomizations = flipSwitch_overwrite.IsOn;
+			SaveSettings();
+
+		}
+
+		// ============================================================================
+		private void flipSwitch_publishTarget_Toggled(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+
+			}
+			_settings.PublishAllPostImport = flipSwitch_publishTarget.IsOn;
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void listSolutions_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			UpdateSolutionSettingsScreen();
+
+			var rowIsSelected = listBoxSolutions.SelectedIndex != -1;
+
+			button_browseManaged.Enabled = rowIsSelected;
+			button_browseUnmananged.Enabled = rowIsSelected;
+
+			SetExportButtonState();
+
+		}
+
+
+
+		// ============================================================================
+		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			UpdateItemSortingIndexesFromListBox();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void textBox_managed_TextChanged(object sender, EventArgs e)
+		{
+			if (listBoxSolutions.SelectedIndex == -1 ||
+				CodeUpdate)
+			{
+				return;
+			}
+
+			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
+			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
+
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
+		{
+			if (listBoxSolutions.SelectedIndex == -1 ||
+				CodeUpdate)
+			{
+				return;
+			}
+
+			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
+			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
+
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void button_browseManaged_Click(object sender, EventArgs e)
+		{
+			var selectedSolution =
+				listBoxSolutions.SelectedItem as Solution;
+
+			if (selectedSolution == null)
+			{
+				return;
+			}
+
+			saveFileDialog1.Title = "Save Managed file as...";
+			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
+
+			if (!string.IsNullOrWhiteSpace(textBox_managed.Text))
+			{
+				saveFileDialog1.FileName = Path.GetFileName(textBox_managed.Text);
+			}
+			else
+			{
+				saveFileDialog1.FileName = "Managed." + selectedSolution.UniqueName + ".zip";
+			}
+
+			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+			{
+				textBox_managed.Text = saveFileDialog1.FileName;
+			}
+
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
+			UpdateFileWarningStatus();
+
+			listBoxSolutions.Refresh();
+
+			// No saving needed because the text field update triggers saving already
+		}
+
+		// ============================================================================
+		private void button_browseUnmananged_Click(object sender, EventArgs e)
+		{
+			var selectedSolution =
+			   listBoxSolutions.SelectedItem as Solution;
+
+			if (selectedSolution == null)
+			{
+				return;
+			}
+
+			saveFileDialog1.Title = "Save Unmanaged file as...";
+			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
+
+			if (!string.IsNullOrWhiteSpace(textBox_unmanaged.Text))
+			{
+				saveFileDialog1.FileName = Path.GetFileName(textBox_unmanaged.Text);
+			}
+			else
+			{
+				saveFileDialog1.FileName = "Unmanaged." + selectedSolution.UniqueName + ".zip";
+			}
+
+			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+			{
+				textBox_unmanaged.Text = saveFileDialog1.FileName;
+			}
+
+
+			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
+			UpdateTargetVersionStatusImages();
+			UpdateFileWarningStatus();
+
+			listBoxSolutions.Refresh();
+
+			// No saving needed because the text field update triggers saving already
+		}
+
+		// ============================================================================
+		private void button_Export_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.DeselectAll();
+			UpdateSolutionSettingsScreen();
+
+			if (!CheckIfAllSolutionFilesAreDefined())
+			{
+				return;
+			}
+
+			SetUiEnabledState(false);
+
+			richTextBox_log.Text = string.Empty;
+			_sessionFiles.Clear();
+
+			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
+
+			WorkAsync(new WorkAsyncInfo
+			{
+				Message = message,
+				Work = (worker, args) =>
+				{
+					if (flipSwitch_publishSource.IsOn)
+					{
+						PublishAll(ConnectionDetail);
+					}
+
+					UpdateCheckedVersionNumbers();
+					ExportCheckedSolutions();
+					HandleGit();
+
+					foreach (var targetConnection in TargetConnections)
+					{
+
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+
+						Log();
+
+						//_logger.IncreaseIndent();
+
+						ImportCheckedSolutions(targetConnection.ServiceClient);
+
+						if (flipSwitch_publishTarget.IsOn)
+						{
+							PublishAll(targetConnection);
+						}
+
+						//_logger.DecreaseIndent();
+					}
+
+
+					args.Result = null;
+				},
+				PostWorkCallBack = (args) =>
+				{
+					if (args.Error != null)
+					{
+						MessageBox.Show(
+							args.Error.ToString(),
+							"Error",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Error);
+					}
+
+					LoadAllSolutions();
+
+					Log(ColorGreen + "##### Done." + ColorEndTag);
+
+					SetUiEnabledState(true);
+				}
+			});
+		}
+
+
+		// ============================================================================
+		private List<string> GetActionsList()
+		{
+			var actions = new List<string>();
+
+			if (flipSwitch_updateVersion.IsOn)
+			{
+				actions.Add("Updating Version of");
+			}
+
+			if (flipSwitch_exportManaged.IsOn ||
+				flipSwitch_exportUnmanaged.IsOn)
+			{
+				actions.Add("Exporting");
+			}
+
+			if (flipSwitch_importManaged.IsOn ||
+				flipSwitch_importUnmanaged.IsOn)
+			{
+				actions.Add("Importing");
+			}
+
+			return actions;
+		}
+
+
+		// ============================================================================
+		private void SetUiEnabledState(
+			bool state)
+		{
+			listBoxSolutions.Enabled = state;
+
+			flipSwitch_publishSource.IsLocked = !state;
+			flipSwitch_updateVersion.IsLocked = !state;
+			flipSwitch_exportManaged.IsLocked = !state;
+			flipSwitch_exportUnmanaged.IsLocked = !state;
+
+			flipSwitch_importManaged.IsLocked = !state;
+			flipSwitch_importUnmanaged.IsLocked = !state;
+			flipSwitch_enableAutomation.IsLocked = !state;
+			flipSwitch_overwrite.IsLocked = !state;
+			flipSwitch_upgrade.IsLocked = !state;
+
+			flipSwitch_publishTarget.IsLocked = !state;
+			flipSwitch_gitCommit.IsLocked = !state;
+			flipSwitch_pushCommit.IsLocked = !state;
+
+			button_browseManaged.Enabled = state;
+			button_browseUnmananged.Enabled = state;
+
+			textBox_versionFormat.Enabled = state;
+			textBox_commitMessage.Enabled = state;
+			textBox_managed.Enabled = state;
+			textBox_unmanaged.Enabled = state;
+
+			comboBox_gitBranches.Enabled = state;
+
+			button_loadSolutions.Enabled = state;
+			button_Export.Enabled = state;
+			button_addAdditionalConnection.Enabled = state;
+			button_manageConnections.Enabled = state;
+			button_Settings.Enabled = state;
+		}
+
+
+		// ============================================================================
+		private void listSolutions_ItemCheck(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			SetExportButtonState();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void button_addAdditionalConnection_Click(object sender, EventArgs e)
+		{
+			AddAdditionalOrganization();
+		}
+
+		// ============================================================================
+		private void button_checkAll_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.CheckAllItems();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void button_invertCheck_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.InvertCheckOfAllItems();
+			SaveSettings();
+		}
+
+		// ============================================================================
+		private void button_uncheckAll_Click(object sender, EventArgs e)
+		{
+			listBoxSolutions.UnCheckAllItems();
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void button_Settings_Click(
+			object sender,
+			EventArgs e)
+		{
+			SettingsForm settingsForm = new SettingsForm();
+			settingsForm.Settings = _settings;
+			settingsForm.ShowDialog();
+			_settings = settingsForm.Settings;
+
+			SaveSettings();
+			UpdateColumns();
+			UpdateSolutionList();
+			UpdateAllConnectionTimeouts();
+		}
+
+
+		// ============================================================================
+		private void button_exportCsv_Click(object sender, EventArgs e)
+		{
+			saveFileDialog1.Title = "Save solution information...";
+			saveFileDialog1.FileName = "Solution Information.csv";
+			saveFileDialog1.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 0;
+
+			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+			{
+				ExportSolutionCsv(saveFileDialog1.FileName);
+			}
+		}
+
+
+		// ============================================================================
+		private void button_manageConnections_Click(object sender, EventArgs e)
+		{
+			_connectionManager = new ConnectionManager(this);
+			var dialogResult = _connectionManager.ShowDialog();
+			_connectionManager = null;
+		}
+
+
+		// ============================================================================
+		private void listBoxSolutions_SortingColumnChanged(object sender, EventArgs e)
+		{
+			if (_settings == null ||
+				CodeUpdate)
+			{
+				return;
+			}
+
+			_settings.SortingColumnIndex = listBoxSolutions.SortingColumnIndex;
+			_settings.SortingColumnOrder = listBoxSolutions.SortingColumnOrder;
+
+			SaveSettings();
+		}
+
+
+		// ============================================================================
+		private void comboBox_gitBranches_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (CodeUpdate)
+			{
+				return;
+			}
+
+			if (!_gitHelper.SwitchToBranch(comboBox_gitBranches.SelectedItem.ToString(), out string errorMessage))
+			{
+				UpdateGitBranches();
+
+				LogError(errorMessage);
+			}
+		}
+
+		// ============================================================================
+		private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
+		{
+			if (_settings == null ||
+				CodeUpdate ||
+				CodeUpdateSplitter)
+			{
+				LogDebug($"OnSplitterMoved not executing - settingsNull: {_settings == null}, codeUpdate: {CodeUpdate}, codeUpdateSplitter {CodeUpdateSplitter}");
+				return;
+			}
+
+			LogDebug("OnSplitterMoved: " + splitContainer1.SplitterDistance);
+			_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
+			SaveSettings();
+		}
+
+
+		#endregion
 
 		// ##################################################
 		// ##################################################
@@ -126,7 +1079,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_connectionManager?.UpdateConnections();
 		}
-
 
 
 		// ============================================================================
@@ -175,8 +1127,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			label_title.Text = _currentSolution.FriendlyName;
 
 			UpdateFileWarningStatus();
-
 		}
+
 
 		// ============================================================================
 		private void UpdateFileWarningStatus()
@@ -250,15 +1202,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void PublishAll(
 			ConnectionDetail connection)
 		{
-			if (flipSwitch_publishTarget.IsOff)
-			{
-				return;
-			}
-
 			Log("##### Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
 			_logger.IncreaseIndent();
 
 			var startTime = DateTime.Now;
+
+			Log("Start Time: " + startTime.ToString(dateTimeFormat));
 
 			PublishAllXmlRequest publishRequest =
 				new PublishAllXmlRequest();
@@ -399,7 +1348,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				for (int i = 0; i < exportedSolutions.Managed.Count; i++)
 				{
-					if (exportedSolutions.Managed[i].SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+					if (exportedSolutions.Managed[i].LogicalSolutionName == solution.UniqueName &&
 						exportedSolutions.Managed[i].FileName == fileName)
 					{
 						exportedSolutions.Managed[i].Version = solution.Version.ToString();
@@ -411,7 +1360,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				for (int i = 0; i < exportedSolutions.Unmanaged.Count; i++)
 				{
-					if (exportedSolutions.Unmanaged[i].SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+					if (exportedSolutions.Unmanaged[i].LogicalSolutionName == solution.UniqueName &&
 						exportedSolutions.Unmanaged[i].FileName == fileName)
 					{
 						exportedSolutions.Unmanaged[i].Version = solution.Version.ToString();
@@ -557,6 +1506,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			var startTime = DateTime.Now;
 
+			Log("Start Time: " + startTime.ToString(dateTimeFormat));
+
 			var exportSolutionRequest = new ExportSolutionRequest
 			{
 				SolutionName = solution.UniqueName,
@@ -689,12 +1640,21 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			var gitRootPath =
-				FileAndFolderHelper.FindRepositoryRootPath(filePath);
+				FileAndFolderHelper.FindRepositoryRootPath(
+					filePath,
+					out string message);
+
+			LogDebug();
+			LogDebug(message);
+			LogDebug();
 
 			if (gitRootPath.IsEmpty())
 			{
+				LogDebug("No Git-Root path determined within: " + filePath);
 				return;
 			}
+
+			LogDebug("No Git-Root path is: " + gitRootPath);
 
 			_gitHelper = new GitHelper(gitRootPath);
 
@@ -711,6 +1671,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_gitBranches = _gitHelper.GetAllBranches();
+
+			LogDebug("Retrieved Git Branches: " + string.Join(", ", _gitBranches));
 
 			CodeUpdate = true;
 			comboBox_gitBranches.Items.Clear();
@@ -848,13 +1810,16 @@ namespace Com.AiricLenz.XTB.Plugin
 				if (isHolding)
 				{
 					Log("Installing the solution upgrade...");
+					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
 				}
 
 				targetServiceClient.Execute(importRequest);
 
 				if (isHolding)
 				{
+					Log();
 					Log("Applying the solution upgrade...");
+					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
 
 					var applyUpgradeRequest = new DeleteAndPromoteRequest
 					{
@@ -873,6 +1838,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						_logger.Indent);
 
 				LogError(errorMessage);
+				Log();
 				_logger.DecreaseIndent();
 				return false;
 			}
@@ -884,6 +1850,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						_logger.Indent);
 
 				LogError(errorMessage);
+				Log();
 				_logger.DecreaseIndent();
 				return false;
 			}
@@ -1057,7 +2024,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-					SaveSettings("LoadAllSolutions", true);
+					SaveSettings(cleanUpNonExistingSolutions: true);
 
 					UpdateColumns();
 					UpdateSolutionList();
@@ -1169,7 +2136,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void SaveSettings(
-			string caller,
+			[CallerMemberName] string caller = "",
 			bool cleanUpNonExistingSolutions = false)
 		{
 			if (CodeUpdate)
@@ -1662,7 +2629,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					colVersion,				// 2
 					colTargetVersionState,	// 3
 					colFileStatusImage,		// 4
-					colFileVersionState		// 5
+					colFileVersionState     // 5
 				};
 
 			listBoxSolutions.SortingColumnIndex = _settings.SortingColumnIndex;
@@ -1766,901 +2733,54 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
-
-		#endregion
-
-		// ##################################################
-		// ##################################################
-
-		#region Plugin Events
-
 		// ============================================================================
-		public BulkSolutionExporter_PluginControl()
+		private void UpdateConnectionTimout(
+			ref ConnectionDetail detail,
+			int timoutInMinutes)
 		{
-			InitializeComponent();
+			// update the global timout setting
+			detail.Timeout = TimeSpan.FromMinutes(timoutInMinutes);
 
-			richTextBox_log.Text = string.Empty;
-
-			_logger = new Logger(richTextBox_log);
-			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
-
-			ParentChanged += MyPlugin_ParentChanged;
-
-			UpdateColumns();
-		}
-
-
-
-
-		// ============================================================================
-		private void OnPluginControl_Load(
-			object sender,
-			EventArgs e)
-		{
-
-			// Loads or creates the settings for the plugin
-			if (!SettingsManager.Instance.TryLoad(GetType(), out _settings))
+			// also update the timeout on the service client
+			if (detail.ServiceClient != null)
 			{
-				_settings = new Settings();
-				CodeUpdate = false;
+				var serviceClient = detail.ServiceClient;
 
-				SaveSettings("OnPluginControl_Load");
-
-				LogWarning("Settings not found => a new settings file has been created!");
-			}
-			else
-			{
-				LogInfo("Settings found and loaded");
-
-				CodeUpdate = true;
-				CodeUpdateSplitter = true;
-
-				flipSwitch_exportManaged.IsOn = _settings.ExportManaged;
-				flipSwitch_exportUnmanaged.IsOn = _settings.ExportUnmanaged;
-
-				flipSwitch_importManaged.IsOn = _settings.ImportManaged;
-				flipSwitch_importManaged.Enabled = TargetConnections?.Count != 0;
-				flipSwitch_importUnmanaged.IsOn = _settings.ImportManaged;
-				flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count != 0;
-				flipSwitch_enableAutomation.IsOn = _settings.EnableAutomation;
-				flipSwitch_upgrade.IsOn = _settings.Upgrade;
-				flipSwitch_overwrite.IsOn = _settings.OverwriteCustomizations;
-				UpdateImportOptionsVisibility();
-
-				flipSwitch_publishSource.IsOn = _settings.PublishAllPreExport;
-				flipSwitch_publishTarget.IsOn = _settings.PublishAllPostImport;
-				flipSwitch_updateVersion.IsOn = _settings.UpdateVersion;
-				textBox_versionFormat.Text = _settings.VersionFormat;
-				UpdateVersionOptionsVisibility();
-
-				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
-				flipSwitch_gitCommit.Enabled =
-					flipSwitch_exportManaged.IsOn ||
-					flipSwitch_exportUnmanaged.IsOn;
-				flipSwitch_pushCommit.IsOn = _settings.PushCommit;
-				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
-				textBox_commitMessage.Text = _settings.CommitMessage;
-				UpdateGitOptionsVisibility();
-
-				listBoxSolutions.ShowTooltips = _settings.ShowToolTips;
-
-				UpdateSolutionSettingsScreen();
-				SetExportButtonState();
-
-				CodeUpdate = false;
-			}
-
-			button_loadSolutions.Enabled = Service != null;
-			button_manageConnections.Visible = TargetConnections?.Count > 0;
-
-			LoadAllSolutions();
-			InitializeGitHelper();
-		}
-
-
-		// ============================================================================
-		private void MyPlugin_ParentChanged(object sender, EventArgs e)
-		{
-			if (this.Parent != null)
-			{
-				if (this.IsHandleCreated)
-				{
-					this.BeginInvoke((MethodInvoker) delegate
-					{
-						CodeUpdate = true;
-						splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
-						splitContainer1.Update();  // Forces immediate UI update
-						splitContainer1.Refresh(); // Ensures repaint
-						Application.DoEvents();    // Processes pending UI messages
-						CodeUpdate = false;
-						CodeUpdateSplitter = false;
-						LogDebug($"After ParentChanged: {splitContainer1.SplitterDistance}");
-					});
-				}
-				else
-				{
-					this.HandleCreated += MyPlugin_HandleCreated;
-				}
+				UpdateConnectionTimout(
+					ref serviceClient,
+					timoutInMinutes);
 			}
 		}
 
+
 		// ============================================================================
-		private void MyPlugin_HandleCreated(object sender, EventArgs e)
+		private void UpdateConnectionTimout(
+			ref CrmServiceClient serviceClient,
+			int timoutInMinutes)
 		{
-			this.HandleCreated -= MyPlugin_HandleCreated; // Unsubscribe to avoid multiple calls
-			this.BeginInvoke((MethodInvoker) delegate
+			if (serviceClient != null)
 			{
-				CodeUpdate = true;
-				splitContainer1.SplitterDistance = _settings.SplitContainerPosition;
-				splitContainer1.Update();  // Forces immediate UI update
-				splitContainer1.Refresh(); // Ensures repaint
-				Application.DoEvents();    // Processes pending UI messages
-				CodeUpdate = false;
-				CodeUpdateSplitter = false;
-
-				LogDebug($"After HandleCreated: {splitContainer1.SplitterDistance}");
-			});
-		}
-
-		// ============================================================================
-		public override void ClosingPlugin(PluginCloseInfo info)
-		{
-			base.ClosingPlugin(info);
-			SaveSettings("ClosingPlugin");
-		}
-
-		// ============================================================================
-		/// <summary>
-		/// This event occurs when the plugin is closed
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void MyPluginControl_OnCloseTool(
-			object sender,
-			EventArgs e)
-		{
-			// Before leaving, save the settings
-			SaveSettings("MyPluginControl_OnCloseTool", true);
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// This event occurs when the connection has been updated in XrmToolBox
-		/// </summary>
-		public override void UpdateConnection(
-			IOrganizationService newService,
-			ConnectionDetail detail,
-			string actionName,
-			object parameter)
-		{
-			base.UpdateConnection(newService, detail, actionName, parameter);
-
-			if (actionName != "AdditionalOrganization")
-			{
-				_currentConnectionGuid = detail.ConnectionId.Value;
-
-				if (_settings != null &&
-					detail != null)
+				// For CrmServiceClient, need to access the underlying client configuration
+				if (serviceClient.OrganizationWebProxyClient != null)
 				{
-					_settings.LastUsedOrganizationWebappUrl = detail.WebApplicationUrl;
-					LogInfo("Connection has changed to: {0}", detail.WebApplicationUrl);
+					// Set timeout on the WebProxy client
+					serviceClient.OrganizationWebProxyClient.InnerChannel.OperationTimeout = TimeSpan.FromMinutes(timoutInMinutes);
+					serviceClient.OrganizationWebProxyClient.Endpoint.Binding.SendTimeout = TimeSpan.FromMinutes(timoutInMinutes);
+					serviceClient.OrganizationWebProxyClient.Endpoint.Binding.ReceiveTimeout = TimeSpan.FromMinutes(timoutInMinutes);
 				}
 
-				LoadAllSolutions();
-
-				button_loadSolutions.Enabled = Service != null;
-			}
-		}
-
-
-		// ============================================================================
-		protected override void ConnectionDetailsUpdated(
-			NotifyCollectionChangedEventArgs e)
-		{
-			//var detail = (ConnectionDetail) e.NewItems[0];
-
-			flipSwitch_importManaged.Enabled = TargetConnections?.Count > 0;
-			flipSwitch_importUnmanaged.Enabled = TargetConnections?.Count > 0;
-			button_manageConnections.Visible = TargetConnections?.Count > 0;
-
-			LoadAllSolutions();
-
-			_connectionManager?.UpdateConnections();
-		}
-
-
-		// ============================================================================
-		private void button_loadSolutions_Click(object sender, EventArgs e)
-		{
-			LoadAllSolutions();
-			InitializeGitHelper();
-		}
-
-		// ============================================================================
-		private void flipSwitch_publish_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.PublishAllPreExport = flipSwitch_publishSource.IsOn;
-
-			SaveSettings("flipSwitch_publish_Toggled");
-			SetExportButtonState();
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_updateVersion_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.UpdateVersion = flipSwitch_updateVersion.IsOn;
-
-			UpdateVersionOptionsVisibility();
-			SetExportButtonState();
-			SaveSettings("flipSwitch_updateVersion_Toggled");
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_exportManaged_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.ExportManaged = flipSwitch_exportManaged.IsOn;
-
-			CodeUpdate = true;
-
-			var gitEnabeld =
-				flipSwitch_exportManaged.IsOn ||
-				flipSwitch_exportUnmanaged.IsOn;
-
-			flipSwitch_gitCommit.Enabled = gitEnabeld;
-			flipSwitch_pushCommit.Enabled = gitEnabeld;
-
-			CodeUpdate = false;
-
-			SetExportButtonState();
-			SaveSettings("flipSwitch_exportManaged_Toggled");
-		}
-
-		// ============================================================================
-		private void flipSwitch_exportUnmanaged_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
-
-			CodeUpdate = true;
-
-			var gitEnabeld =
-				flipSwitch_exportManaged.IsOn ||
-				flipSwitch_exportUnmanaged.IsOn;
-
-			flipSwitch_gitCommit.Enabled = gitEnabeld;
-			flipSwitch_pushCommit.Enabled = gitEnabeld;
-
-			CodeUpdate = false;
-
-			SetExportButtonState();
-			SaveSettings("flipSwitch_exportUnmanaged_Toggled");
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_gitCommit_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.GitCommit = flipSwitch_gitCommit.IsOn;
-			flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
-
-			UpdateGitOptionsVisibility();
-			SetExportButtonState();
-			SaveSettings("flipSwitch_gitCommit_Toggled");
-		}
-
-		// ============================================================================
-		private void flipSwitch_pushCommit_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.PushCommit = flipSwitch_pushCommit.IsOn;
-			SetExportButtonState();
-			SaveSettings("flipSwitch_pushCommit_Toggled");
-
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_importManaged_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.ImportManaged =
-				flipSwitch_importManaged.IsOn &&
-				TargetConnections?.Count > 0;
-
-			if (flipSwitch_importManaged.IsOn &&
-				flipSwitch_importUnmanaged.IsOn &&
-				!CodeUpdate)
-			{
-				CodeUpdate = true;
-
-				flipSwitch_importUnmanaged.IsOn = false;
-				_settings.ImportUnmanaged = false;
-
-				CodeUpdate = false;
-			}
-
-			UpdateImportOptionsVisibility();
-			SetExportButtonState();
-			SaveSettings("flipSwitch_importManaged_Toggled");
-		}
-
-		// ============================================================================
-		private void flipSwitch_importUnmanaged_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.ImportUnmanaged =
-				flipSwitch_importUnmanaged.IsOn &&
-				TargetConnections?.Count > 0;
-
-			if (flipSwitch_importManaged.IsOn &&
-				flipSwitch_importUnmanaged.IsOn &&
-				!CodeUpdate)
-			{
-				CodeUpdate = true;
-
-				flipSwitch_importManaged.IsOn = false;
-				_settings.ImportManaged = false;
-
-				CodeUpdate = false;
-			}
-
-			UpdateImportOptionsVisibility();
-			SetExportButtonState();
-			SaveSettings("flipSwitch_importUnmanaged_Toggled");
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_upgrade_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.Upgrade =
-				flipSwitch_upgrade.IsOn;
-
-			SaveSettings("flipSwitch_upgrade_Toggled");
-		}
-
-
-		// ============================================================================
-		private void textBox_commitMessage_TextChanged(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.CommitMessage = textBox_commitMessage.Text;
-			SetExportButtonState();
-			SaveSettings("textBox_commitMessage_TextChanged");
-		}
-
-
-		// ============================================================================
-		private void textBox_commitMessage_Leave(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-
-			}
-			_settings.CommitMessage = textBox_commitMessage.Text;
-			SaveSettings("textBox_commitMessage_Leave");
-		}
-
-
-		// ============================================================================
-		private void textBox_versionFormat_TextChanged(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-
-			}
-			_settings.VersionFormat = textBox_versionFormat.Text;
-			SetExportButtonState();
-			SaveSettings("textBox_versionFormat_TextChanged");
-		}
-
-		// ============================================================================
-		private void textBox_versionFormat_Leave(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.VersionFormat = textBox_versionFormat.Text;
-			SaveSettings("textBox_versionFormat_Leave");
-		}
-
-
-		// ============================================================================
-		private void flipSwitch_enableAutomation_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.EnableAutomation = flipSwitch_enableAutomation.IsOn;
-			SaveSettings("flipSwitch_enableAutomation_Toggled");
-		}
-
-		// ============================================================================
-		private void flipSwitch_overwrite_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-
-			}
-			_settings.OverwriteCustomizations = flipSwitch_overwrite.IsOn;
-			SaveSettings("flipSwitch_overwrite_Toggled");
-
-		}
-
-		// ============================================================================
-		private void flipSwitch_publishTarget_Toggled(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-
-			}
-			_settings.PublishAllPostImport = flipSwitch_publishTarget.IsOn;
-			SaveSettings("flipSwitch_publishTarget_Toggled");
-		}
-
-
-		// ============================================================================
-		private void listSolutions_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			UpdateSolutionSettingsScreen();
-
-			var rowIsSelected = listBoxSolutions.SelectedIndex != -1;
-
-			button_browseManaged.Enabled = rowIsSelected;
-			button_browseUnmananged.Enabled = rowIsSelected;
-
-			SetExportButtonState();
-
-		}
-
-
-
-		// ============================================================================
-		private void listBoxSolutions_ItemOrderChanged(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			UpdateItemSortingIndexesFromListBox();
-			SaveSettings("listBoxSolutions_ItemOrderChanged");
-		}
-
-
-		// ============================================================================
-		private void textBox_managed_TextChanged(object sender, EventArgs e)
-		{
-			if (listBoxSolutions.SelectedIndex == -1 ||
-				CodeUpdate)
-			{
-				return;
-			}
-
-			_currentSolutionConfig.FileNameManaged = textBox_managed.Text;
-			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
-
-			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-			UpdateTargetVersionStatusImages();
-			SaveSettings("textBox_managed_TextChanged");
-		}
-
-		// ============================================================================
-		private void textBox_unmanaged_TextChanged(object sender, EventArgs e)
-		{
-			if (listBoxSolutions.SelectedIndex == -1 ||
-				CodeUpdate)
-			{
-				return;
-			}
-
-			_currentSolutionConfig.FileNameUnmanaged = textBox_unmanaged.Text;
-			_settings.UpdateSolutionConfiguration(_currentSolutionConfig);
-
-			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-			UpdateTargetVersionStatusImages();
-			SaveSettings("textBox_unmanaged_TextChanged");
-		}
-
-
-		// ============================================================================
-		private void button_browseManaged_Click(object sender, EventArgs e)
-		{
-			var selectedSolution =
-				listBoxSolutions.SelectedItem as Solution;
-
-			if (selectedSolution == null)
-			{
-				return;
-			}
-
-			saveFileDialog1.Title = "Save Managed file as...";
-			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
-			saveFileDialog1.FilterIndex = 0;
-
-			if (!string.IsNullOrWhiteSpace(textBox_managed.Text))
-			{
-				saveFileDialog1.FileName = textBox_managed.Text;
-			}
-			else
-			{
-				saveFileDialog1.FileName = "Managed." + selectedSolution.FriendlyName + ".zip";
-			}
-
-			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-			{
-				textBox_managed.Text = saveFileDialog1.FileName;
-			}
-
-			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-			UpdateTargetVersionStatusImages();
-			UpdateFileWarningStatus();
-
-			listBoxSolutions.Refresh();
-
-			// No saving needed because the text field update triggers saving already
-		}
-
-		// ============================================================================
-		private void button_browseUnmananged_Click(object sender, EventArgs e)
-		{
-			var selectedSolution =
-			   listBoxSolutions.SelectedItem as Solution;
-
-			if (selectedSolution == null)
-			{
-				return;
-			}
-
-			saveFileDialog1.Title = "Save Unmanaged file as...";
-			saveFileDialog1.Filter = "Solution files (*.zip)|*.zip|All files (*.*)|*.*";
-			saveFileDialog1.FilterIndex = 0;
-
-			if (!string.IsNullOrWhiteSpace(textBox_unmanaged.Text))
-			{
-				saveFileDialog1.FileName = textBox_unmanaged.Text;
-			}
-			else
-			{
-				saveFileDialog1.FileName = selectedSolution.FriendlyName + ".zip";
-			}
-
-			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-			{
-				textBox_unmanaged.Text = saveFileDialog1.FileName;
-			}
-
-
-			UpdateSolutionStatusImages(listBoxSolutions.SelectedIndex);
-			UpdateTargetVersionStatusImages();
-			UpdateFileWarningStatus();
-
-			listBoxSolutions.Refresh();
-
-			// No saving needed because the text field update triggers saving already
-		}
-
-		// ============================================================================
-		private void button_Export_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.DeselectAll();
-			UpdateSolutionSettingsScreen();
-
-			if (!CheckIfAllSolutionFilesAreDefined())
-			{
-				return;
-			}
-
-			SetUiEnabledState(false);
-
-			richTextBox_log.Text = string.Empty;
-			_sessionFiles.Clear();
-
-			var actions = new List<string>();
-
-			if (flipSwitch_updateVersion.IsOn)
-			{
-				actions.Add("Updating Version of");
-			}
-
-			if (flipSwitch_exportManaged.IsOn ||
-				flipSwitch_exportUnmanaged.IsOn)
-			{
-				actions.Add("Exporting");
-			}
-
-			if (flipSwitch_importManaged.IsOn ||
-				flipSwitch_importUnmanaged.IsOn)
-			{
-				actions.Add("Importing");
-			}
-
-			var message = string.Join(" / ", actions) + " Solutions...";
-
-			WorkAsync(new WorkAsyncInfo
-			{
-				Message = message,
-				Work = (worker, args) =>
+				// If OrganizationServiceProxy is available (for older auth types)
+				if (serviceClient.OrganizationServiceProxy != null)
 				{
-					if (flipSwitch_publishSource.IsOn)
-					{
-						PublishAll(ConnectionDetail);
-					}
-
-					UpdateCheckedVersionNumbers();
-					ExportCheckedSolutions();
-					HandleGit();
-
-					foreach (var targetConnection in TargetConnections)
-					{
-
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-
-						Log();
-
-						//_logger.IncreaseIndent();
-
-						ImportCheckedSolutions(targetConnection.ServiceClient);
-						PublishAll(targetConnection);
-
-						//_logger.DecreaseIndent();
-					}
-
-
-					args.Result = null;
-				},
-				PostWorkCallBack = (args) =>
-				{
-					if (args.Error != null)
-					{
-						MessageBox.Show(
-							args.Error.ToString(),
-							"Error",
-							MessageBoxButtons.OK,
-							MessageBoxIcon.Error);
-					}
-
-					LoadAllSolutions();
-
-					Log(ColorGreen + "##### Done." + ColorEndTag);
-
-					SetUiEnabledState(true);
+					serviceClient.OrganizationServiceProxy.Timeout = TimeSpan.FromMinutes(timoutInMinutes);
 				}
-			});
-		}
-
-		// ============================================================================
-		private void SetUiEnabledState(
-			bool state)
-		{
-			listBoxSolutions.Enabled = state;
-
-			flipSwitch_publishSource.IsLocked = !state;
-			flipSwitch_updateVersion.IsLocked = !state;
-			flipSwitch_exportManaged.IsLocked = !state;
-			flipSwitch_exportUnmanaged.IsLocked = !state;
-
-			flipSwitch_importManaged.IsLocked = !state;
-			flipSwitch_importUnmanaged.IsLocked = !state;
-			flipSwitch_enableAutomation.IsLocked = !state;
-			flipSwitch_overwrite.IsLocked = !state;
-			flipSwitch_upgrade.IsLocked = !state;
-
-			flipSwitch_publishTarget.IsLocked = !state;
-			flipSwitch_gitCommit.IsLocked = !state;
-			flipSwitch_pushCommit.IsLocked = !state;
-
-			button_browseManaged.Enabled = state;
-			button_browseUnmananged.Enabled = state;
-
-			textBox_versionFormat.Enabled = state;
-			textBox_commitMessage.Enabled = state;
-			textBox_managed.Enabled = state;
-			textBox_unmanaged.Enabled = state;
-
-			comboBox_gitBranches.Enabled = state;
-
-			button_loadSolutions.Enabled = state;
-			button_Export.Enabled = state;
-			button_addAdditionalConnection.Enabled = state;
-			button_manageConnections.Enabled = state;
-			button_Settings.Enabled = state;
-		}
-
-
-		// ============================================================================
-		private void listSolutions_ItemCheck(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
 			}
-
-			SetExportButtonState();
-			SaveSettings("listSolutions_ItemCheck");
-		}
-
-		// ============================================================================
-		private void button_addAdditionalConnection_Click(object sender, EventArgs e)
-		{
-			AddAdditionalOrganization();
-		}
-
-		// ============================================================================
-		private void button_checkAll_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.CheckAllItems();
-			SaveSettings("button_checkAll_Click");
-		}
-
-		// ============================================================================
-		private void button_invertCheck_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.InvertCheckOfAllItems();
-			SaveSettings("InvertCheckOfAllItems");
-		}
-
-		// ============================================================================
-		private void button_uncheckAll_Click(object sender, EventArgs e)
-		{
-			listBoxSolutions.UnCheckAllItems();
-			SaveSettings("UnCheckAllItems");
-		}
-
-
-		// ============================================================================
-		private void button_Settings_Click(
-			object sender,
-			EventArgs e)
-		{
-			SettingsForm settingsForm = new SettingsForm();
-			settingsForm.Settings = _settings;
-			settingsForm.ShowDialog();
-			_settings = settingsForm.Settings;
-
-			SaveSettings("button_Settings_Click");
-			UpdateColumns();
-			UpdateSolutionList();
-		}
-
-
-		// ============================================================================
-		private void button_exportCsv_Click(object sender, EventArgs e)
-		{
-			saveFileDialog1.Title = "Save solution information...";
-			saveFileDialog1.FileName = "Solution Information.csv";
-			saveFileDialog1.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
-			saveFileDialog1.FilterIndex = 0;
-
-			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-			{
-				ExportSolutionCsv(saveFileDialog1.FileName);
-			}
-		}
-
-
-		// ============================================================================
-		private void button_manageConnections_Click(object sender, EventArgs e)
-		{
-			_connectionManager = new ConnectionManager(this);
-			var dialogResult = _connectionManager.ShowDialog();
-			_connectionManager = null;
-		}
-
-
-		// ============================================================================
-		private void listBoxSolutions_SortingColumnChanged(object sender, EventArgs e)
-		{
-			if (_settings == null ||
-				CodeUpdate)
-			{
-				return;
-			}
-
-			_settings.SortingColumnIndex = listBoxSolutions.SortingColumnIndex;
-			_settings.SortingColumnOrder = listBoxSolutions.SortingColumnOrder;
-
-			SaveSettings("listBoxSolutions_SortingColumnChanged");
-		}
-
-
-		// ============================================================================
-		private void comboBox_gitBranches_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			if (CodeUpdate)
-			{
-				return;
-			}
-
-			if (!_gitHelper.SwitchToBranch(comboBox_gitBranches.SelectedItem.ToString(), out string errorMessage))
-			{
-				UpdateGitBranches();
-
-				LogError(errorMessage);
-			}
-		}
-
-		// ============================================================================
-		private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
-		{
-			if (_settings == null ||
-				CodeUpdate ||
-				CodeUpdateSplitter)
-			{
-				LogDebug($"OnSplitterMoved not executing - settingsNull: {_settings == null}, codeUpdate: {CodeUpdate}, codeUpdateSplitter {CodeUpdateSplitter}");
-				return;
-			}
-
-			LogDebug("OnSplitterMoved: " + splitContainer1.SplitterDistance);
-			_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
-			SaveSettings("splitContainer1_SplitterMoved");
 		}
 
 
 		#endregion
+
+
 
 
 	}

@@ -70,7 +70,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 			foreach (var exporedSolution in exportedSolutions.Managed)
 			{
-				if (exporedSolution.SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+				if (exporedSolution.LogicalSolutionName == solution.UniqueName &&
 					exporedSolution.FileName == fileName)
 				{
 					exportedSolutionResult = exporedSolution;
@@ -80,7 +80,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 			foreach (var exporedSolution in exportedSolutions.Unmanaged)
 			{
-				if (exporedSolution.SolutionId.ToLower() == solution.SolutionId.ToString().ToLower() &&
+				if (exporedSolution.LogicalSolutionName.ToLower() == solution.UniqueName &&
 					exporedSolution.FileName == fileName)
 				{
 					exportedSolutionResult = exporedSolution;

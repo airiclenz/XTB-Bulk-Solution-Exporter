@@ -21,6 +21,11 @@ namespace Com.AiricLenz.XTB.Plugin
 	/// </remarks>
 	public class Settings
 	{
+
+		private int _connectionTimeoutInMinutes = 120;
+
+
+
 		public string LastUsedOrganizationWebappUrl
 		{
 			get; set;
@@ -131,7 +136,28 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		} = 500;
 
-
+		public int ConnectionTimeoutInMinutes
+		{
+			get
+			{
+				return _connectionTimeoutInMinutes;
+			}
+			set
+			{
+				if (_connectionTimeoutInMinutes < 2)
+				{
+					_connectionTimeoutInMinutes = 2;
+				}
+				else if (_connectionTimeoutInMinutes > 600)
+				{
+					_connectionTimeoutInMinutes = 600;
+				}
+				else
+				{
+					_connectionTimeoutInMinutes = value;
+				}
+			}
+		}
 
 
 		public List<string> SolutionConfigurations

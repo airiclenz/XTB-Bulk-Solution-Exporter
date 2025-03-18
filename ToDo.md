@@ -9,6 +9,12 @@
 
 ## Added in Release 2025.03.<mark>XX</mark>
 
+- added timeout setting used for all used connections
+- fixed multiple minor bugs
+	- GIT root repo was not always found correctly
+	- some settings were loaded incorrectly
+- miscellaneous other improvements
+
 
 ## Added in Release 2025.03.01
  

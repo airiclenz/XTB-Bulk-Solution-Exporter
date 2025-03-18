@@ -115,7 +115,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_versionFormat.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_versionFormat.Location = new System.Drawing.Point(906, 53);
             this.textBox_versionFormat.Name = "textBox_versionFormat";
-            this.textBox_versionFormat.Size = new System.Drawing.Size(150, 23);
+            this.textBox_versionFormat.Size = new System.Drawing.Size(202, 23);
             this.textBox_versionFormat.TabIndex = 8;
             this.textBox_versionFormat.Text = "YYYY.MM.DD.+";
             this.toolTip1.SetToolTip(this.textBox_versionFormat, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
@@ -379,8 +379,6 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // textBox_commitMessage
             // 
-            this.textBox_commitMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.textBox_commitMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textBox_commitMessage.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -388,7 +386,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_commitMessage.Multiline = true;
             this.textBox_commitMessage.Name = "textBox_commitMessage";
             this.textBox_commitMessage.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBox_commitMessage.Size = new System.Drawing.Size(581, 42);
+            this.textBox_commitMessage.Size = new System.Drawing.Size(202, 66);
             this.textBox_commitMessage.TabIndex = 20;
             this.textBox_commitMessage.Text = "XTB Commit";
             this.textBox_commitMessage.TextChanged += new System.EventHandler(this.textBox_commitMessage_TextChanged);
@@ -654,13 +652,11 @@ namespace Com.AiricLenz.XTB.Plugin
             // 
             // comboBox_gitBranches
             // 
-            this.comboBox_gitBranches.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.comboBox_gitBranches.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.comboBox_gitBranches.FormattingEnabled = true;
             this.comboBox_gitBranches.Location = new System.Drawing.Point(906, 81);
             this.comboBox_gitBranches.Name = "comboBox_gitBranches";
-            this.comboBox_gitBranches.Size = new System.Drawing.Size(581, 23);
+            this.comboBox_gitBranches.Size = new System.Drawing.Size(202, 23);
             this.comboBox_gitBranches.TabIndex = 26;
             this.comboBox_gitBranches.SelectedIndexChanged += new System.EventHandler(this.comboBox_gitBranches_SelectedIndexChanged);
             // 
