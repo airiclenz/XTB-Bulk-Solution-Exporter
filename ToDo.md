@@ -1,3 +1,4 @@
+
 # To-Do's
 
 - add dynamics content for commit message and update information tooltip accordingly
@@ -6,6 +7,8 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
+- add functionality to set all export file names to the stadard in a folder (for selected items)
+- add option "Contiue on Error"
 
 ## Added in Release 2025.03.<mark>XX</mark>
 

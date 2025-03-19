@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Airic Lenz")]
 [assembly: AssemblyProduct("XrmToolBox - Bulk Solution Manager")]
-[assembly: AssemblyCopyright("Copyright © Airic Lenz 2024")]
+[assembly: AssemblyCopyright("Copyright © 2024–2025 Airic Lenz. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2025.3.1.24")]
-[assembly: AssemblyFileVersion("2025.3.1.24")]
+[assembly: AssemblyVersion("2025.3.19.25")]
+[assembly: AssemblyFileVersion("2025.3.19.25")]
