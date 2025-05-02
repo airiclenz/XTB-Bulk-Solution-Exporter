@@ -1,0 +1,3 @@
+[submodule "XTB Components"]
+	path = XTB Components
+	url = https://github.com/airiclenz/XTB-Components.git

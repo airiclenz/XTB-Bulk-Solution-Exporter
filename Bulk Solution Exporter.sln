@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repository Items", "Reposit
 		ToDo.md = ToDo.md
 	EndProjectSection
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "XTB Components", "XTB Components\XTB Components.shproj", "{FA24C448-17A0-4CD6-BFAD-DA2202F2056E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,5 +29,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {26551FF2-AC63-4F5A-AEF2-199E8DA28BBA}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		XTB Components\XTB Components.projitems*{1cb7ef9b-b7dc-4e6a-8f2f-f97c448b9cd3}*SharedItemsImports = 4
+		XTB Components\XTB Components.projitems*{fa24c448-17a0-4cd6-bfad-da2202f2056e}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
