@@ -1892,12 +1892,12 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					queryOrigin.Criteria.AddCondition(
 						"ismanaged",
-						ConditionOperator.Equal,
+						Microsoft.Xrm.Sdk.Query.ConditionOperator.Equal,
 						false);
 
 					queryOrigin.Criteria.AddCondition(
 						"isvisible",
-						ConditionOperator.Equal,
+						Microsoft.Xrm.Sdk.Query.ConditionOperator.Equal,
 						true);
 
 					queryOrigin.ColumnSet.AddColumns(
@@ -1914,7 +1914,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					queryTarget.Criteria.AddCondition(
 						"isvisible",
-						ConditionOperator.Equal,
+						Microsoft.Xrm.Sdk.Query.ConditionOperator.Equal,
 						true);
 
 					queryTarget.ColumnSet.AddColumns(
