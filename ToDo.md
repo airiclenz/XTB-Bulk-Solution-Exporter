@@ -7,17 +7,24 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
-- add functionality to set all export file names to the stadard in a folder (for selected items)
 - add option "Contiue on Error"
 
-## Added in Release 2025.03.<mark>XX</mark>
+
+## Added in Release 2025.06.<mark>XX</mark>
+
+
+## Added in Release 2025.06.02
+
+- added file location wizzard to allow for easier file location definition
+- made splitter more visible
+
+## Added in Release 2025.03.19
 
 - added timeout setting used for all used connections
 - fixed multiple minor bugs
 	- GIT root repo was not always found correctly
 	- some settings were loaded incorrectly
 - miscellaneous other improvements
-
 
 ## Added in Release 2025.03.01
  

@@ -650,8 +650,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
-			button_fileWizzard.Enabled = rowIsSelected;
-
+			
 			SetExportButtonState();
 
 		}
@@ -926,12 +925,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void listSolutions_ItemCheck(object sender, ItemEventArgs e)
+		private void listSolutions_ItemCheck(
+			object sender, 
+			ItemEventArgs e)
 		{
 			if (CodeUpdate)
 			{
 				return;
 			}
+
+			button_fileWizzard.Enabled = listBoxSolutions.CheckedItems.Count > 0;
 
 			SetExportButtonState();
 			SaveSettings();
@@ -1096,8 +1099,15 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			UpdateSolutionList();
 			UpdateSolutionSettingsScreen();
-		}
 
+			// Show a pop-up to inform the user that the process has finished
+			MessageBox.Show(
+				"The file locations have been updated.",
+				"Process Complete",
+				MessageBoxButtons.OK,
+				MessageBoxIcon.Information);
+		}
+		
 
 		#endregion
 
@@ -1477,7 +1487,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
-					Log("The import was succesful.");
+					Log("The import was successful.");
 					Log("Duration: " + duration);
 
 					if (i < listBoxSolutions.CheckedItems.Count - 1)

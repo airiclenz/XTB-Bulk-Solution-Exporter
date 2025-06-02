@@ -58,7 +58,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.panelSeparator = new System.Windows.Forms.Panel();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.button_uncheckAll = new System.Windows.Forms.ToolStripButton();
             this.button_checkAll = new System.Windows.Forms.ToolStripButton();
@@ -354,7 +353,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningUnmanaged.ErrorImage = null;
             this.pictureBox_warningUnmanaged.InitialImage = null;
-            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(782, 103);
             this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
             this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningUnmanaged.TabIndex = 26;
@@ -370,7 +369,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningManaged.ErrorImage = null;
             this.pictureBox_warningManaged.InitialImage = null;
-            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(782, 55);
             this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
             this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningManaged.TabIndex = 9;
@@ -408,18 +407,21 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.splitContainer1.BackColor = System.Drawing.Color.Gainsboro;
             this.splitContainer1.Location = new System.Drawing.Point(3, 193);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.panelSeparator);
+            this.splitContainer1.Panel1.BackColor = System.Drawing.SystemColors.Control;
             this.splitContainer1.Panel1.Controls.Add(this.toolStrip1);
             this.splitContainer1.Panel1.Controls.Add(this.listBoxSolutions);
+            this.splitContainer1.Panel1.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this.splitContainer1.Panel1MinSize = 300;
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.BackColor = System.Drawing.SystemColors.Control;
             this.splitContainer1.Panel2.Controls.Add(this.panel1);
             this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningUnmanaged);
             this.splitContainer1.Panel2.Controls.Add(this.pictureBox_warningManaged);
@@ -434,18 +436,9 @@ namespace Com.AiricLenz.XTB.Plugin
             this.splitContainer1.Panel2MinSize = 300;
             this.splitContainer1.Size = new System.Drawing.Size(1494, 604);
             this.splitContainer1.SplitterDistance = 650;
+            this.splitContainer1.SplitterWidth = 2;
             this.splitContainer1.TabIndex = 6;
             this.splitContainer1.SplitterMoved += new System.Windows.Forms.SplitterEventHandler(this.splitContainer1_SplitterMoved);
-            // 
-            // panelSeparator
-            // 
-            this.panelSeparator.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.panelSeparator.BackColor = System.Drawing.SystemColors.ControlDark;
-            this.panelSeparator.Location = new System.Drawing.Point(0, 28);
-            this.panelSeparator.Name = "panelSeparator";
-            this.panelSeparator.Size = new System.Drawing.Size(668, 2);
-            this.panelSeparator.TabIndex = 9;
             // 
             // toolStrip1
             // 
@@ -458,7 +451,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_fileWizzard});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(650, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(640, 25);
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -508,6 +501,7 @@ namespace Com.AiricLenz.XTB.Plugin
             // button_fileWizzard
             // 
             this.button_fileWizzard.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_fileWizzard.Enabled = false;
             this.button_fileWizzard.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.file_wizzard_16px;
             this.button_fileWizzard.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_fileWizzard.Name = "button_fileWizzard";
@@ -527,28 +521,31 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.BorderColor = System.Drawing.SystemColors.ControlDark;
             this.listBoxSolutions.BorderThickness = 1F;
             this.listBoxSolutions.CheckBoxMargin = 4;
-            this.listBoxSolutions.CheckBoxRadius = 18;
-            this.listBoxSolutions.CheckBoxSize = 18;
+            this.listBoxSolutions.CheckBoxRadius = 11;
+            this.listBoxSolutions.CheckBoxSize = 16;
             this.listBoxSolutions.ColorChecked = System.Drawing.Color.MediumSlateBlue;
             this.listBoxSolutions.ColorUnchecked = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
             this.listBoxSolutions.ColumnsJson = "[]";
             this.listBoxSolutions.DragBurgerLineThickness = 1.5F;
             this.listBoxSolutions.DragBurgerSize = 11;
-            this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listBoxSolutions.Filter = null;
+            this.listBoxSolutions.Font = new System.Drawing.Font("Consolas", 9F);
+            this.listBoxSolutions.IsBoldWhenChecked = true;
             this.listBoxSolutions.IsCheckable = true;
             this.listBoxSolutions.IsSortable = true;
-            this.listBoxSolutions.ItemHeigth = 24;
-            this.listBoxSolutions.Location = new System.Drawing.Point(3, 35);
+            this.listBoxSolutions.ItemHeigth = 22;
+            this.listBoxSolutions.Location = new System.Drawing.Point(3, 28);
             this.listBoxSolutions.Name = "listBoxSolutions";
+            this.listBoxSolutions.ShowOnlyCheckedItems = false;
             this.listBoxSolutions.ShowScrollBar = true;
             this.listBoxSolutions.ShowTooltips = true;
-            this.listBoxSolutions.Size = new System.Drawing.Size(644, 564);
+            this.listBoxSolutions.Size = new System.Drawing.Size(634, 571);
             this.listBoxSolutions.SortingColumnIndex = -1;
             this.listBoxSolutions.SortingColumnOrder = System.Windows.Forms.SortOrder.None;
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
-            this.listBoxSolutions.ItemChecked += new System.EventHandler<ItemEventArgs>(this.listSolutions_ItemCheck);
+            this.listBoxSolutions.ItemChecked += new System.EventHandler<Com.AiricLenz.XTB.Components.ItemEventArgs>(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
             this.listBoxSolutions.SortingColumnChanged += new System.EventHandler(this.listBoxSolutions_SortingColumnChanged);
             // 
@@ -561,7 +558,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.panel1.Controls.Add(this.richTextBox_log);
             this.panel1.Location = new System.Drawing.Point(15, 156);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(795, 443);
+            this.panel1.Size = new System.Drawing.Size(797, 443);
             this.panel1.TabIndex = 28;
             // 
             // richTextBox_log
@@ -573,7 +570,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.richTextBox_log.Location = new System.Drawing.Point(0, 0);
             this.richTextBox_log.Name = "richTextBox_log";
             this.richTextBox_log.ReadOnly = true;
-            this.richTextBox_log.Size = new System.Drawing.Size(793, 441);
+            this.richTextBox_log.Size = new System.Drawing.Size(795, 441);
             this.richTextBox_log.TabIndex = 27;
             this.richTextBox_log.Text = "";
             // 
@@ -647,7 +644,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_unmanaged.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_unmanaged.Location = new System.Drawing.Point(107, 101);
             this.textBox_unmanaged.Name = "textBox_unmanaged";
-            this.textBox_unmanaged.Size = new System.Drawing.Size(705, 23);
+            this.textBox_unmanaged.Size = new System.Drawing.Size(707, 23);
             this.textBox_unmanaged.TabIndex = 1;
             this.textBox_unmanaged.TextChanged += new System.EventHandler(this.textBox_unmanaged_TextChanged);
             // 
@@ -659,7 +656,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_managed.Location = new System.Drawing.Point(107, 53);
             this.textBox_managed.Name = "textBox_managed";
-            this.textBox_managed.Size = new System.Drawing.Size(705, 23);
+            this.textBox_managed.Size = new System.Drawing.Size(707, 23);
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 
@@ -904,7 +901,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.ToolStrip toolStrip1;
 		private System.Windows.Forms.ToolStripButton button_checkAll;
 		private System.Windows.Forms.ToolStripButton button_uncheckAll;
-		private System.Windows.Forms.Panel panelSeparator;
 		private FlipSwitch flipSwitch_publishTarget;
 		private System.Windows.Forms.ToolStripButton button_invertCheck;
 		private System.Windows.Forms.PictureBox pictureBox_warningManaged;

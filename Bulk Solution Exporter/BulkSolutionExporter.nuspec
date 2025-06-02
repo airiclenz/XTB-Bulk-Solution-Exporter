@@ -4,7 +4,7 @@
         <!-- Required elements-->
         <id>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</id>
 		<title>Bulk Solution Manager</title>
-        <version>2025.3.19.25</version>
+        <version>2025.6.2.26</version>
         <authors>Airic Lenz</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>
