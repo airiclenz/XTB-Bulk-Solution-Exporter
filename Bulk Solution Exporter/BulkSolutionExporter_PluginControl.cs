@@ -650,6 +650,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
+			button_fileWizzard.Enabled = rowIsSelected;
 
 			SetExportButtonState();
 
@@ -726,7 +727,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			else
 			{
-				saveFileDialog1.FileName = "Managed." + selectedSolution.UniqueName + ".zip";
+				saveFileDialog1.FileName = GetDefaultFileName(selectedSolution, true);
 			}
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
@@ -764,7 +765,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			else
 			{
-				saveFileDialog1.FileName = "Unmanaged." + selectedSolution.UniqueName + ".zip";
+				saveFileDialog1.FileName = GetDefaultFileName(selectedSolution, false);
 			}
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
@@ -925,7 +926,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void listSolutions_ItemCheck(object sender, EventArgs e)
+		private void listSolutions_ItemCheck(object sender, ItemEventArgs e)
 		{
 			if (CodeUpdate)
 			{
@@ -1051,6 +1052,50 @@ namespace Com.AiricLenz.XTB.Plugin
 			LogDebug("OnSplitterMoved: " + splitContainer1.SplitterDistance);
 			_settings.SplitContainerPosition = splitContainer1.SplitterDistance;
 			SaveSettings();
+		}
+
+		// ============================================================================
+		private void button_fileWizzard_Click(object sender, EventArgs e)
+		{
+			if (folderBrowserDialog1.ShowDialog() != DialogResult.OK)
+			{
+				return;
+			}
+
+			foreach (var selectedSolution in listBoxSolutions.CheckedItems)
+			{
+				var solution = selectedSolution.ItemObject as Solution;
+
+				if (solution == null)
+				{
+					continue;
+				}
+
+				var solutionConfig =
+					_settings.GetSolutionConfiguration(
+						solution.SolutionIdentifier);
+
+				if (solutionConfig == null)
+				{
+					continue;
+				}
+
+				solutionConfig.FileNameManaged =
+					Path.Combine(
+						folderBrowserDialog1.SelectedPath,
+						GetDefaultFileName(solution, true));
+
+				solutionConfig.FileNameUnmanaged =
+					Path.Combine(
+						folderBrowserDialog1.SelectedPath,
+						GetDefaultFileName(solution, false));
+
+
+				_settings.UpdateSolutionConfiguration(solutionConfig);
+			}
+
+			UpdateSolutionList();
+			UpdateSolutionSettingsScreen();
 		}
 
 
@@ -2778,7 +2823,38 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		private string GetDefaultFileName(
+			Solution solution,
+			bool isManaged = true)
+		{
+			var solutionName = solution.UniqueName;
+			solutionName = solutionName.Replace("#", "");
+
+			while (solutionName.Contains("  "))
+			{
+				solutionName = solutionName.Replace("  ", " ");
+			}
+
+			solutionName = solutionName.Trim();
+
+			if (isManaged)
+			{
+				return
+					"Managed." + solutionName + ".zip";
+			}
+			else
+			{
+				return
+					"Unmanaged." + solutionName + ".zip";
+			}
+		}
+
+
+
+
 		#endregion
+
 
 
 

@@ -38,7 +38,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -333,6 +333,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bulk solution exporter.ico" />
+    <None Include="Resources\file wizzard.16px.png" />
     <None Include="Resources\add.32px.png" />
     <None Include="Resources\delete.32px.png" />
     <None Include="Resources\connections.32px.png" />

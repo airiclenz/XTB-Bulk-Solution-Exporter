@@ -47,14 +47,14 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_Export = new System.Windows.Forms.ToolStripButton();
             this.button_Settings = new System.Windows.Forms.ToolStripButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
-            this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
-            this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
             this.flipSwitch_overwrite = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_enableAutomation = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportUnmanaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_exportManaged = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_upgrade = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.pictureBox_arrow = new System.Windows.Forms.PictureBox();
+            this.pictureBox_warningUnmanaged = new System.Windows.Forms.PictureBox();
+            this.pictureBox_warningManaged = new System.Windows.Forms.PictureBox();
             this.textBox_commitMessage = new System.Windows.Forms.TextBox();
             this.label_commitMessage = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -65,6 +65,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_invertCheck = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.button_exportCsv = new System.Windows.Forms.ToolStripButton();
+            this.button_fileWizzard = new System.Windows.Forms.ToolStripButton();
             this.listBoxSolutions = new Com.AiricLenz.XTB.Components.SortableCheckList();
             this.panel1 = new System.Windows.Forms.Panel();
             this.richTextBox_log = new System.Windows.Forms.RichTextBox();
@@ -85,6 +86,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.flipSwitch_gitCommit = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_publishSource = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_updateVersion = new Com.AiricLenz.XTB.Components.FlipSwitch();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.toolStripMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_arrow)).BeginInit();
@@ -190,11 +192,10 @@ namespace Com.AiricLenz.XTB.Plugin
             // button_manageConnections
             // 
             this.button_manageConnections.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button_manageConnections.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.connections_32px;
             this.button_manageConnections.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_manageConnections.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
             this.button_manageConnections.Name = "button_manageConnections";
-            this.button_manageConnections.Size = new System.Drawing.Size(171, 39);
+            this.button_manageConnections.Size = new System.Drawing.Size(139, 39);
             this.button_manageConnections.Text = " Manage Connections";
             this.button_manageConnections.ToolTipText = "Manage all connected target environments";
             this.button_manageConnections.Click += new System.EventHandler(this.button_manageConnections_Click);
@@ -228,52 +229,6 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_Settings.Size = new System.Drawing.Size(102, 39);
             this.button_Settings.Text = " Settings";
             this.button_Settings.Click += new System.EventHandler(this.button_Settings_Click);
-            // 
-            // pictureBox_arrow
-            // 
-            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
-            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox_arrow.ErrorImage = null;
-            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
-            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
-            this.pictureBox_arrow.Name = "pictureBox_arrow";
-            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
-            this.pictureBox_arrow.TabIndex = 16;
-            this.pictureBox_arrow.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
-        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
-            // 
-            // pictureBox_warningUnmanaged
-            // 
-            this.pictureBox_warningUnmanaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_warningUnmanaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.pictureBox_warningUnmanaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningUnmanaged.BackgroundImage")));
-            this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox_warningUnmanaged.ErrorImage = null;
-            this.pictureBox_warningUnmanaged.InitialImage = null;
-            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
-            this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
-            this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
-            this.pictureBox_warningUnmanaged.TabIndex = 26;
-            this.pictureBox_warningUnmanaged.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_warningUnmanaged, "The file was not exported yet or is out-dated!");
-            this.pictureBox_warningUnmanaged.Visible = false;
-            // 
-            // pictureBox_warningManaged
-            // 
-            this.pictureBox_warningManaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox_warningManaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.pictureBox_warningManaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningManaged.BackgroundImage")));
-            this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox_warningManaged.ErrorImage = null;
-            this.pictureBox_warningManaged.InitialImage = null;
-            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
-            this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
-            this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
-            this.pictureBox_warningManaged.TabIndex = 9;
-            this.pictureBox_warningManaged.TabStop = false;
-            this.toolTip1.SetToolTip(this.pictureBox_warningManaged, "The file was not exported yet or is out-dated!");
-            this.pictureBox_warningManaged.Visible = false;
             // 
             // flipSwitch_overwrite
             // 
@@ -377,6 +332,52 @@ namespace Com.AiricLenz.XTB.Plugin
         ") - otherwise they are installed with Update.");
             this.flipSwitch_upgrade.Toggled += new System.EventHandler(this.flipSwitch_upgrade_Toggled);
             // 
+            // pictureBox_arrow
+            // 
+            this.pictureBox_arrow.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.BackgroundImage")));
+            this.pictureBox_arrow.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox_arrow.ErrorImage = null;
+            this.pictureBox_arrow.InitialImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_arrow.InitialImage")));
+            this.pictureBox_arrow.Location = new System.Drawing.Point(210, 77);
+            this.pictureBox_arrow.Name = "pictureBox_arrow";
+            this.pictureBox_arrow.Size = new System.Drawing.Size(48, 48);
+            this.pictureBox_arrow.TabIndex = 16;
+            this.pictureBox_arrow.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_arrow, "Allowed Tokens:\r\n\r\n#    Number with no changed applied\r\n+    Increment number by " +
+        "1 \r\nYYYY    Current year\r\nMM    Current month\r\nDD    Current day");
+            // 
+            // pictureBox_warningUnmanaged
+            // 
+            this.pictureBox_warningUnmanaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningUnmanaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningUnmanaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningUnmanaged.BackgroundImage")));
+            this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningUnmanaged.ErrorImage = null;
+            this.pictureBox_warningUnmanaged.InitialImage = null;
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(780, 103);
+            this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
+            this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningUnmanaged.TabIndex = 26;
+            this.pictureBox_warningUnmanaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningUnmanaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningUnmanaged.Visible = false;
+            // 
+            // pictureBox_warningManaged
+            // 
+            this.pictureBox_warningManaged.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox_warningManaged.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.pictureBox_warningManaged.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pictureBox_warningManaged.BackgroundImage")));
+            this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox_warningManaged.ErrorImage = null;
+            this.pictureBox_warningManaged.InitialImage = null;
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(780, 55);
+            this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
+            this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
+            this.pictureBox_warningManaged.TabIndex = 9;
+            this.pictureBox_warningManaged.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox_warningManaged, "The file was not exported yet or is out-dated!");
+            this.pictureBox_warningManaged.Visible = false;
+            // 
             // textBox_commitMessage
             // 
             this.textBox_commitMessage.BackColor = System.Drawing.SystemColors.ControlLightLight;
@@ -453,7 +454,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_checkAll,
             this.button_invertCheck,
             this.toolStripSeparator3,
-            this.button_exportCsv});
+            this.button_exportCsv,
+            this.button_fileWizzard});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(650, 25);
@@ -503,6 +505,17 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_exportCsv.Text = "Export to CSV";
             this.button_exportCsv.Click += new System.EventHandler(this.button_exportCsv_Click);
             // 
+            // button_fileWizzard
+            // 
+            this.button_fileWizzard.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.button_fileWizzard.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.file_wizzard_16px;
+            this.button_fileWizzard.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.button_fileWizzard.Name = "button_fileWizzard";
+            this.button_fileWizzard.Size = new System.Drawing.Size(23, 22);
+            this.button_fileWizzard.Text = "File Wizzard";
+            this.button_fileWizzard.ToolTipText = "Define file locations for all selected files";
+            this.button_fileWizzard.Click += new System.EventHandler(this.button_fileWizzard_Click);
+            // 
             // listBoxSolutions
             // 
             this.listBoxSolutions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -535,7 +548,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.listBoxSolutions.TabIndex = 7;
             this.listBoxSolutions.Text = "sortableCheckList1";
             this.listBoxSolutions.SelectedIndexChanged += new System.EventHandler(this.listSolutions_SelectedIndexChanged);
-            this.listBoxSolutions.ItemChecked += new System.EventHandler(this.listSolutions_ItemCheck);
+            this.listBoxSolutions.ItemChecked += new System.EventHandler<ItemEventArgs>(this.listSolutions_ItemCheck);
             this.listBoxSolutions.ItemOrderChanged += new System.EventHandler(this.listBoxSolutions_ItemOrderChanged);
             this.listBoxSolutions.SortingColumnChanged += new System.EventHandler(this.listBoxSolutions_SortingColumnChanged);
             // 
@@ -905,5 +918,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private System.Windows.Forms.Label label_gitBranch;
 		private System.Windows.Forms.ComboBox comboBox_gitBranches;
 		private FlipSwitch flipSwitch_upgrade;
+		private System.Windows.Forms.ToolStripButton button_fileWizzard;
+		private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
 	}
 }
