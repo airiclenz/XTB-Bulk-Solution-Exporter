@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Activities.Presentation.Debug;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -15,7 +16,6 @@ using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
-//using Microsoft.Xrm.Sdk.Organization;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 using Newtonsoft.Json;
@@ -1587,10 +1587,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("**Importing solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
+
+
 				if (ImportSolution(targetService, solution, worker, importManagd))
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
+					var durationSeconds = (int)(DateTime.Now - startTime).TotalSeconds;
+
 					Log("The import was successful.");
 					Log("Duration: " + duration);
 
@@ -1600,6 +1604,18 @@ namespace Com.AiricLenz.XTB.Plugin
 					}
 
 					_logger.DecreaseIndent();
+
+					if (importManagd)
+					{
+						solutionConfig.LastImportDurationManagedInSeconds = durationSeconds;
+					}
+					else
+					{
+						solutionConfig.LastImportDurationUnmanagedInSeconds = durationSeconds;
+					}
+
+					_settings.UpdateSolutionConfiguration(solutionConfig);
+					SaveSettings();
 				}
 
 				RefreshSolutionInListBox(solution);
@@ -1625,10 +1641,18 @@ namespace Com.AiricLenz.XTB.Plugin
 					0,
 					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'");
 
-				ExportToFile(
-					solution,
-					solutionConfiguration,
-					true);
+				var durationInSeconds = 
+					ExportToFile(
+						solution,
+						solutionConfiguration,
+						true);
+
+				if (durationInSeconds > 0)
+				{
+					solutionConfiguration.LastExportDurationManagedInSeconds = durationInSeconds;
+					_settings.UpdateSolutionConfiguration(solutionConfiguration);
+					SaveSettings();
+				}
 			}
 
 
@@ -1644,10 +1668,18 @@ namespace Com.AiricLenz.XTB.Plugin
 					0,
 					$"Exporting as unmanged...{Environment.NewLine}'{solution.FriendlyName}'");
 
-				ExportToFile(
-					solution,
-					solutionConfiguration,
-					false);
+				var durationInSeconds = 
+					ExportToFile(
+						solution,
+						solutionConfiguration,
+						false);
+
+				if (durationInSeconds > 0)
+				{
+					solutionConfiguration.LastExportDurationUnamangedInSeconds = durationInSeconds;
+					_settings.UpdateSolutionConfiguration(solutionConfiguration);
+					SaveSettings();
+				}
 			}
 
 			_logger.DecreaseIndent();
@@ -1657,7 +1689,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExportToFile(
+		private int ExportToFile(
 			Solution solution,
 			SolutionConfiguration solutionConfiguration,
 			bool isManaged)
@@ -1671,7 +1703,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				LogError("No file name for the " + (isManaged ? "" : "un") + "managed solution was given!");
 				_logger.DecreaseIndent();
-				return;
+				return -1;
 			}
 
 			var startTime = DateTime.Now;
@@ -1713,7 +1745,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					solutionConfiguration.SolutionIndentifier);
 
 			var duration = GetDurationString(startTime);
-			Log("Exported to file: " + ColorFile + "" + filePath + "" + ColorEndTag);
+            var durationSeconds = (int)(DateTime.Now - startTime).TotalSeconds;
+
 			Log("Duration: " + duration);
 
 			if (_settings.SaveVersionJson)
@@ -1725,6 +1758,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			_logger.DecreaseIndent();
+			return durationSeconds;
 
 		}
 
