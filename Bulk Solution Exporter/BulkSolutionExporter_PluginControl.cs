@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -49,6 +50,13 @@ namespace Com.AiricLenz.XTB.Plugin
 		private GitHelper _gitHelper = null;
 		private List<string> _gitBranches = new List<string>();
 		private Logger _logger = null;
+
+		private WorkAsyncInfo _executionWorker = null;
+		private Timer _progressTimer;
+		private DateTime _progressStartTime;
+		private string _progressBaseMessage;
+		private Size _workerPanelSize = new Size(400, 200);
+
 
 		private Solution _currentSolution;
 		private object origin;
@@ -650,7 +658,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			button_browseManaged.Enabled = rowIsSelected;
 			button_browseUnmananged.Enabled = rowIsSelected;
-			
+
 			SetExportButtonState();
 
 		}
@@ -795,67 +803,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			SetUiEnabledState(false);
 
-			richTextBox_log.Text = string.Empty;
-			_sessionFiles.Clear();
-
-			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
-
-			WorkAsync(new WorkAsyncInfo
-			{
-				Message = message,
-				Work = (worker, args) =>
-				{
-					if (flipSwitch_publishSource.IsOn)
-					{
-						PublishAll(ConnectionDetail);
-					}
-
-					UpdateCheckedVersionNumbers();
-					ExportCheckedSolutions();
-					HandleGit();
-
-					foreach (var targetConnection in TargetConnections)
-					{
-
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-
-						Log();
-
-						//_logger.IncreaseIndent();
-
-						ImportCheckedSolutions(targetConnection.ServiceClient);
-
-						if (flipSwitch_publishTarget.IsOn)
-						{
-							PublishAll(targetConnection);
-						}
-
-						//_logger.DecreaseIndent();
-					}
-
-
-					args.Result = null;
-				},
-				PostWorkCallBack = (args) =>
-				{
-					if (args.Error != null)
-					{
-						MessageBox.Show(
-							args.Error.ToString(),
-							"Error",
-							MessageBoxButtons.OK,
-							MessageBoxIcon.Error);
-					}
-
-					LoadAllSolutions();
-
-					Log(ColorGreen + "##### Done." + ColorEndTag);
-
-					SetUiEnabledState(true);
-				}
-			});
+			ExecuteOperations();
 		}
 
 
@@ -926,7 +874,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void listSolutions_ItemCheck(
-			object sender, 
+			object sender,
 			ItemEventArgs e)
 		{
 			if (CodeUpdate)
@@ -1107,14 +1055,152 @@ namespace Com.AiricLenz.XTB.Plugin
 				MessageBoxButtons.OK,
 				MessageBoxIcon.Information);
 		}
-		
 
-		#endregion
 
-		// ##################################################
-		// ##################################################
 
-		#region Custom Logic
+		// ============================================================================
+		private void ExecuteOperations()
+		{
+			richTextBox_log.Text = string.Empty;
+			_sessionFiles.Clear();
+
+			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
+
+			_executionWorker = new WorkAsyncInfo()
+			{
+				Message = message,
+				MessageWidth = _workerPanelSize.Width,
+				MessageHeight = _workerPanelSize.Height,
+				IsCancelable = true,
+				Work = (worker, args) =>
+				{
+					if (flipSwitch_publishSource.IsOn)
+					{
+						worker.ReportProgress(0, $"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]");
+						PublishAll(ConnectionDetail);
+					}
+
+					UpdateCheckedVersionNumbers(worker);
+					ExportCheckedSolutions(worker);
+					HandleGit(worker);
+
+					foreach (var targetConnection in TargetConnections)
+					{
+
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
+						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+
+						Log();
+
+						ImportCheckedSolutions(
+							targetConnection,
+							worker);
+
+						if (flipSwitch_publishTarget.IsOn)
+						{
+							worker.ReportProgress(0, $"Publishing all [{targetConnection.ConnectionName}]...");
+							PublishAll(targetConnection);
+						}
+					}
+
+
+					args.Result = null;
+				},
+
+				PostWorkCallBack = (args) =>
+				{
+					if (args.Error != null)
+					{
+						MessageBox.Show(
+							args.Error.ToString(),
+							"Error",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Error);
+					}
+
+					LoadAllSolutions();
+
+					Log(ColorGreen + "##### Done." + ColorEndTag);
+
+					SetUiEnabledState(true);
+				},
+
+				ProgressChanged = (args) =>
+				{
+					var workerMessage = args.UserState.ToString();
+					SetWorkingMessage(workerMessage, _workerPanelSize.Width, _workerPanelSize.Height);
+					StartProgressTimer(workerMessage);
+				},
+			};
+
+			WorkAsync(_executionWorker);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Set a new working message. 
+		/// Sending an empty message will stop the progress timer.
+		/// </summary>
+		/// <param name="message"></param>
+		private new void SetWorkingMessage(
+			string message = null,
+			int width = 340,
+			int height = 150)
+		{
+			if (string.IsNullOrEmpty(message))
+			{
+				StopProgressTimer();
+			}
+
+			base.SetWorkingMessage(message, width, height);
+		}
+
+
+		// ============================================================================
+		// Call this method to start the timer and set the base message
+		private void StartProgressTimer(
+			string message)
+		{
+			StopProgressTimer();
+
+			_progressBaseMessage = message;
+			_progressStartTime = DateTime.Now;
+
+			if (_progressTimer == null)
+			{
+				_progressTimer = new Timer();
+				_progressTimer.Interval = 1000; // 1 second
+				_progressTimer.Tick += ProgressTimer_Tick;
+			}
+
+			_progressTimer.Start();
+		}
+
+		// ============================================================================
+		// Call this method to stop the timer
+		private void StopProgressTimer()
+		{
+			if (_progressTimer != null)
+			{
+				_progressTimer.Stop();
+			}
+		}
+
+
+		// ============================================================================
+		// Timer tick event handler
+		private void ProgressTimer_Tick(object sender, EventArgs e)
+		{
+			var elapsed = DateTime.Now - _progressStartTime;
+			var elapsedStr = GetDurationString(_progressStartTime, true);
+
+			SetWorkingMessage(
+				$"{_progressBaseMessage}{Environment.NewLine}{elapsedStr}",
+				_workerPanelSize.Width,
+				_workerPanelSize.Height);
+		}
 
 
 		// ============================================================================
@@ -1289,13 +1375,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void UpdateCheckedVersionNumbers()
+		private void UpdateCheckedVersionNumbers(
+			BackgroundWorker worker)
 		{
 			if (!flipSwitch_updateVersion.IsOn ||
 				listBoxSolutions.CheckedItems.Count == 0)
 			{
 				return;
 			}
+
+			worker.ReportProgress(0, "Updating Version Numbers...");
 
 			Log("##### Updating Version Numbers:");
 			_logger.IncreaseIndent();
@@ -1328,7 +1417,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExportCheckedSolutions()
+		private void ExportCheckedSolutions(
+			BackgroundWorker worker)
 		{
 			if (flipSwitch_exportManaged.IsOff &&
 				flipSwitch_exportUnmanaged.IsOff)
@@ -1353,7 +1443,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				var exportResult =
 					ExportSolution(
 						solution,
-						solutionConfig);
+						solutionConfig,
+						worker);
 
 				if (!exportResult)
 				{
@@ -1454,8 +1545,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void ImportCheckedSolutions(
-			IOrganizationService targetServiceClient)
+			ConnectionDetail targetService,
+			BackgroundWorker worker)
 		{
+			var targetServiceClient = targetService?.ServiceClient;
+
 			if (targetServiceClient == null ||
 				(
 					flipSwitch_importManaged.IsOff &&
@@ -1483,7 +1577,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("**Importing solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
-				if (ImportSolution(targetServiceClient, solution, importManagd))
+				if (ImportSolution(targetService, solution, worker, importManagd))
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
@@ -1508,12 +1602,17 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private bool ExportSolution(
 			Solution solution,
-			SolutionConfiguration solutionConfiguration)
+			SolutionConfiguration solutionConfiguration,
+			BackgroundWorker worker)
 		{
 			_logger.IncreaseIndent();
 
 			if (flipSwitch_exportManaged.IsOn)
 			{
+				worker.ReportProgress(
+					0,
+					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'");
+
 				ExportToFile(
 					solution,
 					solutionConfiguration,
@@ -1529,6 +1628,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (flipSwitch_exportUnmanaged.IsOn)
 			{
+				worker.ReportProgress(
+					0,
+					$"Exporting as unmanged...{Environment.NewLine}'{solution.FriendlyName}'");
+
 				ExportToFile(
 					solution,
 					solutionConfiguration,
@@ -1738,13 +1841,18 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void HandleGit()
+		private void HandleGit(
+			BackgroundWorker worker)
 		{
 			if (flipSwitch_gitCommit.IsOff ||
 				_gitHelper == null)
 			{
 				return;
 			}
+
+			worker.ReportProgress(
+				0,
+				"Committing files to Git...");
 
 			Log("##### Commiting the new files to Git:");
 			_logger.IncreaseIndent();
@@ -1812,11 +1920,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private bool ImportSolution(
-			IOrganizationService targetServiceClient,
+			ConnectionDetail targetService,
 			Solution solution,
+			BackgroundWorker worker,
 			bool isManaged = true)
 		{
 			_logger.IncreaseIndent();
+
+			var targetServiceClient = targetService?.ServiceClient;
 
 			var config =
 				_settings.GetSolutionConfiguration(
@@ -1866,6 +1977,19 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Log("Installing the solution upgrade...");
 					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
+
+					worker.ReportProgress(
+						0,
+						$"Installing upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
+				}
+				else
+				{
+					Log("Installing the solution update...");
+					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
+
+					worker.ReportProgress(
+						0,
+						$"Installing update: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
 				}
 
 				targetServiceClient.Execute(importRequest);
@@ -1875,6 +1999,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log();
 					Log("Applying the solution upgrade...");
 					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
+
+					worker.ReportProgress(
+						0,
+						$"Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
 
 					var applyUpgradeRequest = new DeleteAndPromoteRequest
 					{
@@ -1940,6 +2068,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			WorkAsync(new WorkAsyncInfo
 			{
 				Message = "**Getting All Solutions**",
+				IsCancelable = false,
 				Work = (worker, args) =>
 				{
 					// ORIGIN SOLUTIONS
@@ -2373,7 +2502,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		static string GetDurationString(
-			DateTime startTime)
+			DateTime startTime,
+			bool noMilliseconds = false)
 		{
 			var duration = DateTime.Now - startTime;
 
@@ -2390,20 +2520,48 @@ namespace Com.AiricLenz.XTB.Plugin
 				result += $"{hours}h ";
 			}
 
-			if (minutes > 0 || hours > 0)
+			if (minutes > 0 ||
+				hours > 0)
 			{
-				result += $"{minutes}min ";
-			}
-
-			if (seconds >= 1 || (hours == 0 && minutes == 0))
-			{
-				if (minutes > 0 || hours > 0)
+				if (hours > 0)
 				{
-					result += $"{Math.Round(seconds)}sec";
+					result += $"{minutes:D2}min ";
 				}
 				else
 				{
-					result += $"{seconds:F1}sec";
+					result += $"{minutes}min ";
+				}
+
+			}
+
+			if (seconds > 0 ||
+				hours > 0 ||
+				minutes > 0)
+			{
+				if (minutes > 0 ||
+					hours > 0 ||
+					noMilliseconds)
+				{
+					if (minutes > 0)
+					{
+						result += $"{Math.Round(seconds):00}sec";
+					}
+					else
+					{
+						result += $"{Math.Round(seconds)}sec";
+					}
+				}
+				else
+				{
+					if (minutes > 0)
+					{
+						result += $"{seconds:00.0}sec";
+					}
+					else
+					{
+						result += $"{seconds:F1}sec";
+					}
+
 					result = result.Replace(",", ".");
 				}
 			}
