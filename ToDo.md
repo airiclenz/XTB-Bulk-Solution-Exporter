@@ -7,11 +7,12 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
-- add option "Contiue on Error"
+- add option "Abort on Error"
 
 
 ## Added in Release 2025.06.<mark>XX</mark>
 
+- better statuses on worker panel
 
 ## Added in Release 2025.06.02
 

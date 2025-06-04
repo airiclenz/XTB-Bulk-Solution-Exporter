@@ -55,7 +55,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			get; set;
 		}
-
+		
 		public bool GitCommit
 		{
 			get; set;

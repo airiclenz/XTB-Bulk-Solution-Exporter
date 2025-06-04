@@ -44,6 +44,18 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			get; set;
 		}
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int LastExportDurationInSeconds
+		{
+			get; set;
+		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		public int LastImportDurationInSeconds
+		{
+			get; set;
+		}
+
 
 		// ============================================================================
 		public SolutionConfiguration(

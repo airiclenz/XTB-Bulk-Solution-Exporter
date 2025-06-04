@@ -15,6 +15,7 @@ using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+//using Microsoft.Xrm.Sdk.Organization;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 using Newtonsoft.Json;
@@ -1057,6 +1058,26 @@ namespace Com.AiricLenz.XTB.Plugin
 		}
 
 
+		// ============================================================================
+		// Timer tick event handler
+		private void ProgressTimer_Tick(object sender, EventArgs e)
+		{
+			var elapsed = DateTime.Now - _progressStartTime;
+			var elapsedStr = GetDurationString(_progressStartTime, true);
+
+			SetWorkingMessage(
+				$"{_progressBaseMessage}{Environment.NewLine}{elapsedStr}",
+				_workerPanelSize.Width,
+				_workerPanelSize.Height);
+		}
+
+		#endregion
+
+		// ##################################################
+		// ##################################################
+
+		#region Custom Logic
+
 
 		// ============================================================================
 		private void ExecuteOperations()
@@ -1104,12 +1125,14 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-
 					args.Result = null;
 				},
 
 				PostWorkCallBack = (args) =>
 				{
+					StopProgressTimer();
+					SetWorkingMessage("Done.", _workerPanelSize.Width, _workerPanelSize.Height);
+
 					if (args.Error != null)
 					{
 						MessageBox.Show(
@@ -1186,20 +1209,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				_progressTimer.Stop();
 			}
-		}
-
-
-		// ============================================================================
-		// Timer tick event handler
-		private void ProgressTimer_Tick(object sender, EventArgs e)
-		{
-			var elapsed = DateTime.Now - _progressStartTime;
-			var elapsedStr = GetDurationString(_progressStartTime, true);
-
-			SetWorkingMessage(
-				$"{_progressBaseMessage}{Environment.NewLine}{elapsedStr}",
-				_workerPanelSize.Width,
-				_workerPanelSize.Height);
 		}
 
 
@@ -1401,8 +1410,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				Log("Updating version number for solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag);
 
-				UpdateVersionNumberInSource(
-					solution);
+				UpdateVersionNumberInSource(solution);
+				RefreshSolutionInListBox(solution);
 
 				if (i < listBoxSolutions.CheckedItems.Count - 1)
 				{
@@ -1413,7 +1422,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.DecreaseIndent();
 			Log();
 		}
-
 
 
 		// ============================================================================
@@ -1457,6 +1465,8 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					Log();
 				}
+
+				RefreshSolutionInListBox(solution);
 			}
 
 			_logger.DecreaseIndent();
@@ -1591,6 +1601,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					_logger.DecreaseIndent();
 				}
+
+				RefreshSolutionInListBox(solution);
 			}
 
 			_logger.DecreaseIndent();
@@ -1714,9 +1726,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_logger.DecreaseIndent();
 
-
 		}
-
 
 
 		// ============================================================================
@@ -1750,8 +1760,16 @@ namespace Com.AiricLenz.XTB.Plugin
 			Service.Update(solutionToBeUpdated);
 
 			Log("Updated the version number: **" + oldVersionString + "** → **" + solution.Version + "**");
+			
+			_logger.DecreaseIndent();
+			return true;
+		}
 
-			// update the list as well:
+
+		// ============================================================================
+		private void RefreshSolutionInListBox(
+			Solution solution)
+		{
 			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
 				var listItem = listBoxSolutions.Items[i];
@@ -1761,12 +1779,26 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					listBoxSolutions.Items[i].ItemObject = solution;
 					listBoxSolutions.Invalidate();
-					break;
+
+					if (InvokeRequired)
+					{
+						Invoke(new MethodInvoker(() =>
+						{
+							UpdateSolutionList();
+							//UpdateFileWarningStatus();
+							//UpdateTargetVersionStatusImages();
+						}));
+					}
+					else
+					{
+						UpdateSolutionList();
+						//UpdateFileWarningStatus();
+						//UpdateTargetVersionStatusImages();
+					}
+
+					return;
 				}
 			}
-
-			_logger.DecreaseIndent();
-			return true;
 		}
 
 
@@ -2065,9 +2097,11 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void LoadAllSolutions()
 		{
-			WorkAsync(new WorkAsyncInfo
+			var loadSolutionsWorker = new WorkAsyncInfo
 			{
-				Message = "**Getting All Solutions**",
+				Message = "Loading all solutions...",
+				MessageWidth = _workerPanelSize.Width,
+				MessageHeight = _workerPanelSize.Height,
 				IsCancelable = false,
 				Work = (worker, args) =>
 				{
@@ -2215,7 +2249,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					UpdateImportOptionsVisibility();
 					SetExportButtonState();
 				}
-			});
+			};
+
+
+			WorkAsync(loadSolutionsWorker);
 
 		}
 
@@ -3022,9 +3059,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		#endregion
-
-
-
 
 
 	}
