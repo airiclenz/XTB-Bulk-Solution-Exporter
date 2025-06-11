@@ -507,7 +507,8 @@ namespace Com.AiricLenz.XTB.Plugin
             this.button_fileWizzard.Name = "button_fileWizzard";
             this.button_fileWizzard.Size = new System.Drawing.Size(23, 22);
             this.button_fileWizzard.Text = "File Wizzard";
-            this.button_fileWizzard.ToolTipText = "Define file locations for all selected files";
+            this.button_fileWizzard.ToolTipText = "Define solution-file locations (managed- and unmanaged) for all selected solution" +
+    "s";
             this.button_fileWizzard.Click += new System.EventHandler(this.button_fileWizzard_Click);
             // 
             // listBoxSolutions
