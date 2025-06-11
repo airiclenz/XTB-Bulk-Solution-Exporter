@@ -12,7 +12,10 @@
 
 ## Added in Release 2025.06.<mark>XX</mark>
 
+## Added in Release 2025.06.11
+
 - better statuses on worker panel
+- storing last import / export times for reference
 - installing as update (not upgrade) automatically if solution is not yet installed.
 
 ## Added in Release 2025.06.02

@@ -4,17 +4,46 @@
         <!-- Required elements-->
         <id>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</id>
 		<title>Bulk Solution Manager</title>
-        <version>2025.6.2.26</version>
+        <version>2025.6.11.27</version>
         <authors>Airic Lenz</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>
-			A Bulk-Solution-Manager tool for the XrmToolBox that can export and import multiple solutions into multiple target encironments.
-			Before each export, the version number of the solutions can be automatically updated following a specific format.
-			When exporting, each solution file is saved in its specific target location.
-			Downloaded solution files can automatically be commited to a git repository.
+			Export smarter, not harder.
+			The Bulk Solution Exporter is a powerful XrmToolBox plugin designed to streamline and automate the export and import of multiple Dataverse / Dynamics 365 solutions.
+			Whether you’re managing development pipelines, prepping deployment packages, or backing up environments, this tool saves hours of repetitive manual work.
+
+			🚀 Key Features and Benefits
+			
+			•	Batch Export and Import
+			Export or import multiple solutions in one operation—managed or unmanaged—with full control over export settings like including source components or auto-publishing.
+			•	Automated Version Management
+			Apply consistent versioning to your solutions automatically. Support for custom version patterns, auto-increment, and per-solution overrides makes it easy to enforce release standards.
+			•	Organized Output and Custom Paths
+			Define export paths per solution or per environment to keep your output clean, structured, and easy to track.
+			•	Integrated Git Commit Support
+			Seamlessly commit exported solutions to your Git repository—ideal for DevOps, backup strategies, and release governance.
+			•	Command History and Repeatability
+			Review and repeat previous exports using the built-in export history for consistent, traceable deployments.
+			•	Designed for Teams
+			Whether you’re a solo developer or part of a large delivery team, the tool helps standardize solution management across environments and projects.
+
+			🧠 Why Use It?
+			
+			Manual exports are tedious and error-prone. This plugin provides a fast, repeatable, and version-controlled way to manage solution artifacts—making it the perfect companion for ALM, CI/CD pipelines, and source-controlled development processes.
+
 		</description>
 		<summary>
-			A Plugin foor the XrmToolBox that helps to bulk export and/or import solution files as managed and/or unmanaged and save them as specific files including version number updates and GIT commits.
+			Streamline and automate your solution export and import process in Dataverse. 
+			This tool lets you batch export and import multiple solutions at once—supporting managed/unmanaged types, auto-versioning, Git commits, and structured output paths. Ideal for development teams, CI/CD pipelines, and anyone managing multiple environments.
+
+			✅ Export multiple solutions in one go
+			✅ Custom versioning with auto-increment
+			✅ Git commit support for version control
+			✅ Per-solution export paths for clean organization
+			✅ Reusable export history for traceability
+			✅ Fully configurable and easy to use
+
+			Save time, reduce errors, and bring consistency to your ALM process.
 		</summary>
 		<releaseNotes>Release notes can be found here: https://github.com/airiclenz/XTB-Bulk-Solution-Exporter/releases</releaseNotes>
 

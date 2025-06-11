@@ -1097,7 +1097,11 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					if (flipSwitch_publishSource.IsOn)
 					{
-						worker.ReportProgress(0, $"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]");
+						ReportExtendedProgress(
+							worker,
+							$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
+							resetTimer: true);
+
 						PublishAll(ConnectionDetail);
 					}
 
@@ -1120,7 +1124,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 						if (flipSwitch_publishTarget.IsOn)
 						{
-							worker.ReportProgress(0, $"Publishing all [{targetConnection.ConnectionName}]...");
+							ReportExtendedProgress(
+								worker,
+								$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
+								resetTimer: true);
+
 							PublishAll(targetConnection);
 						}
 					}
@@ -1131,7 +1139,6 @@ namespace Com.AiricLenz.XTB.Plugin
 				PostWorkCallBack = (args) =>
 				{
 					StopProgressTimer();
-					SetWorkingMessage("Done.", _workerPanelSize.Width, _workerPanelSize.Height);
 
 					if (args.Error != null)
 					{
@@ -1151,9 +1158,30 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				ProgressChanged = (args) =>
 				{
-					var workerMessage = args.UserState.ToString();
-					SetWorkingMessage(workerMessage, _workerPanelSize.Width, _workerPanelSize.Height);
-					StartProgressTimer(workerMessage);
+					var extendedArgs = args.UserState as ExtendedProgressChangedEventArgs;
+					
+					if (extendedArgs != null)
+					{
+						// Use the extended information
+						var workerMessage = extendedArgs.Message;
+						var additionalData = extendedArgs.AdditionalMessage;
+						var resetTimer = extendedArgs.ResetTimer;
+
+						_progressBaseMessage =
+							workerMessage + (
+								additionalData.HasValue() ? Environment.NewLine + additionalData : string.Empty
+							);
+
+						SetWorkingMessage(
+							_progressBaseMessage, 
+							_workerPanelSize.Width, 
+							_workerPanelSize.Height);
+
+						if (resetTimer)
+						{
+							StartProgressTimer();
+						}
+					}
 				},
 			};
 
@@ -1172,23 +1200,15 @@ namespace Com.AiricLenz.XTB.Plugin
 			int width = 340,
 			int height = 150)
 		{
-			if (string.IsNullOrEmpty(message))
-			{
-				StopProgressTimer();
-			}
-
 			base.SetWorkingMessage(message, width, height);
 		}
 
 
+
 		// ============================================================================
 		// Call this method to start the timer and set the base message
-		private void StartProgressTimer(
-			string message)
+		private void StartProgressTimer()
 		{
-			StopProgressTimer();
-
-			_progressBaseMessage = message;
 			_progressStartTime = DateTime.Now;
 
 			if (_progressTimer == null)
@@ -1393,7 +1413,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			worker.ReportProgress(0, "Updating Version Numbers...");
+			ReportExtendedProgress(
+				worker,
+				"Updating Version Numbers...",
+				resetTimer: true);
 
 			Log("##### Updating Version Numbers:");
 			_logger.IncreaseIndent();
@@ -1637,9 +1660,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (flipSwitch_exportManaged.IsOn)
 			{
-				worker.ReportProgress(
-					0,
-					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'");
+				var lastDurationString = 
+					solutionConfiguration.LastExportDurationManagedInSeconds != 0 ?
+					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationManagedInSeconds, noMilliseconds: true)})" : 
+					null;
+
+				ReportExtendedProgress(
+					worker,
+					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'",
+					additionalMessage: lastDurationString,
+					resetTimer: true);
 
 				var durationInSeconds =
 					ExportToFile(
@@ -1664,9 +1694,16 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (flipSwitch_exportUnmanaged.IsOn)
 			{
-				worker.ReportProgress(
-					0,
-					$"Exporting as unmanged...{Environment.NewLine}'{solution.FriendlyName}'");
+				var lastDurationString =
+					solutionConfiguration.LastExportDurationUnamangedInSeconds != 0 ?
+					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationUnamangedInSeconds, noMilliseconds: true)})" :
+					null;
+
+				ReportExtendedProgress(
+					worker,
+					$"Exporting as unmanaged...{Environment.NewLine}'{solution.FriendlyName}'",
+					additionalMessage: lastDurationString,
+					resetTimer: true);
 
 				var durationInSeconds =
 					ExportToFile(
@@ -1819,15 +1856,11 @@ namespace Com.AiricLenz.XTB.Plugin
 						Invoke(new MethodInvoker(() =>
 						{
 							UpdateSolutionList();
-							//UpdateFileWarningStatus();
-							//UpdateTargetVersionStatusImages();
 						}));
 					}
 					else
 					{
 						UpdateSolutionList();
-						//UpdateFileWarningStatus();
-						//UpdateTargetVersionStatusImages();
 					}
 
 					return;
@@ -1916,9 +1949,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			worker.ReportProgress(
-				0,
-				"Committing files to Git...");
+			ReportExtendedProgress(
+				worker, 
+				"Committing files to Git...", 
+				resetTimer: true);
 
 			Log("##### Commiting the new files to Git:");
 			_logger.IncreaseIndent();
@@ -2049,23 +2083,37 @@ namespace Com.AiricLenz.XTB.Plugin
 					HoldingSolution = isHolding,
 				};
 
+				var lastImportDuration = 
+					isManaged ? 
+					config.LastImportDurationManagedInSeconds : 
+					config.LastImportDurationUnmanagedInSeconds;
+				
+				var lastImportDurationString = 
+					lastImportDuration > 0 ? 
+					$" (Last Import: {GetDurationString(lastImportDuration, noMilliseconds: true)})" : 
+					null;
+
 				if (isHolding)
 				{
 					Log("Installing the solution upgrade...");
-					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
+					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat) + lastImportDurationString);
 
-					worker.ReportProgress(
-						0,
-						$"Installing upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
+					ReportExtendedProgress(
+						worker,
+						$"Installing upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						lastImportDurationString,
+						resetTimer: true);
 				}
 				else
 				{
 					Log("Installing the solution update...");
 					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
 
-					worker.ReportProgress(
-						0,
-						$"Installing update: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
+					ReportExtendedProgress(
+						worker,
+						$"Installing update: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						lastImportDurationString,
+						resetTimer: true);
 				}
 
 				targetServiceClient.Execute(importRequest);
@@ -2076,10 +2124,12 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log("Applying the solution upgrade...");
 					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
 
-					worker.ReportProgress(
-						0,
-						$"Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...");
-
+					ReportExtendedProgress(
+						worker,
+						$"Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						lastImportDurationString,
+						resetTimer: false);
+					
 					var applyUpgradeRequest = new DeleteAndPromoteRequest
 					{
 						UniqueName = solution.UniqueName,
@@ -2449,11 +2499,10 @@ namespace Com.AiricLenz.XTB.Plugin
 					}
 				}
 			}
-
+			
+			SetExportButtonState();
 			UpdateTargetVersionStatusImages();
 			listBoxSolutions.Refresh();
-			SetExportButtonState();
-
 		}
 
 
@@ -2639,13 +2688,31 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log(message);
 		}
 
+
 		// ============================================================================
 		static string GetDurationString(
 			DateTime startTime,
 			bool noMilliseconds = false)
 		{
 			var duration = DateTime.Now - startTime;
+			return GetDurationString(duration, noMilliseconds);
+		}
 
+
+		// ============================================================================
+		static string GetDurationString(
+			int seconds,
+			bool noMilliseconds = false)
+		{
+			var duration = TimeSpan.FromSeconds(seconds);
+			return GetDurationString(duration, noMilliseconds);
+		}
+
+		// ============================================================================
+		static string GetDurationString(
+			TimeSpan duration,
+			bool noMilliseconds = false)
+		{
 			// Extract components from the TimeSpan
 			int hours = duration.Hours;
 			int minutes = duration.Minutes;
@@ -3155,10 +3222,57 @@ namespace Com.AiricLenz.XTB.Plugin
 				return
 					"Unmanaged." + solutionName + ".zip";
 			}
+			// ============================================================================
 		}
 
 
+		// ============================================================================
+		// ============================================================================
+		    private class ExtendedProgressChangedEventArgs : ProgressChangedEventArgs
+        {
+            public string Message { get; private set; }
+            public string AdditionalMessage { get; private set; }
+            public bool ResetTimer { get; private set; }
 
+            // Constructor with a body to fix CS0501
+            public ExtendedProgressChangedEventArgs(
+                int progressPercentage,
+                string message,
+                string additionalMessage,
+                bool resetTimer)
+                : base(progressPercentage, null)
+            {
+                Message = message;
+                AdditionalMessage = additionalMessage;
+                ResetTimer = resetTimer;
+            }
+        }
+		
+
+		// ============================================================================
+		/// <summary>
+		/// Extended version of ReportProgress that includes additional data
+		/// </summary>
+		/// <param name="worker">BackgroundWorker instance</param>
+		/// <param name="message">Main progress message</param>
+		/// <param name="additionalData">Additional context data</param>
+		private void ReportExtendedProgress(
+			BackgroundWorker worker,
+			string message,
+			string additionalMessage = null,
+			bool resetTimer = false)
+		{
+			if (worker == null || !worker.WorkerReportsProgress)
+				return;
+
+			worker.ReportProgress(
+				0,
+				new ExtendedProgressChangedEventArgs(
+					0, 
+					message, 
+					additionalMessage, 
+					resetTimer));
+		}
 
 		#endregion
 
