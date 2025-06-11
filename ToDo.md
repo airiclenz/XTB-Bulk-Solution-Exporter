@@ -13,6 +13,7 @@
 ## Added in Release 2025.06.<mark>XX</mark>
 
 - better statuses on worker panel
+- installing as update (not upgrade) automatically if solution is not yet installed.
 
 ## Added in Release 2025.06.02
 

@@ -2024,7 +2024,17 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			var solutionBytes = File.ReadAllBytes(solutionPath);
-			var isHolding = isManaged && flipSwitch_upgrade.IsOn;
+
+			bool IsInstalledAlready = 
+				DoesSolutionExistInTarget(
+					targetService,
+					solution.UniqueName);
+
+			var isHolding =
+				isManaged &&
+				IsInstalledAlready &&
+				flipSwitch_upgrade.IsOn;
+				
 
 			try
 			{
@@ -2110,6 +2120,48 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		/// <summary>
+		/// Checks if a solution already exists in the target environment
+		/// </summary>
+		/// <param name="targetService">The connection to the target environment</param>
+		/// <param name="solutionUniqueName">The unique name of the solution to check</param>
+		/// <returns>True if the solution exists, false otherwise</returns>
+		private bool DoesSolutionExistInTarget(
+			ConnectionDetail targetService,
+			string solutionUniqueName)
+		{
+			if (targetService == null || string.IsNullOrEmpty(solutionUniqueName))
+			{
+				return false;
+			}
+
+			try
+			{
+				var targetServiceClient = targetService.ServiceClient;
+
+				// Query to check if the solution exists
+				var query = new QueryExpression("solution")
+				{
+					ColumnSet = new ColumnSet("uniquename", "version"),
+					Criteria = new FilterExpression(LogicalOperator.And)
+				};
+
+				query.Criteria.AddCondition("uniquename", Microsoft.Xrm.Sdk.Query.ConditionOperator.Equal, solutionUniqueName);
+
+				var result = targetServiceClient.RetrieveMultiple(query);
+
+				// If we found at least one record, the solution exists
+				return result.Entities.Count > 0;
+			}
+			catch (Exception ex)
+			{
+				LogError($"Error checking if solution exists in target: {ex.Message}");
+				return false;
+			}
+		}
+
+
+		// ============================================================================
 		private void UpdateItemSortingIndexesFromListBox()
 		{
 			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
@@ -2183,16 +2235,30 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					if (Service != null)
 					{
-						result.OriginsSolutions =
-							Service.RetrieveMultiple(
-								queryOrigin);
+						try
+						{
+							result.OriginsSolutions =
+								Service.RetrieveMultiple(
+									queryOrigin);
+						}
+						catch (Exception)
+						{
+							result = null;
+						}
 					}
 
 					if (TargetConnections?.Count == 1)
 					{
-						result.TargetSolutions =
-							TargetConnections[0].GetCrmServiceClient().RetrieveMultiple(
-								queryTarget);
+						try
+						{
+							result.TargetSolutions =
+								TargetConnections[0].GetCrmServiceClient().RetrieveMultiple(
+									queryTarget);
+						}
+						catch (Exception)
+						{
+							result = null;
+						}
 					}
 
 					args.Result = result;
