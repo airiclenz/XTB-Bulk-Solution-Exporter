@@ -1593,7 +1593,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
-					var durationSeconds = (int)(DateTime.Now - startTime).TotalSeconds;
+					var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
 
 					Log("The import was successful.");
 					Log("Duration: " + duration);
@@ -1641,7 +1641,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					0,
 					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'");
 
-				var durationInSeconds = 
+				var durationInSeconds =
 					ExportToFile(
 						solution,
 						solutionConfiguration,
@@ -1668,7 +1668,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					0,
 					$"Exporting as unmanged...{Environment.NewLine}'{solution.FriendlyName}'");
 
-				var durationInSeconds = 
+				var durationInSeconds =
 					ExportToFile(
 						solution,
 						solutionConfiguration,
@@ -1745,7 +1745,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					solutionConfiguration.SolutionIndentifier);
 
 			var duration = GetDurationString(startTime);
-            var durationSeconds = (int)(DateTime.Now - startTime).TotalSeconds;
+			var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
 
 			Log("Duration: " + duration);
 
@@ -1794,7 +1794,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			Service.Update(solutionToBeUpdated);
 
 			Log("Updated the version number: **" + oldVersionString + "** → **" + solution.Version + "**");
-			
+
 			_logger.DecreaseIndent();
 			return true;
 		}
@@ -2025,7 +2025,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			var solutionBytes = File.ReadAllBytes(solutionPath);
 
-			bool IsInstalledAlready = 
+			bool IsInstalledAlready =
 				DoesSolutionExistInTarget(
 					targetService,
 					solution.UniqueName);
@@ -2034,7 +2034,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				isManaged &&
 				IsInstalledAlready &&
 				flipSwitch_upgrade.IsOn;
-				
+
 
 			try
 			{
@@ -2241,8 +2241,9 @@ namespace Com.AiricLenz.XTB.Plugin
 								Service.RetrieveMultiple(
 									queryOrigin);
 						}
-						catch (Exception)
+						catch (Exception ex)
 						{
+							LogError(ex.Message);
 							result = null;
 						}
 					}
@@ -2255,8 +2256,9 @@ namespace Com.AiricLenz.XTB.Plugin
 								TargetConnections[0].GetCrmServiceClient().RetrieveMultiple(
 									queryTarget);
 						}
-						catch (Exception)
+						catch (Exception ex)
 						{
+							LogError(ex.Message);
 							result = null;
 						}
 					}
