@@ -1,16 +1,56 @@
 # Bulk Solution Exporter
+![XrmToolBox](https://img.shields.io/badge/XrmToolBox-Plugin-blue?logo=powerapps)
+![Dataverse](https://img.shields.io/badge/Target-Dataverse%20%7C%20Dynamics%20365-764ABC)
+![License](https://img.shields.io/github/license/airiclenz/XTB-Bulk-Solution-Exporter)
+
 
 <img src="https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/refs/heads/master/Images/bulk%20solution%20exporter.svg" alt="Logo" width="110"/>
 
-## Summary
+Export smarter, **not harder**. <br><br>
+Bulk Solution Exporter automates the export *and* import of multiple Dataverse / Dynamics 365 solutions in one click—complete with version bumping, Git commits, and clean output folders. Perfect for CI/CD pipelines, nightly backups, or any team that juggles more than a handful of solutions.
 
-A Bulk-Solution-Manager tool for the XrmToolBox that can export and import multiple solutions into multiple target encironments.
-Before each export, the version number of the solutions can be automatically updated following a specific format.
-When exporting, each solution file is saved in its specific target location.
-Downloaded solution files can automatically be commited to a git repository.
+---
 
-## Description
+## ✨ Features
 
-The **Bulk Solution Exporter** for the **XrmToolBox** is a tool to automatically export multiple solutions at at time.
-The tool supports exporting as manged- and unmanaged solution where each file is saved in its specific target location.
-Before updating, the solution's version number(s) can be updated according to a custom version format.
+| Capability | Description |
+|------------|-------------|
+| **Batch export / import** | Select dozens of solutions and run a single operation—managed or unmanaged. |
+| **Automated versioning** | Apply custom version patterns and auto-increment rules to stay release-ready. |
+| **Git integration** | Commit or tag exported ZIPs directly to your repo for easy traceability. |
+| **Custom output paths** | Define destination folders per solution, project, or environment. |
+| **Reusable history** | Rerun previous exports with identical settings for consistent builds. |
+| **Check solution status in target** | Comnpares solution version numberas in source and target and displays status icons. |
+
+---
+
+## 🚀 Quick Start
+
+1. **Install** via XrmToolBox > *Plugins Store* > **Bulk Solution Exporter**.
+2. Connect to your Dataverse environment.
+3. Pick the solutions, choose *Managed* or *Unmanaged*, tweak versioning if needed.
+4. Hit **Export** (or **Import**) and enjoy the coffee break you just earned.
+
+> **Tip:** Check **Settings → Git** to enable auto-commit.
+> The plugin creates lightweight commits referencing each exported file.
+---
+
+## 🤝 Contributing
+
+PRs and feature requests are welcome!
+1. Fork the repo
+2. Create your branch (`git checkout -b feature/amazing-thing`)
+3. Commit and push (`git push origin feature/amazing-thing`)
+4. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the GNU GENERAL PUBLIC LICENSE Version 3. See `LICENSE` for details.
+
+---
+
+> **Maintainer:** [Airic Lenz](https://github.com/airiclenz) – *Solution Architect & hobby synth nerd*  🎛️ <br>
+> *Because exporting and importing 42 solutions one-by-one should never be a thing.*
+
