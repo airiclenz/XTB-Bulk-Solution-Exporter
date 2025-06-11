@@ -7,7 +7,7 @@
 <img src="https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/refs/heads/master/Images/bulk%20solution%20exporter.svg" alt="Logo" width="110"/>
 
 Export smarter, **not harder**. <br><br>
-Bulk Solution Exporter automates the export *and* import of multiple Dataverse / Dynamics 365 solutions in one click—complete with version bumping, Git commits, and clean output folders. Perfect for CI/CD pipelines, nightly backups, or any team that juggles more than a handful of solutions.
+Bulk Solution Exporter automates the export *and* import of multiple Power Platform / Dataverse / Dynamics 365 solutions in one click - complete with version bumping, Git commits, and clean output folders. Perfect for CI/CD pipelines, configuration backups, or any team that juggles more than a handful of solutions.
 
 ---
 
