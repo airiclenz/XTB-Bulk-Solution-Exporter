@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 using Com.AiricLenz.Extentions;
-using Microsoft.Crm.Sdk.Messages;
 
 // ============================================================================
 // ============================================================================
@@ -54,6 +48,12 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		}
 
 		// ============================================================================
+		public void ResetIndent()
+		{
+			_indentLevel = 0;
+		}
+
+		// ============================================================================
 		public void Log(string message)
 		{
 			if (message.IsEmpty())
@@ -65,7 +65,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				var indent = GenerateIndent();
 				_markdownParser.ParseAndAppend(indent + message);
 			}
-			
+
 		}
 
 		// ============================================================================

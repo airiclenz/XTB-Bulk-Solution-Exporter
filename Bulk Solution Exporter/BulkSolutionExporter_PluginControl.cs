@@ -182,12 +182,15 @@ namespace Com.AiricLenz.XTB.Plugin
 				textBox_versionFormat.Text = _settings.VersionFormat;
 				UpdateVersionOptionsVisibility();
 
-				flipSwitch_gitCommit.IsOn = _settings.GitCommit;
-				flipSwitch_gitCommit.Enabled =
-					flipSwitch_exportManaged.IsOn || flipSwitch_exportUnmanaged.IsOn;
+				var allowGit =
+					_settings.ExportManaged ||
+					_settings.ExportUnmanaged;
 
-				flipSwitch_pushCommit.IsOn = _settings.PushCommit && _settings.GitCommit != false;
-				flipSwitch_pushCommit.Enabled = flipSwitch_gitCommit.IsOn;
+				flipSwitch_gitCommit.IsOn = _settings.GitCommit && allowGit;
+				flipSwitch_gitCommit.Enabled = allowGit;
+
+				flipSwitch_pushCommit.IsOn = _settings.PushCommit;
+				flipSwitch_pushCommit.Enabled = _settings.GitCommit && allowGit;
 				textBox_commitMessage.Text = _settings.CommitMessage;
 				UpdateGitOptionsVisibility();
 
@@ -415,7 +418,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_exportUnmanaged.IsOn;
 
 			flipSwitch_gitCommit.Enabled = gitEnabeld;
-			flipSwitch_pushCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld && flipSwitch_gitCommit.IsOn;
 
 			CodeUpdate = false;
 
@@ -440,7 +443,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				flipSwitch_exportUnmanaged.IsOn;
 
 			flipSwitch_gitCommit.Enabled = gitEnabeld;
-			flipSwitch_pushCommit.Enabled = gitEnabeld;
+			flipSwitch_pushCommit.Enabled = gitEnabeld && flipSwitch_gitCommit.IsOn;
 
 			CodeUpdate = false;
 
@@ -1083,6 +1086,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void ExecuteOperations()
 		{
 			richTextBox_log.Text = string.Empty;
+			_logger.ResetIndent();
 			_sessionFiles.Clear();
 
 			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
@@ -1159,7 +1163,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				ProgressChanged = (args) =>
 				{
 					var extendedArgs = args.UserState as ExtendedProgressChangedEventArgs;
-					
+
 					if (extendedArgs != null)
 					{
 						// Use the extended information
@@ -1173,8 +1177,8 @@ namespace Com.AiricLenz.XTB.Plugin
 							);
 
 						SetWorkingMessage(
-							_progressBaseMessage, 
-							_workerPanelSize.Width, 
+							_progressBaseMessage,
+							_workerPanelSize.Width,
 							_workerPanelSize.Height);
 
 						if (resetTimer)
@@ -1660,9 +1664,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (flipSwitch_exportManaged.IsOn)
 			{
-				var lastDurationString = 
+				var lastDurationString =
 					solutionConfiguration.LastExportDurationManagedInSeconds != 0 ?
-					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationManagedInSeconds, noMilliseconds: true)})" : 
+					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationManagedInSeconds, noMilliseconds: true)})" :
 					null;
 
 				ReportExtendedProgress(
@@ -1950,8 +1954,8 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			ReportExtendedProgress(
-				worker, 
-				"Committing files to Git...", 
+				worker,
+				"Committing files to Git...",
 				resetTimer: true);
 
 			Log("##### Commiting the new files to Git:");
@@ -2083,14 +2087,14 @@ namespace Com.AiricLenz.XTB.Plugin
 					HoldingSolution = isHolding,
 				};
 
-				var lastImportDuration = 
-					isManaged ? 
-					config.LastImportDurationManagedInSeconds : 
+				var lastImportDuration =
+					isManaged ?
+					config.LastImportDurationManagedInSeconds :
 					config.LastImportDurationUnmanagedInSeconds;
-				
-				var lastImportDurationString = 
-					lastImportDuration > 0 ? 
-					$" (Last Import: {GetDurationString(lastImportDuration, noMilliseconds: true)})" : 
+
+				var lastImportDurationString =
+					lastImportDuration > 0 ?
+					$" (Last Import: {GetDurationString(lastImportDuration, noMilliseconds: true)})" :
 					null;
 
 				if (isHolding)
@@ -2129,7 +2133,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						$"Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
 						lastImportDurationString,
 						resetTimer: false);
-					
+
 					var applyUpgradeRequest = new DeleteAndPromoteRequest
 					{
 						UniqueName = solution.UniqueName,
@@ -2499,7 +2503,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					}
 				}
 			}
-			
+
 			SetExportButtonState();
 			UpdateTargetVersionStatusImages();
 			listBoxSolutions.Refresh();
@@ -3228,26 +3232,35 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		// ============================================================================
-		    private class ExtendedProgressChangedEventArgs : ProgressChangedEventArgs
-        {
-            public string Message { get; private set; }
-            public string AdditionalMessage { get; private set; }
-            public bool ResetTimer { get; private set; }
+		private class ExtendedProgressChangedEventArgs : ProgressChangedEventArgs
+		{
+			public string Message
+			{
+				get; private set;
+			}
+			public string AdditionalMessage
+			{
+				get; private set;
+			}
+			public bool ResetTimer
+			{
+				get; private set;
+			}
 
-            // Constructor with a body to fix CS0501
-            public ExtendedProgressChangedEventArgs(
-                int progressPercentage,
-                string message,
-                string additionalMessage,
-                bool resetTimer)
-                : base(progressPercentage, null)
-            {
-                Message = message;
-                AdditionalMessage = additionalMessage;
-                ResetTimer = resetTimer;
-            }
-        }
-		
+			// Constructor with a body to fix CS0501
+			public ExtendedProgressChangedEventArgs(
+				int progressPercentage,
+				string message,
+				string additionalMessage,
+				bool resetTimer)
+				: base(progressPercentage, null)
+			{
+				Message = message;
+				AdditionalMessage = additionalMessage;
+				ResetTimer = resetTimer;
+			}
+		}
+
 
 		// ============================================================================
 		/// <summary>
@@ -3268,9 +3281,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			worker.ReportProgress(
 				0,
 				new ExtendedProgressChangedEventArgs(
-					0, 
-					message, 
-					additionalMessage, 
+					0,
+					message,
+					additionalMessage,
 					resetTimer));
 		}
 

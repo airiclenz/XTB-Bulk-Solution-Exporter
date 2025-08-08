@@ -12,6 +12,9 @@
 
 ## Added in Release 2025.06.<mark>XX</mark>
 
+- fixed a bug with logging-indentation
+- fixed a bug with cascading flipswitch logic
+
 ## Added in Release 2025.06.11
 
 - better statuses on worker panel
