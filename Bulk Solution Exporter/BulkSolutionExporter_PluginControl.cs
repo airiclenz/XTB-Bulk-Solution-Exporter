@@ -2139,7 +2139,59 @@ namespace Com.AiricLenz.XTB.Plugin
 						UniqueName = solution.UniqueName,
 					};
 
-					targetServiceClient.Execute(applyUpgradeRequest);
+					// Get retry settings from configuration (default to 3 if not set)
+					int maxRetries = _settings.SolutionUpgradeRetryCount > 0 ? _settings.SolutionUpgradeRetryCount : 3;
+					int retryDelay = _settings.SolutionUpgradeRetryDelayInSeconds > 0 ? _settings.SolutionUpgradeRetryDelayInSeconds : 5;
+					int currentRetry = 0;
+					bool success = false;
+
+					while (currentRetry <= maxRetries && !success)
+					{
+						try
+						{
+							if (currentRetry > 0)
+							{
+								Log($"Retry attempt {currentRetry} of {maxRetries} for applying upgrade...");
+								ReportExtendedProgress(
+									worker,
+									$"Retry {currentRetry}/{maxRetries}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+									null,
+									resetTimer: false);
+
+								// Wait before retrying
+								System.Threading.Thread.Sleep(retryDelay * 1000);
+							}
+
+							targetServiceClient.Execute(applyUpgradeRequest);
+							success = true; // If we get here without an exception, we succeeded
+
+							if (currentRetry > 0)
+							{
+								Log($"Upgrade succeeded on retry {currentRetry}.");
+							}
+						}
+						catch (FaultException ex) when (ex.Message.Contains("Cannot start another"))
+						{
+							// This specific exception indicates another import is in progress
+							if (currentRetry >= maxRetries)
+							{
+								// If this was our last retry, log and propagate the exception
+								LogError($"Failed to apply upgrade after {maxRetries} retries: {ex.Message}");
+								throw;
+							}
+
+							// Log the retry attempt
+							Log($"Another import is in progress. Waiting {retryDelay} seconds before retry {currentRetry + 1}/{maxRetries}...");
+						}
+						catch (Exception ex)
+						{
+							// Any other exception should not retry
+							LogError($"Error applying solution upgrade: {ex.Message}");
+							throw;
+						}
+
+						currentRetry++;
+					}
 				}
 			}
 

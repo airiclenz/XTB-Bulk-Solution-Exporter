@@ -191,10 +191,11 @@ namespace Com.AiricLenz.XTB.Plugin
             // button_manageConnections
             // 
             this.button_manageConnections.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button_manageConnections.Image = global::Com.AiricLenz.XTB.Plugin.Properties.Resources.connections_32px;
             this.button_manageConnections.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.button_manageConnections.Margin = new System.Windows.Forms.Padding(10, 1, 10, 2);
             this.button_manageConnections.Name = "button_manageConnections";
-            this.button_manageConnections.Size = new System.Drawing.Size(139, 39);
+            this.button_manageConnections.Size = new System.Drawing.Size(171, 39);
             this.button_manageConnections.Text = " Manage Connections";
             this.button_manageConnections.ToolTipText = "Manage all connected target environments";
             this.button_manageConnections.Click += new System.EventHandler(this.button_manageConnections_Click);
@@ -353,7 +354,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningUnmanaged.ErrorImage = null;
             this.pictureBox_warningUnmanaged.InitialImage = null;
-            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(782, 103);
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(784, 103);
             this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
             this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningUnmanaged.TabIndex = 26;
@@ -369,7 +370,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningManaged.ErrorImage = null;
             this.pictureBox_warningManaged.InitialImage = null;
-            this.pictureBox_warningManaged.Location = new System.Drawing.Point(782, 55);
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(784, 55);
             this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
             this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningManaged.TabIndex = 9;
@@ -559,7 +560,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.panel1.Controls.Add(this.richTextBox_log);
             this.panel1.Location = new System.Drawing.Point(15, 156);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(797, 443);
+            this.panel1.Size = new System.Drawing.Size(799, 443);
             this.panel1.TabIndex = 28;
             // 
             // richTextBox_log
@@ -571,7 +572,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.richTextBox_log.Location = new System.Drawing.Point(0, 0);
             this.richTextBox_log.Name = "richTextBox_log";
             this.richTextBox_log.ReadOnly = true;
-            this.richTextBox_log.Size = new System.Drawing.Size(795, 441);
+            this.richTextBox_log.Size = new System.Drawing.Size(797, 441);
             this.richTextBox_log.TabIndex = 27;
             this.richTextBox_log.Text = "";
             // 
@@ -645,7 +646,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_unmanaged.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_unmanaged.Location = new System.Drawing.Point(107, 101);
             this.textBox_unmanaged.Name = "textBox_unmanaged";
-            this.textBox_unmanaged.Size = new System.Drawing.Size(707, 23);
+            this.textBox_unmanaged.Size = new System.Drawing.Size(709, 23);
             this.textBox_unmanaged.TabIndex = 1;
             this.textBox_unmanaged.TextChanged += new System.EventHandler(this.textBox_unmanaged_TextChanged);
             // 
@@ -657,7 +658,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_managed.Location = new System.Drawing.Point(107, 53);
             this.textBox_managed.Name = "textBox_managed";
-            this.textBox_managed.Size = new System.Drawing.Size(707, 23);
+            this.textBox_managed.Size = new System.Drawing.Size(709, 23);
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 

@@ -55,7 +55,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			get; set;
 		}
-		
+
 		public bool GitCommit
 		{
 			get; set;
@@ -158,6 +158,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 		}
+
+
+		public int SolutionUpgradeRetryCount { get; set; } = 3;
+		public int SolutionUpgradeRetryDelayInSeconds { get; set; } = 10;
 
 
 		public List<string> SolutionConfigurations

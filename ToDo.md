@@ -1,4 +1,4 @@
-
+﻿
 # To-Do's
 
 - add dynamics content for commit message and update information tooltip accordingly
@@ -14,6 +14,7 @@
 
 - fixed a bug with logging-indentation
 - fixed a bug with cascading flipswitch logic
+- added re-tries for applying solution upgrades
 
 ## Added in Release 2025.06.11
 
