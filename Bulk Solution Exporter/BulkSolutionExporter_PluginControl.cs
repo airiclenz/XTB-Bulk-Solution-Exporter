@@ -2140,8 +2140,8 @@ namespace Com.AiricLenz.XTB.Plugin
 					};
 
 					// Get retry settings from configuration (default to 3 if not set)
-					int maxRetries = _settings.SolutionUpgradeRetryCount > 0 ? _settings.SolutionUpgradeRetryCount : 3;
-					int retryDelay = _settings.SolutionUpgradeRetryDelayInSeconds > 0 ? _settings.SolutionUpgradeRetryDelayInSeconds : 5;
+					int maxRetries = _settings.RetryCount > 0 ? _settings.RetryCount : 3;
+					int retryDelay = _settings.RetryDelayInSeconds > 0 ? _settings.RetryDelayInSeconds : 5;
 					int currentRetry = 0;
 					bool success = false;
 

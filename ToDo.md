@@ -8,7 +8,7 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 - add option "Abort on Error"
-- run-retries on apply-upgrade fail
+
 
 ## Added in Release 2025.06.<mark>XX</mark>
 

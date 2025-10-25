@@ -31,13 +31,17 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
             this.button_ok = new System.Windows.Forms.Button();
             this.groupBox_generalSettings = new System.Windows.Forms.GroupBox();
+            this.label_retryDelay = new System.Windows.Forms.Label();
+            this.label_retryCount = new System.Windows.Forms.Label();
+            this.textBox_retryDelay = new System.Windows.Forms.TextBox();
+            this.textBox_retryCount = new System.Windows.Forms.TextBox();
+            this.textBox_connectionTimeout = new System.Windows.Forms.TextBox();
+            this.label_connectiontimeout = new System.Windows.Forms.Label();
             this.flipSwitch_saveVersionJson = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.groupBox_solutionListBoxSettings = new System.Windows.Forms.GroupBox();
             this.flipSwitch_showLogicalNames = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_showFriendlyNames = new Com.AiricLenz.XTB.Components.FlipSwitch();
             this.flipSwitch_showTooltips = new Com.AiricLenz.XTB.Components.FlipSwitch();
-            this.label_connectiontimeout = new System.Windows.Forms.Label();
-            this.textBox_connectionTimeout = new System.Windows.Forms.TextBox();
             this.groupBox_generalSettings.SuspendLayout();
             this.groupBox_solutionListBoxSettings.SuspendLayout();
             this.SuspendLayout();
@@ -57,15 +61,85 @@
             // 
             this.groupBox_generalSettings.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox_generalSettings.Controls.Add(this.label_retryDelay);
+            this.groupBox_generalSettings.Controls.Add(this.label_retryCount);
+            this.groupBox_generalSettings.Controls.Add(this.textBox_retryDelay);
+            this.groupBox_generalSettings.Controls.Add(this.textBox_retryCount);
             this.groupBox_generalSettings.Controls.Add(this.textBox_connectionTimeout);
             this.groupBox_generalSettings.Controls.Add(this.label_connectiontimeout);
             this.groupBox_generalSettings.Controls.Add(this.flipSwitch_saveVersionJson);
             this.groupBox_generalSettings.Location = new System.Drawing.Point(12, 12);
             this.groupBox_generalSettings.Name = "groupBox_generalSettings";
-            this.groupBox_generalSettings.Size = new System.Drawing.Size(560, 96);
+            this.groupBox_generalSettings.Size = new System.Drawing.Size(560, 151);
             this.groupBox_generalSettings.TabIndex = 1;
             this.groupBox_generalSettings.TabStop = false;
             this.groupBox_generalSettings.Text = "General Settings";
+            // 
+            // label_retryDelay
+            // 
+            this.label_retryDelay.AutoSize = true;
+            this.label_retryDelay.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_retryDelay.Location = new System.Drawing.Point(48, 117);
+            this.label_retryDelay.Name = "label_retryDelay";
+            this.label_retryDelay.Size = new System.Drawing.Size(178, 15);
+            this.label_retryDelay.TabIndex = 6;
+            this.label_retryDelay.Text = "Delay in seconds before a re-try";
+            // 
+            // label_retryCount
+            // 
+            this.label_retryCount.AutoSize = true;
+            this.label_retryCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_retryCount.Location = new System.Drawing.Point(48, 88);
+            this.label_retryCount.Name = "label_retryCount";
+            this.label_retryCount.Size = new System.Drawing.Size(188, 15);
+            this.label_retryCount.TabIndex = 5;
+            this.label_retryCount.Text = "Retry count after an error occured";
+            // 
+            // textBox_retryDelay
+            // 
+            this.textBox_retryDelay.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox_retryDelay.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_retryDelay.Location = new System.Drawing.Point(6, 113);
+            this.textBox_retryDelay.Name = "textBox_retryDelay";
+            this.textBox_retryDelay.Size = new System.Drawing.Size(35, 23);
+            this.textBox_retryDelay.TabIndex = 4;
+            this.textBox_retryDelay.Text = "10";
+            this.textBox_retryDelay.WordWrap = false;
+            this.textBox_retryDelay.TextChanged += new System.EventHandler(this.textBox_retryDelay_TextChanged);
+            // 
+            // textBox_retryCount
+            // 
+            this.textBox_retryCount.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox_retryCount.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_retryCount.Location = new System.Drawing.Point(6, 84);
+            this.textBox_retryCount.Name = "textBox_retryCount";
+            this.textBox_retryCount.Size = new System.Drawing.Size(35, 23);
+            this.textBox_retryCount.TabIndex = 3;
+            this.textBox_retryCount.Text = "5";
+            this.textBox_retryCount.WordWrap = false;
+            this.textBox_retryCount.TextChanged += new System.EventHandler(this.textBox_retryCount_TextChanged);
+            // 
+            // textBox_connectionTimeout
+            // 
+            this.textBox_connectionTimeout.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox_connectionTimeout.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBox_connectionTimeout.Location = new System.Drawing.Point(6, 55);
+            this.textBox_connectionTimeout.Name = "textBox_connectionTimeout";
+            this.textBox_connectionTimeout.Size = new System.Drawing.Size(35, 23);
+            this.textBox_connectionTimeout.TabIndex = 2;
+            this.textBox_connectionTimeout.Text = "10";
+            this.textBox_connectionTimeout.WordWrap = false;
+            this.textBox_connectionTimeout.TextChanged += new System.EventHandler(this.textBox_connectionTimeout_TextChanged);
+            // 
+            // label_connectiontimeout
+            // 
+            this.label_connectiontimeout.AutoSize = true;
+            this.label_connectiontimeout.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_connectiontimeout.Location = new System.Drawing.Point(48, 58);
+            this.label_connectiontimeout.Name = "label_connectiontimeout";
+            this.label_connectiontimeout.Size = new System.Drawing.Size(213, 15);
+            this.label_connectiontimeout.TabIndex = 1;
+            this.label_connectiontimeout.Text = "Default connection timeout in minutes";
             // 
             // flipSwitch_saveVersionJson
             // 
@@ -94,9 +168,9 @@
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showLogicalNames);
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showFriendlyNames);
             this.groupBox_solutionListBoxSettings.Controls.Add(this.flipSwitch_showTooltips);
-            this.groupBox_solutionListBoxSettings.Location = new System.Drawing.Point(12, 114);
+            this.groupBox_solutionListBoxSettings.Location = new System.Drawing.Point(12, 169);
             this.groupBox_solutionListBoxSettings.Name = "groupBox_solutionListBoxSettings";
-            this.groupBox_solutionListBoxSettings.Size = new System.Drawing.Size(560, 122);
+            this.groupBox_solutionListBoxSettings.Size = new System.Drawing.Size(560, 128);
             this.groupBox_solutionListBoxSettings.TabIndex = 2;
             this.groupBox_solutionListBoxSettings.TabStop = false;
             this.groupBox_solutionListBoxSettings.Text = "Solution List Settings";
@@ -161,28 +235,6 @@
             this.flipSwitch_showTooltips.Title = "Show Tooltips";
             this.flipSwitch_showTooltips.Toggled += new System.EventHandler(this.flipSwitch_showTooltips_Toggled);
             // 
-            // label_connectiontimeout
-            // 
-            this.label_connectiontimeout.AutoSize = true;
-            this.label_connectiontimeout.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_connectiontimeout.Location = new System.Drawing.Point(48, 58);
-            this.label_connectiontimeout.Name = "label_connectiontimeout";
-            this.label_connectiontimeout.Size = new System.Drawing.Size(219, 15);
-            this.label_connectiontimeout.TabIndex = 1;
-            this.label_connectiontimeout.Text = "Default Connection Timeout in Minutes";
-            // 
-            // textBox_connectionTimeout
-            // 
-            this.textBox_connectionTimeout.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBox_connectionTimeout.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_connectionTimeout.Location = new System.Drawing.Point(6, 55);
-            this.textBox_connectionTimeout.Name = "textBox_connectionTimeout";
-            this.textBox_connectionTimeout.Size = new System.Drawing.Size(35, 23);
-            this.textBox_connectionTimeout.TabIndex = 2;
-            this.textBox_connectionTimeout.Text = "10";
-            this.textBox_connectionTimeout.WordWrap = false;
-            this.textBox_connectionTimeout.TextChanged += new System.EventHandler(this.textBox_connectionTimeout_TextChanged);
-            // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -218,5 +270,9 @@
 		private Components.FlipSwitch flipSwitch_showLogicalNames;
 		private System.Windows.Forms.TextBox textBox_connectionTimeout;
 		private System.Windows.Forms.Label label_connectiontimeout;
+		private System.Windows.Forms.Label label_retryDelay;
+		private System.Windows.Forms.Label label_retryCount;
+		private System.Windows.Forms.TextBox textBox_retryDelay;
+		private System.Windows.Forms.TextBox textBox_retryCount;
 	}
 }

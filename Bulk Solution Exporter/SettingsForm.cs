@@ -152,6 +152,115 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		private void textBox_retryCount_TextChanged(object sender, EventArgs e)
+		{
+			if (IsCodeUpddate)
+			{
+				return;
+			}
+
+			string numericOnlyString =
+				System.Text.RegularExpressions.Regex.Replace(
+					textBox_retryCount.Text,
+					"[^0-9]", "");
+
+			if (numericOnlyString.Length > 3)
+			{
+				numericOnlyString = numericOnlyString.Substring(0, 3);
+			}
+
+			if (!string.IsNullOrEmpty(numericOnlyString))
+			{
+				numericOnlyString = int.Parse(numericOnlyString).ToString();
+			}
+			else
+			{
+				numericOnlyString = "0";
+			}
+
+
+			int caretPosition = textBox_retryCount.SelectionStart;
+
+			if (textBox_retryCount.Text != numericOnlyString)
+			{
+				IsCodeUpddate = true;
+				textBox_retryCount.Text = numericOnlyString;
+				IsCodeUpddate = false;
+
+				// Adjust caret position to account for removed characters
+				textBox_retryCount.SelectionStart =
+					caretPosition - (textBox_retryCount.Text.Length - numericOnlyString.Length);
+
+				textBox_retryCount.SelectionLength = 0;
+			}
+
+			if (int.TryParse(textBox_retryCount.Text, out int value))
+			{
+				Settings.RetryCount = value;
+			}
+			else
+			{
+				Settings.RetryCount = 3;
+			}
+		}
+
+
+		// ============================================================================
+		private void textBox_retryDelay_TextChanged(object sender, EventArgs e)
+		{
+			if (IsCodeUpddate)
+			{
+				return;
+			}
+
+			string numericOnlyString =
+				System.Text.RegularExpressions.Regex.Replace(
+					textBox_retryDelay.Text,
+					"[^0-9]", "");
+
+			if (numericOnlyString.Length > 3)
+			{
+				numericOnlyString = numericOnlyString.Substring(0, 3);
+			}
+
+			if (!string.IsNullOrEmpty(numericOnlyString))
+			{
+				numericOnlyString = int.Parse(numericOnlyString).ToString();
+			}
+			else
+			{
+				numericOnlyString = "0";
+			}
+
+
+			int caretPosition = textBox_retryDelay.SelectionStart;
+
+			if (textBox_retryDelay.Text != numericOnlyString)
+			{
+				IsCodeUpddate = true;
+				textBox_retryDelay.Text = numericOnlyString;
+				IsCodeUpddate = false;
+
+				// Adjust caret position to account for removed characters
+				textBox_retryDelay.SelectionStart =
+					caretPosition - (textBox_retryDelay.Text.Length - numericOnlyString.Length);
+
+				textBox_retryDelay.SelectionLength = 0;
+			}
+
+			if (int.TryParse(textBox_retryDelay.Text, out int value))
+			{
+				Settings.RetryDelayInSeconds = value;
+			}
+			else
+			{
+				Settings.RetryDelayInSeconds = 3;
+			}
+		}
+
+
+
+		// ============================================================================
 		private void button_ok_Click(object sender, EventArgs e)
 		{
 			Close();
@@ -167,14 +276,16 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			flipSwitch_saveVersionJson.IsOn = Settings.SaveVersionJson;
 			textBox_connectionTimeout.Text = Settings.ConnectionTimeoutInMinutes.ToString();
+			textBox_retryCount.Text = Settings.RetryCount.ToString();
+			textBox_retryDelay.Text = Settings.RetryDelayInSeconds.ToString();
+
 
 			flipSwitch_showTooltips.IsOn = Settings.ShowToolTips;
 			flipSwitch_showFriendlyNames.IsOn = Settings.ShowFriendlySolutionNames;
 			flipSwitch_showLogicalNames.IsOn = Settings.ShowLogicalSolutionNames;
 		}
 
-
-
+	
 	}
 }
 
