@@ -81,9 +81,9 @@
             this.label_retryDelay.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label_retryDelay.Location = new System.Drawing.Point(48, 117);
             this.label_retryDelay.Name = "label_retryDelay";
-            this.label_retryDelay.Size = new System.Drawing.Size(178, 15);
+            this.label_retryDelay.Size = new System.Drawing.Size(265, 15);
             this.label_retryDelay.TabIndex = 6;
-            this.label_retryDelay.Text = "Delay in seconds before a re-try";
+            this.label_retryDelay.Text = "Delay in seconds before a retry (Apply Upgrade)";
             // 
             // label_retryCount
             // 
@@ -91,9 +91,9 @@
             this.label_retryCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label_retryCount.Location = new System.Drawing.Point(48, 88);
             this.label_retryCount.Name = "label_retryCount";
-            this.label_retryCount.Size = new System.Drawing.Size(188, 15);
+            this.label_retryCount.Size = new System.Drawing.Size(279, 15);
             this.label_retryCount.TabIndex = 5;
-            this.label_retryCount.Text = "Retry count after an error occured";
+            this.label_retryCount.Text = "Retry count after an error occured (Apply Upgrade)";
             // 
             // textBox_retryDelay
             // 
