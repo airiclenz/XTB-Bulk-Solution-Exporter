@@ -2239,10 +2239,10 @@ namespace Com.AiricLenz.XTB.Plugin
 						Log($"Succeeded on retry {currentRetry}.");
 					}
 				}
-
-				// Specific transient condition: another import in progress
+				// ------------------------------------------
 				catch (FaultException ex) when (
 					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment"))
+
 				{
 
 					if (currentRetry >= maxRetries)
@@ -2259,8 +2259,22 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-					Log($"Another import is in progress. Waiting {retryDelaySeconds} seconds before retry {currentRetry + 1}/{maxRetries}...");
+					Log($"Waiting {retryDelaySeconds} seconds before retry {currentRetry + 1}/{maxRetries} --> {ex.Message}");
 				}
+				// ------------------------------------------
+				catch (FaultException ex) when (
+					ex.Message.Contains("ex.Message.Contains(\"_Upgrade already exists"))
+				{
+					if (continueOnError)
+					{
+						return;
+					}
+					else
+					{
+						throw;
+					}
+				}
+				// ------------------------------------------
 				catch (Exception ex)
 				{
 					// Non-retryable error: preserve original behavior (log + rethrow)
