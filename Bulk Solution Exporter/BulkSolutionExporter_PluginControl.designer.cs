@@ -354,7 +354,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningUnmanaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningUnmanaged.ErrorImage = null;
             this.pictureBox_warningUnmanaged.InitialImage = null;
-            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(784, 103);
+            this.pictureBox_warningUnmanaged.Location = new System.Drawing.Point(786, 103);
             this.pictureBox_warningUnmanaged.Name = "pictureBox_warningUnmanaged";
             this.pictureBox_warningUnmanaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningUnmanaged.TabIndex = 26;
@@ -370,7 +370,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.pictureBox_warningManaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.pictureBox_warningManaged.ErrorImage = null;
             this.pictureBox_warningManaged.InitialImage = null;
-            this.pictureBox_warningManaged.Location = new System.Drawing.Point(784, 55);
+            this.pictureBox_warningManaged.Location = new System.Drawing.Point(786, 55);
             this.pictureBox_warningManaged.Name = "pictureBox_warningManaged";
             this.pictureBox_warningManaged.Size = new System.Drawing.Size(30, 20);
             this.pictureBox_warningManaged.TabIndex = 9;
@@ -560,7 +560,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.panel1.Controls.Add(this.richTextBox_log);
             this.panel1.Location = new System.Drawing.Point(15, 156);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(799, 443);
+            this.panel1.Size = new System.Drawing.Size(801, 443);
             this.panel1.TabIndex = 28;
             // 
             // richTextBox_log
@@ -572,7 +572,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.richTextBox_log.Location = new System.Drawing.Point(0, 0);
             this.richTextBox_log.Name = "richTextBox_log";
             this.richTextBox_log.ReadOnly = true;
-            this.richTextBox_log.Size = new System.Drawing.Size(797, 441);
+            this.richTextBox_log.Size = new System.Drawing.Size(799, 441);
             this.richTextBox_log.TabIndex = 27;
             this.richTextBox_log.Text = "";
             // 
@@ -646,7 +646,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_unmanaged.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_unmanaged.Location = new System.Drawing.Point(107, 101);
             this.textBox_unmanaged.Name = "textBox_unmanaged";
-            this.textBox_unmanaged.Size = new System.Drawing.Size(709, 23);
+            this.textBox_unmanaged.Size = new System.Drawing.Size(711, 23);
             this.textBox_unmanaged.TabIndex = 1;
             this.textBox_unmanaged.TextChanged += new System.EventHandler(this.textBox_unmanaged_TextChanged);
             // 
@@ -658,7 +658,7 @@ namespace Com.AiricLenz.XTB.Plugin
             this.textBox_managed.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox_managed.Location = new System.Drawing.Point(107, 53);
             this.textBox_managed.Name = "textBox_managed";
-            this.textBox_managed.Size = new System.Drawing.Size(709, 23);
+            this.textBox_managed.Size = new System.Drawing.Size(711, 23);
             this.textBox_managed.TabIndex = 0;
             this.textBox_managed.TextChanged += new System.EventHandler(this.textBox_managed_TextChanged);
             // 
@@ -799,10 +799,10 @@ namespace Com.AiricLenz.XTB.Plugin
             // flipSwitch_updateVersion
             // 
             this.flipSwitch_updateVersion.ColorOff = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.MediumSlateBlue;
+            this.flipSwitch_updateVersion.ColorOn = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(80)))), ((int)(((byte)(0)))));
             this.flipSwitch_updateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.flipSwitch_updateVersion.IsLocked = false;
-            this.flipSwitch_updateVersion.IsOn = false;
+            this.flipSwitch_updateVersion.IsOn = true;
             this.flipSwitch_updateVersion.Location = new System.Drawing.Point(15, 80);
             this.flipSwitch_updateVersion.Margin = new System.Windows.Forms.Padding(4);
             this.flipSwitch_updateVersion.MarginText = 7;

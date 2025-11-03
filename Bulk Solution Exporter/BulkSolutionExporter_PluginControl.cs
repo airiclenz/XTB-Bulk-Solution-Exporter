@@ -1615,8 +1615,14 @@ namespace Com.AiricLenz.XTB.Plugin
 				Log("**Importing solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
 
 
+				var importResult =
+					ImportSolution(
+						targetService,
+						solution,
+						worker,
+						importManagd);
 
-				if (ImportSolution(targetService, solution, worker, importManagd))
+				if (importResult)
 				{
 					_logger.IncreaseIndent();
 					var duration = GetDurationString(startTime);
@@ -1643,6 +1649,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					_settings.UpdateSolutionConfiguration(solutionConfig);
 					SaveSettings();
+				}
+
+				if (!importResult &&
+					!_settings.ContinueOnError)
+				{
+					LogError("The import was not successful and Continue-On-Error is disabled.");
+					break;
 				}
 
 				RefreshSolutionInListBox(solution);
@@ -2032,6 +2045,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.IncreaseIndent();
 
 			var targetServiceClient = targetService?.ServiceClient;
+			int maxRetries = _settings.RetryCount > 0 ? _settings.RetryCount : 3;
+			int retryDelay = _settings.RetryDelayInSeconds > 0 ? _settings.RetryDelayInSeconds : 5;
+			bool continueOnError = _settings.ContinueOnError;
 
 			var config =
 				_settings.GetSolutionConfiguration(
@@ -2120,7 +2136,15 @@ namespace Com.AiricLenz.XTB.Plugin
 						resetTimer: true);
 				}
 
-				targetServiceClient.Execute(importRequest);
+				ExecuteWithRetries(
+					() => targetServiceClient.Execute(importRequest),
+					worker,
+					$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+					maxRetries,
+					retryDelay,
+					$"installing solution '{solution.FriendlyName}'",
+					continueOnError);
+
 
 				if (isHolding)
 				{
@@ -2139,59 +2163,14 @@ namespace Com.AiricLenz.XTB.Plugin
 						UniqueName = solution.UniqueName,
 					};
 
-					// Get retry settings from configuration (default to 3 if not set)
-					int maxRetries = _settings.RetryCount > 0 ? _settings.RetryCount : 3;
-					int retryDelay = _settings.RetryDelayInSeconds > 0 ? _settings.RetryDelayInSeconds : 5;
-					int currentRetry = 0;
-					bool success = false;
-
-					while (currentRetry <= maxRetries && !success)
-					{
-						try
-						{
-							if (currentRetry > 0)
-							{
-								Log($"Retry attempt {currentRetry} of {maxRetries} for applying upgrade...");
-								ReportExtendedProgress(
-									worker,
-									$"Retry {currentRetry}/{maxRetries}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-									null,
-									resetTimer: false);
-
-								// Wait before retrying
-								System.Threading.Thread.Sleep(retryDelay * 1000);
-							}
-
-							targetServiceClient.Execute(applyUpgradeRequest);
-							success = true; // If we get here without an exception, we succeeded
-
-							if (currentRetry > 0)
-							{
-								Log($"Upgrade succeeded on retry {currentRetry}.");
-							}
-						}
-						catch (FaultException ex) when (ex.Message.Contains("Cannot start another"))
-						{
-							// This specific exception indicates another import is in progress
-							if (currentRetry >= maxRetries)
-							{
-								// If this was our last retry, log and propagate the exception
-								LogError($"Failed to apply upgrade after {maxRetries} retries: {ex.Message}");
-								throw;
-							}
-
-							// Log the retry attempt
-							Log($"Another import is in progress. Waiting {retryDelay} seconds before retry {currentRetry + 1}/{maxRetries}...");
-						}
-						catch (Exception ex)
-						{
-							// Any other exception should not retry
-							LogError($"Error applying solution upgrade: {ex.Message}");
-							throw;
-						}
-
-						currentRetry++;
-					}
+					ExecuteWithRetries(
+						() => targetServiceClient.Execute(applyUpgradeRequest),
+						worker,
+						$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						maxRetries,
+						retryDelay,
+						$"applying upgrade '{solution.FriendlyName}'",
+						continueOnError);
 				}
 			}
 
@@ -2223,6 +2202,79 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.DecreaseIndent();
 			return true;
 		}
+
+
+		// ============================================================================
+		private void ExecuteWithRetries(
+		Action action,
+		BackgroundWorker worker,
+		string retryMessageFormat,
+		int maxRetries,
+		int retryDelaySeconds,
+		string operationDescription = null,
+		bool continueOnError = false)
+		{
+			int currentRetry = 0;
+			bool success = false;
+
+			while (currentRetry <= maxRetries && !success)
+			{
+				try
+				{
+					if (currentRetry > 0)
+					{
+						Log($"Retry attempt {currentRetry} of {maxRetries} for {operationDescription ?? "operation"}...");
+						var retryMessage = string.Format(retryMessageFormat, currentRetry, maxRetries);
+						ReportExtendedProgress(worker, retryMessage, null, resetTimer: false);
+
+						// Wait before retrying
+						System.Threading.Thread.Sleep(retryDelaySeconds * 1000);
+					}
+
+					action();
+					success = true;
+
+					if (currentRetry > 0)
+					{
+						Log($"Succeeded on retry {currentRetry}.");
+					}
+				}
+
+				// Specific transient condition: another import in progress
+				catch (FaultException ex) when (
+					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment"))
+				{
+
+					if (currentRetry >= maxRetries)
+					{
+						//	LogError($"Failed after {maxRetries} retries: {ex.Message}");
+
+						if (continueOnError)
+						{
+							return;
+						}
+						else
+						{
+							throw;
+						}
+					}
+
+					Log($"Another import is in progress. Waiting {retryDelaySeconds} seconds before retry {currentRetry + 1}/{maxRetries}...");
+				}
+				catch (Exception ex)
+				{
+					// Non-retryable error: preserve original behavior (log + rethrow)
+					LogError($"Error with {operationDescription}: {ex.Message}");
+					if (!continueOnError)
+					{
+						throw;
+					}
+				}
+
+				currentRetry++;
+			}
+		}
+
 
 
 		// ============================================================================

@@ -1,5 +1,5 @@
 ﻿
-# To-Do's
+# To-Do's / Ideas
 
 - add dynamics content for commit message and update information tooltip accordingly
 - allow for dynamic content in the filenames
@@ -7,14 +7,14 @@
 - add possibility to transfer data
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
-- add option "Abort on Error"
 
 
 ## Added in Release 2025.06.<mark>XX</mark>
 
+- added option "Continue on Error"
 - fixed a bug with logging-indentation
 - fixed a bug with cascading flipswitch logic
-- added re-tries for applying solution upgrades
+- added re-tries for installing solutions and applying solution upgrades (for cases where oither processes are still ongoing)
 
 ## Added in Release 2025.06.11
 

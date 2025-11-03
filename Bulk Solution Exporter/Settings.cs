@@ -121,12 +121,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		} = true;
 
-		public int RetryCount {
-			get; set; 
+		public int RetryCount
+		{
+			get; set;
 		} = 3;
 
-		public int RetryDelayInSeconds {
-			get; set; 
+		public int RetryDelayInSeconds
+		{
+			get; set;
 		} = 10;
 
 		public int SortingColumnIndex
@@ -167,6 +169,10 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 		}
 
+		public bool ContinueOnError
+		{
+			get; set;
+		} = false;
 
 		public List<string> SolutionConfigurations
 		{

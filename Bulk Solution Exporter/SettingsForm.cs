@@ -61,6 +61,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			Settings.SaveVersionJson = flipSwitch_saveVersionJson.IsOn;
 		}
 
+		// ============================================================================
+		private void flipSwitch_continueOnError_Toggled(object sender, EventArgs e)
+		{
+			Settings.ContinueOnError = flipSwitch_continueOnError.IsOn;
+		}
+
 
 		// ============================================================================
 		private void flipSwitch_showTooltips_Toggled(object sender, EventArgs e)
@@ -275,6 +281,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void UpdateForm()
 		{
 			flipSwitch_saveVersionJson.IsOn = Settings.SaveVersionJson;
+			flipSwitch_continueOnError.IsOn = Settings.ContinueOnError;
 			textBox_connectionTimeout.Text = Settings.ConnectionTimeoutInMinutes.ToString();
 			textBox_retryCount.Text = Settings.RetryCount.ToString();
 			textBox_retryDelay.Text = Settings.RetryDelayInSeconds.ToString();
@@ -285,7 +292,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_showLogicalNames.IsOn = Settings.ShowLogicalSolutionNames;
 		}
 
-	
+
 	}
 }
 
