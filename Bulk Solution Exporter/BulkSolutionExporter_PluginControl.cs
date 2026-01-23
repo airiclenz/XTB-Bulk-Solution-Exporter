@@ -1111,6 +1111,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					UpdateCheckedVersionNumbers(worker);
 					ExportCheckedSolutions(worker);
+
+					if (_settings.AutoDisableExportButtons)
+					{
+						flipSwitch_updateVersion.IsOn = false;
+						flipSwitch_exportManaged.IsOn = false;
+						flipSwitch_exportUnmanaged.IsOn = false;
+					}
+
 					HandleGit(worker);
 
 					foreach (var targetConnection in TargetConnections)
@@ -2241,30 +2249,12 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 				// ------------------------------------------
 				catch (FaultException ex) when (
-					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment"))
-
+					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment") ||
+					ex.Message.Contains("_Upgrade already exists"))
 				{
+					return;
 
-					if (currentRetry >= maxRetries)
-					{
-						//	LogError($"Failed after {maxRetries} retries: {ex.Message}");
-
-						if (continueOnError)
-						{
-							return;
-						}
-						else
-						{
-							throw;
-						}
-					}
-
-					Log($"Waiting {retryDelaySeconds} seconds before retry {currentRetry + 1}/{maxRetries} --> {ex.Message}");
-				}
-				// ------------------------------------------
-				catch (FaultException ex) when (
-					ex.Message.Contains("ex.Message.Contains(\"_Upgrade already exists"))
-				{
+					/*
 					if (continueOnError)
 					{
 						return;
@@ -2273,6 +2263,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					{
 						throw;
 					}
+					*/
 				}
 				// ------------------------------------------
 				catch (Exception ex)

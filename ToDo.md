@@ -11,10 +11,12 @@
 
 ## Added in Release 2025.06.<mark>XX</mark>
 
+- added option to automatically switch off the export-option after an export has been done
 - added option "Continue on Error"
+- added re-tries for installing solutions and applying solution upgrades (for cases where oither processes are still ongoing)
 - fixed a bug with logging-indentation
 - fixed a bug with cascading flipswitch logic
-- added re-tries for installing solutions and applying solution upgrades (for cases where oither processes are still ongoing)
+- fixed a bug where export-manifest was not loaded correctly
 
 ## Added in Release 2025.06.11
 

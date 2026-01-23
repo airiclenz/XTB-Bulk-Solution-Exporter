@@ -67,6 +67,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			Settings.ContinueOnError = flipSwitch_continueOnError.IsOn;
 		}
 
+		// ============================================================================
+		private void flipSwitch_autoDisableExportButtons_Toggled(object sender, EventArgs e)
+		{
+			Settings.AutoDisableExportButtons = flipSwitch_autoDisableExportButtons.IsOn;
+		}
+
 
 		// ============================================================================
 		private void flipSwitch_showTooltips_Toggled(object sender, EventArgs e)
@@ -89,6 +95,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			flipSwitch_showLogicalNames.IsOn = true;
 
 		}
+
 		// ============================================================================
 		private void flipSwitch_showLogicalNames_Toggled(object sender, EventArgs e)
 		{
@@ -282,6 +289,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			flipSwitch_saveVersionJson.IsOn = Settings.SaveVersionJson;
 			flipSwitch_continueOnError.IsOn = Settings.ContinueOnError;
+			flipSwitch_autoDisableExportButtons.IsOn = Settings.AutoDisableExportButtons;
+
 			textBox_connectionTimeout.Text = Settings.ConnectionTimeoutInMinutes.ToString();
 			textBox_retryCount.Text = Settings.RetryCount.ToString();
 			textBox_retryDelay.Text = Settings.RetryDelayInSeconds.ToString();

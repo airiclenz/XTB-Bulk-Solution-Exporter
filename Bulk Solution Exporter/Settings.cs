@@ -174,6 +174,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			get; set;
 		} = false;
 
+		public bool AutoDisableExportButtons
+		{
+			get; set;
+		} = false;
+
 		public List<string> SolutionConfigurations
 		{
 			get; set;

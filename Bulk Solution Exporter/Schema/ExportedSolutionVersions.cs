@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Com.AiricLenz.Extentions;
 using Newtonsoft.Json;
 
 
@@ -68,24 +69,33 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			var exportedSolutions =
 				JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
 
-			foreach (var exporedSolution in exportedSolutions.Managed)
+			try
 			{
-				if (exporedSolution.LogicalSolutionName == solution.UniqueName &&
-					exporedSolution.FileName == fileName)
+				foreach (var exporedSolution in exportedSolutions.Managed)
 				{
-					exportedSolutionResult = exporedSolution;
-					return true;
+					if (!exporedSolution.LogicalSolutionName.IsEmpty() &&
+						exporedSolution.LogicalSolutionName == solution.UniqueName &&
+						exporedSolution.FileName == fileName)
+					{
+						exportedSolutionResult = exporedSolution;
+						return true;
+					}
+				}
+
+				foreach (var exporedSolution in exportedSolutions.Unmanaged)
+				{
+					if (!exporedSolution.LogicalSolutionName.IsEmpty() &&
+						exporedSolution.LogicalSolutionName.ToLower() == solution.UniqueName &&
+						exporedSolution.FileName == fileName)
+					{
+						exportedSolutionResult = exporedSolution;
+						return true;
+					}
 				}
 			}
-
-			foreach (var exporedSolution in exportedSolutions.Unmanaged)
+			catch (Exception)
 			{
-				if (exporedSolution.LogicalSolutionName.ToLower() == solution.UniqueName &&
-					exporedSolution.FileName == fileName)
-				{
-					exportedSolutionResult = exporedSolution;
-					return true;
-				}
+				// ignore
 			}
 
 			exportedSolutionResult = null;
