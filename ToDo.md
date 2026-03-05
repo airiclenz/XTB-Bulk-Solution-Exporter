@@ -8,8 +8,9 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
+## Added in Release 2026.03.<mark>XX</mark>
 
-## Added in Release 2025.06.<mark>XX</mark>
+## Added in Release 2026.03.05
 
 - added option to automatically switch off the export-option after an export has been done
 - added option "Continue on Error"

@@ -1112,13 +1112,6 @@ namespace Com.AiricLenz.XTB.Plugin
 					UpdateCheckedVersionNumbers(worker);
 					ExportCheckedSolutions(worker);
 
-					if (_settings.AutoDisableExportButtons)
-					{
-						flipSwitch_updateVersion.IsOn = false;
-						flipSwitch_exportManaged.IsOn = false;
-						flipSwitch_exportUnmanaged.IsOn = false;
-					}
-
 					HandleGit(worker);
 
 					foreach (var targetConnection in TargetConnections)
@@ -1166,6 +1159,14 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log(ColorGreen + "##### Done." + ColorEndTag);
 
 					SetUiEnabledState(true);
+
+					if (args.Error == null &&
+						_settings.AutoDisableExportButtons)
+					{
+						flipSwitch_updateVersion.IsOn = false;
+						flipSwitch_exportManaged.IsOn = false;
+						flipSwitch_exportUnmanaged.IsOn = false;
+					}
 				},
 
 				ProgressChanged = (args) =>
@@ -3138,7 +3139,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					IsSortable = false,
 				};
 
-			var colFileVersionState =
+			var colFileVersionStatus =
 				new ColumnDefinition
 				{
 					Header = "",
@@ -3161,7 +3162,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					colVersion,				// 2
 					colTargetVersionState,	// 3
 					colFileStatusImage,		// 4
-					colFileVersionState     // 5
+					colFileVersionStatus     // 5
 				};
 
 			listBoxSolutions.SortingColumnIndex = _settings.SortingColumnIndex;
@@ -3171,6 +3172,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			//listBoxSolutions.Refresh();
 		}
+
 
 		// ============================================================================
 		private void UpdateGitOptionsVisibility()
