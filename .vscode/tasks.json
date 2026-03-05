@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-solution",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /p:Configuration=Debug; if ($LASTEXITCODE -eq 0) { Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll' \"$env:APPDATA\\MscrmTools\\XrmToolBox\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll\" -Force }"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ]
+}
