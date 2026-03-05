@@ -24,6 +24,10 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private int _connectionTimeoutInMinutes = 120;
 
+		private List<string> _solutionConfigurations;
+		private Dictionary<string, SolutionConfiguration> _configCache;
+		private Dictionary<string, int> _configIndexMap;
+
 
 
 		public string LastUsedOrganizationWebappUrl
@@ -181,7 +185,12 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		public List<string> SolutionConfigurations
 		{
-			get; set;
+			get { return _solutionConfigurations; }
+			set
+			{
+				_solutionConfigurations = value;
+				InvalidateCache();
+			}
 		}
 
 
@@ -215,11 +224,65 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		private void InvalidateCache()
+		{
+			_configCache = null;
+			_configIndexMap = null;
+		}
+
+
+		// ============================================================================
+		private void EnsureCache()
+		{
+			if (_configCache != null)
+			{
+				return;
+			}
+
+			_configCache = new Dictionary<string, SolutionConfiguration>(StringComparer.Ordinal);
+			_configIndexMap = new Dictionary<string, int>(StringComparer.Ordinal);
+
+			for (int i = 0; i < _solutionConfigurations.Count; i++)
+			{
+				var config = SolutionConfiguration.GetConfigFromJson(_solutionConfigurations[i]);
+
+				if (config == null)
+				{
+					continue;
+				}
+
+				_configCache[config.SolutionIndentifier] = config;
+				_configIndexMap[config.SolutionIndentifier] = i;
+			}
+		}
+
+
+		// ============================================================================
+		private void SyncBackingListFromCache()
+		{
+			if (_configCache == null)
+			{
+				return;
+			}
+
+			_solutionConfigurations.Clear();
+			_configIndexMap.Clear();
+
+			foreach (var kvp in _configCache)
+			{
+				_configIndexMap[kvp.Key] = _solutionConfigurations.Count;
+				_solutionConfigurations.Add(kvp.Value.GetJson());
+			}
+		}
+
+
+		// ============================================================================
 		public void SetCheckedStatus(
 			string solutionIdentifier,
 			bool selectedState)
 		{
 			var config = GetSolutionConfiguration(solutionIdentifier);
+
 			if (config == null)
 			{
 				return;
@@ -236,6 +299,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			int index)
 		{
 			var config = GetSolutionConfiguration(solutionIdentifier);
+
 			if (config == null)
 			{
 				return;
@@ -251,39 +315,24 @@ namespace Com.AiricLenz.XTB.Plugin
 			string solutionIdentifier,
 			bool createIfNotFound = false)
 		{
-
 			if (string.IsNullOrWhiteSpace(solutionIdentifier))
 			{
 				return null;
 			}
 
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			EnsureCache();
+
+			if (_configCache.TryGetValue(solutionIdentifier, out var config))
 			{
-				var config =
-					SolutionConfiguration.GetConfigFromJson(
-						SolutionConfigurations[i]);
-
-				if (config == null)
-				{
-					SolutionConfigurations.RemoveAt(i);
-					continue;
-				}
-
-				if (config.SolutionIndentifier == solutionIdentifier)
-				{
-					return config;
-				}
+				return config;
 			}
 
 			if (createIfNotFound)
 			{
-				var newSolutionConfig =
-					new SolutionConfiguration(
-						solutionIdentifier);
-
-				SolutionConfigurations.Add(
-					newSolutionConfig.GetJson());
-
+				var newSolutionConfig = new SolutionConfiguration(solutionIdentifier);
+				_configCache[solutionIdentifier] = newSolutionConfig;
+				_configIndexMap[solutionIdentifier] = _solutionConfigurations.Count;
+				_solutionConfigurations.Add(newSolutionConfig.GetJson());
 				return newSolutionConfig;
 			}
 
@@ -296,20 +345,19 @@ namespace Com.AiricLenz.XTB.Plugin
 			string solutionIdentifier)
 		{
 			// does it already exist?
-			var existingConfig =
-				GetSolutionConfiguration(solutionIdentifier);
+			var existingConfig = GetSolutionConfiguration(solutionIdentifier);
 
 			if (existingConfig != null)
 			{
 				return existingConfig;
 			}
 
-			var newSolutionConfig =
-				new SolutionConfiguration(
-					solutionIdentifier);
+			EnsureCache();
 
-			SolutionConfigurations.Add(
-				newSolutionConfig.GetJson());
+			var newSolutionConfig = new SolutionConfiguration(solutionIdentifier);
+			_configCache[solutionIdentifier] = newSolutionConfig;
+			_configIndexMap[solutionIdentifier] = _solutionConfigurations.Count;
+			_solutionConfigurations.Add(newSolutionConfig.GetJson());
 
 			return newSolutionConfig;
 		}
@@ -319,40 +367,34 @@ namespace Com.AiricLenz.XTB.Plugin
 		public bool UpdateSolutionConfiguration(
 			SolutionConfiguration config)
 		{
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
-			{
-				var currentConfig =
-					SolutionConfiguration.GetConfigFromJson(
-						SolutionConfigurations[i]);
+			EnsureCache();
 
-				if (config.SolutionIndentifier == currentConfig.SolutionIndentifier)
-				{
-					SolutionConfigurations[i] = config.GetJson();
-					return true;
-				}
+			if (!_configCache.ContainsKey(config.SolutionIndentifier))
+			{
+				return false;
 			}
 
-			return false;
-		}
+			_configCache[config.SolutionIndentifier] = config;
+			_solutionConfigurations[_configIndexMap[config.SolutionIndentifier]] = config.GetJson();
 
+			return true;
+		}
 
 
 		// ============================================================================
 		public void RemoveSolutionConfiguration(
 			string solutionIdentifier)
 		{
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
-			{
-				var currentConfig =
-					SolutionConfiguration.GetConfigFromJson(
-						SolutionConfigurations[i]);
+			EnsureCache();
 
-				if (currentConfig.SolutionIndentifier == solutionIdentifier)
-				{
-					SolutionConfigurations.RemoveAt(i);
-					return;
-				}
+			if (!_configCache.ContainsKey(solutionIdentifier))
+			{
+				return;
 			}
+
+			_configCache.Remove(solutionIdentifier);
+			_configIndexMap.Remove(solutionIdentifier);
+			SyncBackingListFromCache();
 		}
 
 
@@ -360,21 +402,16 @@ namespace Com.AiricLenz.XTB.Plugin
 		public List<SolutionConfiguration> GetAllSolutionConfigurationdForConnection(
 			Guid connectionGuid)
 		{
-			var resultList =
-				new List<SolutionConfiguration>();
+			EnsureCache();
 
-			for (int i = 0; i < SolutionConfigurations.Count; i++)
+			var resultList = new List<SolutionConfiguration>();
+			var guidString = connectionGuid.ToString().ToLower();
+
+			foreach (var config in _configCache.Values)
 			{
-				var currentConfig =
-					SolutionConfiguration.GetConfigFromJson(
-						SolutionConfigurations[i]);
-
-				var guidString =
-					connectionGuid.ToString().ToLower();
-
-				if (currentConfig.SolutionIndentifier.StartsWith(guidString))
+				if (config.SolutionIndentifier.StartsWith(guidString))
 				{
-					resultList.Add(currentConfig);
+					resultList.Add(config);
 				}
 			}
 

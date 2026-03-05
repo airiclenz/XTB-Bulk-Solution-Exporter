@@ -10,6 +10,8 @@
 
 ## Added in Release 2026.03.<mark>XX</mark>
 
+- performance optimization for environments with large numbers of solutions (300-400+): dictionary cache for O(1) config lookups, eliminated O(n²) loops, added save debounce, fixed stale-config cleanup bug
+
 ## Added in Release 2026.03.05
 
 - added option to automatically switch off the export-option after an export has been done

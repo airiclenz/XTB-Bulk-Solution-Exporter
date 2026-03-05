@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \":*)",
+      "Bash(powershell -Command \"Get-Content -Path ''c:\\\\Users\\\\ERES\\\\Repos\\\\XTB - Bulk Solution Exporter\\\\Bulk Solution Exporter\\\\BulkSolutionExporter_PluginControl.cs'' -Encoding UTF8 | Select-Object -Index \\(2596..2615\\) | ForEach-Object { [System.Text.RegularExpressions.Regex]::Replace\\($_ ''\\\\t'', ''\\\\t''\\) }\")",
+      "Bash(powershell -File:*)",
+      "Bash(powershell -Command \":*)",
+      "Bash(/tmp/fix_update_solution_list.ps1:*)",
+      "Bash(/tmp/debug2.ps1:*)",
+      "Bash(/tmp/debug3.ps1:*)",
+      "Bash(/tmp/fix2.ps1:*)",
+      "Bash(/tmp/fix_updatestatusimages.ps1:*)",
+      "Bash(/tmp/fix_targetversion.ps1:*)",
+      "Bash(/tmp/fix_debounce.ps1:*)",
+      "Bash(/tmp/fix_closing.ps1:*)",
+      "Bash(/tmp/fix_remove_nonexistant.ps1:*)",
+      "Bash(/tmp/debug_remove.ps1:*)",
+      "Bash(/tmp/fix_remove2.ps1:*)"
+    ]
+  }
+}

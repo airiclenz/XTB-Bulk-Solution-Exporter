@@ -54,15 +54,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private WorkAsyncInfo _executionWorker = null;
 		private Timer _progressTimer;
+		private Timer _saveDebounceTimer;
 		private DateTime _progressStartTime;
 		private string _progressBaseMessage;
 		private Size _workerPanelSize = new Size(400, 200);
 
 
 		private Solution _currentSolution;
-		private object origin;
-		private object target;
-
 		private const string ColorError = "<color=#770000>";
 		private const string ColorSolution = "<color=#000077>";
 		private const string ColorFile = "<color=#777700>";
@@ -130,6 +128,10 @@ namespace Com.AiricLenz.XTB.Plugin
 			InitializeComponent();
 
 			richTextBox_log.Text = string.Empty;
+
+			_saveDebounceTimer = new Timer();
+			_saveDebounceTimer.Interval = 500;
+			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); ExecuteSaveSettings(); };
 
 			_logger = new Logger(richTextBox_log);
 			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
@@ -263,7 +265,9 @@ namespace Com.AiricLenz.XTB.Plugin
 		public override void ClosingPlugin(PluginCloseInfo info)
 		{
 			base.ClosingPlugin(info);
-			SaveSettings();
+			SaveSettings(immediate: true);
+			_saveDebounceTimer?.Stop();
+			_saveDebounceTimer?.Dispose();
 		}
 
 		// ============================================================================
@@ -277,7 +281,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			EventArgs e)
 		{
 			// Before leaving, save the settings
-			SaveSettings(cleanUpNonExistingSolutions: true);
+			SaveSettings(cleanUpNonExistingSolutions: true, immediate: true);
 		}
 
 
@@ -2596,21 +2600,15 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			// select the item in the list that were selected before
 			// (information from the saved settings)
-			foreach (var configString in _settings.SolutionConfigurations)
+			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
-				var config =
-					SolutionConfiguration.GetConfigFromJson(
-						configString);
+				var solution = listBoxSolutions.Items[i].ItemObject as Solution;
+				var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
 
-				for (int i = 0; i < listBoxSolutions.Items.Count; i++)
+				if (config != null)
 				{
-					var solution = listBoxSolutions.Items[i].ItemObject as Solution;
-
-					if (solution.SolutionIdentifier == config.SolutionIndentifier)
-					{
-						listBoxSolutions.SetItemChecked(i, config.Checked);
-						UpdateSolutionStatusImages(i);
-					}
+					listBoxSolutions.SetItemChecked(i, config.Checked);
+					UpdateSolutionStatusImages(i, config);
 				}
 			}
 
@@ -2623,7 +2621,8 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void SaveSettings(
 			[CallerMemberName] string caller = "",
-			bool cleanUpNonExistingSolutions = false)
+			bool cleanUpNonExistingSolutions = false,
+			bool immediate = false)
 		{
 			if (CodeUpdate)
 			{
@@ -2637,6 +2636,23 @@ namespace Com.AiricLenz.XTB.Plugin
 				RemoveNonExistantSolutions();
 			}
 
+			if (immediate)
+			{
+				_saveDebounceTimer.Stop();
+				ExecuteSaveSettings(caller);
+				return;
+			}
+
+			// Restart the debounce timer; rapid calls coalesce into one save
+			_saveDebounceTimer.Stop();
+			_saveDebounceTimer.Start();
+		}
+
+
+		// ============================================================================
+		private void ExecuteSaveSettings(
+			[CallerMemberName] string caller = "")
+		{
 			// Update the Solution Configs from the solutions...
 			foreach (var listBoxItem in listBoxSolutions.Items)
 			{
@@ -2659,27 +2675,19 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void RemoveNonExistantSolutions()
 		{
+			var originIdentifiers = new HashSet<string>(
+				_solutionsOrigin.Select(s => s.SolutionIdentifier),
+				StringComparer.Ordinal);
+
 			var configsForCurrentConnection =
 					_settings.GetAllSolutionConfigurationdForConnection(
 						_currentConnectionGuid);
 
-			foreach (var solution in _solutionsOrigin)
+			foreach (var config in configsForCurrentConnection)
 			{
-				var found = false;
-
-				foreach (var config in configsForCurrentConnection)
+				if (!originIdentifiers.Contains(config.SolutionIndentifier))
 				{
-					if (solution.SolutionIdentifier == config.SolutionIndentifier)
-					{
-						found = true;
-						break;
-					}
-				}
-
-				if (!found)
-				{
-					_settings.RemoveSolutionConfiguration(
-						solution.SolutionIdentifier);
+					_settings.RemoveSolutionConfiguration(config.SolutionIndentifier);
 				}
 			}
 		}
@@ -2893,7 +2901,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void UpdateSolutionStatusImages(
-			int index)
+			int index,
+			SolutionConfiguration config = null)
 		{
 			if (index == -1)
 			{
@@ -2901,7 +2910,11 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			var solution = listBoxSolutions.Items[index].ItemObject as Solution;
-			var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
+
+			if (config == null)
+			{
+				config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
+			}
 
 			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
 			var hasFileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
@@ -3025,43 +3038,28 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
+			var targetByName = new Dictionary<string, Solution>(StringComparer.Ordinal);
+
+			foreach (var targetSolution in _solutionsTarget)
+			{
+				targetByName[targetSolution.UniqueName] = targetSolution;
+			}
+
 			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
 			{
-				var found = false;
 				var originSolution = listBoxSolutions.Items[i].ItemObject as Solution;
-				Com.AiricLenz.XTB.Plugin.Schema.Version originVersion = originSolution.Version;
-				Com.AiricLenz.XTB.Plugin.Schema.Version targetVersion = null;
 
-				foreach (var targetSolution in _solutionsTarget)
-				{
-					if (targetSolution.UniqueName != originSolution.UniqueName)
-					{
-						continue;
-					}
-
-					targetVersion = targetSolution.Version;
-					found = true;
-					break;
-				}
-
-				if (found == false)
+				if (targetByName.TryGetValue(originSolution.UniqueName, out var targetSolution))
 				{
 					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
-						Properties.Resources.missing;
-					continue;
-				}
-
-				if (targetVersion.ToString() == originVersion.ToString())
-				{
-					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
-						Properties.Resources.match;
-					continue;
+						targetSolution.Version.ToString() == originSolution.Version.ToString()
+							? Properties.Resources.match
+							: Properties.Resources.missmatch;
 				}
 				else
 				{
 					(listBoxSolutions.Items[i].ItemObject as Solution).TargetVersionState =
-						Properties.Resources.missmatch;
-					continue;
+						Properties.Resources.missing;
 				}
 			}
 
