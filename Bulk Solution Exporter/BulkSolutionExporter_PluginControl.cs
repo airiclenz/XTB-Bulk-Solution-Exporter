@@ -1096,6 +1096,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.ResetIndent();
 			_sessionFiles.Clear();
 
+			// Taken on the UI thread: the list is rebuilt during the run, so the
+			// worker phases must not read listBoxSolutions.CheckedItems live.
+			var checkedSolutions =
+				listBoxSolutions.CheckedItems
+					.Select(item => item.ItemObject as Solution)
+					.ToList();
+
 			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
 
 			_executionWorker = new WorkAsyncInfo()
@@ -1116,8 +1123,13 @@ namespace Com.AiricLenz.XTB.Plugin
 						PublishAll(ConnectionDetail);
 					}
 
-					UpdateCheckedVersionNumbers(worker);
-					ExportCheckedSolutions(worker);
+					UpdateCheckedVersionNumbers(
+						checkedSolutions,
+						worker);
+
+					ExportCheckedSolutions(
+						checkedSolutions,
+						worker);
 
 					HandleGit(worker);
 
@@ -1132,6 +1144,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 						ImportCheckedSolutions(
 							targetConnection,
+							checkedSolutions,
 							worker);
 
 						if (flipSwitch_publishTarget.IsOn)
@@ -1425,10 +1438,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void UpdateCheckedVersionNumbers(
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			if (!flipSwitch_updateVersion.IsOn ||
-				listBoxSolutions.CheckedItems.Count == 0)
+				solutions.Count == 0)
 			{
 				return;
 			}
@@ -1442,10 +1456,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.IncreaseIndent();
 
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1456,7 +1469,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateVersionNumberInSource(solution);
 				RefreshSolutionInListBox(solution);
 
-				if (i < listBoxSolutions.CheckedItems.Count - 1)
+				if (i < solutions.Count - 1)
 				{
 					Log();
 				}
@@ -1469,6 +1482,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void ExportCheckedSolutions(
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			if (flipSwitch_exportManaged.IsOff &&
@@ -1480,10 +1494,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("##### Exporting:");
 			_logger.IncreaseIndent();
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1504,7 +1517,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					break;
 				}
 
-				if (i < listBoxSolutions.CheckedItems.Count - 1)
+				if (i < solutions.Count - 1)
 				{
 					Log();
 				}
@@ -1599,6 +1612,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ImportCheckedSolutions(
 			ConnectionDetail targetService,
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			var targetServiceClient = targetService?.ServiceClient;
@@ -1617,10 +1631,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("##### Importing:");
 			_logger.IncreaseIndent();
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1647,7 +1660,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log("The import was successful.");
 					Log("Duration: " + duration);
 
-					if (i < listBoxSolutions.CheckedItems.Count - 1)
+					if (i < solutions.Count - 1)
 					{
 						Log();
 					}

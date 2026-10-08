@@ -76,7 +76,7 @@ The Acceptance grep uses `-A10`, not `-A4`: the `SaveSettings(` signature and it
 - `grep -n -A10 "private void SaveSettings(" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` and the following lines show an `InvokeRequired` guard before any `_saveDebounceTimer` use
 **Commit:** fix(settings): marshal SaveSettings to the UI thread from export worker
 
-## 3. Snapshot checked solutions at export start
+## 3. Snapshot checked solutions at export start — ✅ DONE (2026-10-08)
 
 **What:** Ratified scope call: the worker phases iterate a snapshot taken on the UI thread, not `listBoxSolutions.CheckedItems`, which changes whenever the list is rebuilt.
 **Regression guard.** The manual Tests steps are a regression check only: once items 1-2 are in, the mid-run `UpdateSolutionList` (via `RefreshSolutionInListBox`) restores the same check state from the synced `_settings`, so they cannot fail against the pre-item-3 tree. The `CheckedItems` Acceptance grep is the binding check.
