@@ -35,7 +35,11 @@
 - Making `Settings` thread-safe (its dictionary cache) beyond what marshalling to the UI thread provides.
 - Any other settings properties or UI behaviour.
 
-## 1. Sync list state into settings synchronously; debounce only the disk write
+## 1. Sync list state into settings synchronously; debounce only the disk write — ✅ DONE (2026-10-08)
+
+NOTES (2026-10-08): ExecuteSaveSettings removed outright (no immediate-path wrapper kept); SaveSettings now calls SyncSolutionConfigsFromList() then PersistSettings(caller) or the debounce timer, and the Tick lambda calls only PersistSettings().
+NOTES (2026-10-08): until item 2 lands, the worker-thread SaveSettings() calls (ExportSolution, ImportCheckedSolutions) now also run SyncSolutionConfigsFromList() off the UI thread (reads listBoxSolutions.Items only, no handle access); item 2's InvokeRequired guard removes this.
+NOTES (2026-10-08): repo has no CHANGELOG file (ToDo.md carries release notes); entry text left above for the closeout, ToDo.md untouched.
 
 **What:** fix for the regression from `5c3cda4`: list check state reaches `_settings` only when the debounce timer fires.
 **Regression guard.** The manual Tests steps must first complete one export run (so the pre-fix debounce timer is dead) before checking A+B and clicking Export; state that the bug also reproduces in a fresh session by clicking Export within 0.5 s of a check change. Yields to `ToDo.md:13` ("added save debounce" as the 300-400+ solution performance fix): the debounce stays on the disk write.

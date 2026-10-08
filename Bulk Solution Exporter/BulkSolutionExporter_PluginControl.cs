@@ -131,7 +131,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_saveDebounceTimer = new Timer();
 			_saveDebounceTimer.Interval = 500;
-			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); ExecuteSaveSettings(); };
+			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); PersistSettings(); };
 
 			_logger = new Logger(richTextBox_log);
 			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
@@ -808,6 +808,9 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				return;
 			}
+
+			// Flush the current check state before the run starts
+			SaveSettings(immediate: true);
 
 			SetUiEnabledState(false);
 
@@ -2512,10 +2515,13 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-					SaveSettings(cleanUpNonExistingSolutions: true);
-
 					UpdateColumns();
 					UpdateSolutionList();
+
+					// After the rebuild, so the sync does not walk the old list
+					// and re-create the configs the cleanup just removed
+					SaveSettings(cleanUpNonExistingSolutions: true);
+
 					UpdateImportOptionsVisibility();
 					SetExportButtonState();
 				}
@@ -2636,10 +2642,15 @@ namespace Com.AiricLenz.XTB.Plugin
 				RemoveNonExistantSolutions();
 			}
 
+			// The in-memory settings are synced right away so that any list
+			// rebuild from _settings restores the current check state;
+			// only the disk write is debounced
+			SyncSolutionConfigsFromList();
+
 			if (immediate)
 			{
 				_saveDebounceTimer.Stop();
-				ExecuteSaveSettings(caller);
+				PersistSettings(caller);
 				return;
 			}
 
@@ -2650,22 +2661,33 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExecuteSaveSettings(
-			[CallerMemberName] string caller = "")
+		private void SyncSolutionConfigsFromList()
 		{
-			// Update the Solution Configs from the solutions...
 			foreach (var listBoxItem in listBoxSolutions.Items)
 			{
 				var solution = listBoxItem.ItemObject as Solution;
 				var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier, true);
+
+				// Skip unchanged configs: re-serializing every config on each
+				// keystroke-triggered save is costly with hundreds of solutions
+				if (config.Checked == listBoxItem.IsChecked &&
+					config.SortingIndex == listBoxItem.SortingIndex)
+				{
+					continue;
+				}
 
 				config.Checked = listBoxItem.IsChecked;
 				config.SortingIndex = listBoxItem.SortingIndex;
 
 				_settings.UpdateSolutionConfiguration(config);
 			}
+		}
 
-			// Save
+
+		// ============================================================================
+		private void PersistSettings(
+			[CallerMemberName] string caller = "")
+		{
 			SettingsManager.Instance.Save(GetType(), _settings);
 
 			LogDebug($"Settings have been saved ({caller}): ({_settings.SplitContainerPosition})");
