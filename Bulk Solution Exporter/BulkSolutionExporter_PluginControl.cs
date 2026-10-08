@@ -2630,6 +2630,15 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool cleanUpNonExistingSolutions = false,
 			bool immediate = false)
 		{
+			// Called from the export worker too: the debounce timer and the
+			// list must only be touched on the UI thread, so re-dispatch there
+			// (BeginInvoke, so the worker does not block on the UI thread)
+			if (InvokeRequired)
+			{
+				BeginInvoke((MethodInvoker) (() => SaveSettings(caller, cleanUpNonExistingSolutions, immediate)));
+				return;
+			}
+
 			if (CodeUpdate)
 			{
 				return;

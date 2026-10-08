@@ -58,7 +58,10 @@ In `SyncSolutionConfigsFromList`, set fields and call `UpdateSolutionConfigurati
 - `grep -n "SaveSettings(cleanUpNonExistingSolutions: true);\|UpdateSolutionList();" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` shows, inside `LoadAllSolutions`, the `SaveSettings(cleanUpNonExistingSolutions: true);` line after `UpdateSolutionList();`
 **Commit:** fix(settings): sync solution check state immediately, debounce only disk save
 
-## 2. Marshal SaveSettings to the UI thread
+## 2. Marshal SaveSettings to the UI thread — ✅ DONE (2026-10-08)
+
+NOTES (2026-10-08): the InvokeRequired guard sits above the CodeUpdate check, so CodeUpdate is evaluated on the UI thread when the re-dispatched call runs; the original caller name is forwarded explicitly, so the debug log still names ExportSolution/ImportCheckedSolutions.
+NOTES (2026-10-08): pre-existing edge case left as is: a worker SaveSettings() arriving after ClosingPlugin disposed _saveDebounceTimer (plugin closed mid-export) would restart the disposed timer or hit a destroyed handle; not introduced by this item.
 
 **What:** fix for the regression from `5c3cda4`: `SaveSettings()` called from the export worker thread touches the WinForms debounce timer and `listBoxSolutions` off the UI thread, and the debounce timer stops working for the session. Depends on item 1.
 **Regression guard.** The manual Tests steps must start from a session in which a prior export (with a duration-saving SaveSettings call from the worker) has completed, then toggle checks and run a second export to confirm the selection holds.
