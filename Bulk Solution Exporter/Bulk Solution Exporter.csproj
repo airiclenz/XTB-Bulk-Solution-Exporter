@@ -362,6 +362,7 @@
     <None Include="Scripts\Deploy Locally.bat" />
     <Compile Include="Schema\Version.cs" />
     <Compile Include="Settings.cs" />
+    <None Include="Scripts\NuGet Pack.ps1" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
