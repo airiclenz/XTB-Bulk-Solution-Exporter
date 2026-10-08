@@ -60,7 +60,11 @@ XrmToolBox.Extensibility.dll — WorkAsyncInfo.PerformWork (calls Work directly,
 - `grep -n "Aborted by user\|args.Cancelled\|args.Cancel = true" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` shows all three
 **Commit:** feat(export): stop the execution between steps when cancellation is requested
 
-## 2. Turn the Execute button into an Abort button while a run is active
+## 2. Turn the Execute button into an Abort button while a run is active — ✅ DONE (2026-10-08)
+
+NOTES (2026-10-08): the three looks live in a private nested `enum ExecuteButtonMode { Execute, Abort, Aborting }` passed to `SetExecuteButtonMode(...)`. The Execute look restores the captured designer image and tooltip, and its enabled state comes from calling `SetExportButtonState()`. The delete icon is loaded once into a `readonly Image _abortButtonImage`, so a run does not create a new bitmap from the resx.
+NOTES (2026-10-08): `PostWorkCallBack` sets `_isExecuting = false`, clears the captured worker and restores the Execute look right after `StopProgressTimer()`. That is before the error MessageBox and `LoadAllSolutions()`, and so still before `SetUiEnabledState(true)`. While `_isExecuting` is true, `SetUiEnabledState` leaves `button_Export` alone instead of forcing it on, so that `SetExecuteButtonMode` owns it in both Abort and Aborting. The captured worker is the field `volatile BackgroundWorker _executionBackgroundWorker`, set on the first line of the `Work` lambda.
+NOTES (2026-10-08): no CHANGELOG entry, because the repo has no CHANGELOG file (item 1 added none either).
 
 **What:** Depends on item 1.
 **Goal:** While the execution worker runs, `button_Export` is enabled and shows `" Abort "`, the `delete_32px` image and tooltip "Abort the execution". Clicking it shows a Yes/No dialog "Abort after the current step finishes?"; on Yes it calls `CancelWorker()` and the button shows `" Aborting... "` and is disabled. When the run ends (completed, failed or aborted), the button shows `" Execute "` with its original designer image and tooltip, and its enabled state comes from `SetExportButtonState()` again.

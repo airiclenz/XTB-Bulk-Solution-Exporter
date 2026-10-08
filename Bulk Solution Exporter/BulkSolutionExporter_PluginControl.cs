@@ -53,7 +53,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private Logger _logger = null;
 
 		private WorkAsyncInfo _executionWorker = null;
+		private volatile BackgroundWorker _executionBackgroundWorker = null;
 		private volatile bool _isAbortRequested = false;
+		private bool _isExecuting = false;
+		private Image _executeButtonImage;
+		private string _executeButtonToolTip;
+		private readonly Image _abortButtonImage = Properties.Resources.delete_32px;
 		private Timer _progressTimer;
 		private Timer _saveDebounceTimer;
 		private DateTime _progressStartTime;
@@ -77,6 +82,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// Longest single sleep of the retry wait: an abort ends the wait within this time.
 		private const int RetryWaitSliceInMilliseconds = 250;
+
+		// Looks of the toolbar's Execute button; see SetExecuteButtonMode.
+		private enum ExecuteButtonMode
+		{
+			Execute,
+			Abort,
+			Aborting
+		}
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -131,6 +144,10 @@ namespace Com.AiricLenz.XTB.Plugin
 		public BulkSolutionExporter_PluginControl()
 		{
 			InitializeComponent();
+
+			// Kept so the Execute look is restored without reloading it from the resx.
+			_executeButtonImage = button_Export.Image;
+			_executeButtonToolTip = button_Export.ToolTipText;
 
 			richTextBox_log.Text = string.Empty;
 
@@ -806,6 +823,42 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
+			if (_isExecuting)
+			{
+				var answer =
+					MessageBox.Show(
+						"Abort after the current step finishes?",
+						"Abort Execution",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Question);
+
+				// The run may have ended while the dialog was open.
+				if (answer != DialogResult.Yes ||
+					!_isExecuting)
+				{
+					return;
+				}
+
+				// CancelWorker() cancels the plugin's current worker and removes the
+				// working panel; CancelAsync() makes sure the execution worker itself
+				// is cancelled even when another worker became the current one.
+				CancelWorker();
+				_executionBackgroundWorker?.CancelAsync();
+
+				SetExecuteButtonMode(ExecuteButtonMode.Aborting);
+
+				// The progress timer recreates the working panel with this message.
+				_progressBaseMessage =
+					$"Aborting...{Environment.NewLine}Waiting for the current step to finish.";
+
+				SetWorkingMessage(
+					_progressBaseMessage,
+					_workerPanelSize.Width,
+					_workerPanelSize.Height);
+
+				return;
+			}
+
 			listBoxSolutions.DeselectAll();
 			UpdateSolutionSettingsScreen();
 
@@ -819,7 +872,45 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			SetUiEnabledState(false);
 
+			_isExecuting = true;
+			SetExecuteButtonMode(ExecuteButtonMode.Abort);
+
 			ExecuteOperations();
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Sets the text, image, tooltip and enabled state of the Execute button.
+		/// The Execute look takes its enabled state from SetExportButtonState(),
+		/// so _isExecuting must be false before switching back to it.
+		/// </summary>
+		private void SetExecuteButtonMode(
+			ExecuteButtonMode mode)
+		{
+			switch (mode)
+			{
+				case ExecuteButtonMode.Abort:
+					button_Export.Text = " Abort ";
+					button_Export.Image = _abortButtonImage;
+					button_Export.ToolTipText = "Abort the execution";
+					button_Export.Enabled = true;
+					break;
+
+				case ExecuteButtonMode.Aborting:
+					button_Export.Text = " Aborting... ";
+					button_Export.Image = _abortButtonImage;
+					button_Export.ToolTipText = "Abort the execution";
+					button_Export.Enabled = false;
+					break;
+
+				default:
+					button_Export.Text = " Execute ";
+					button_Export.Image = _executeButtonImage;
+					button_Export.ToolTipText = _executeButtonToolTip;
+					SetExportButtonState();
+					break;
+			}
 		}
 
 
@@ -881,7 +972,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			comboBox_gitBranches.Enabled = state;
 
 			button_loadSolutions.Enabled = state;
-			button_Export.Enabled = state;
+
+			// While a run is active the button is the Abort button, owned by
+			// SetExecuteButtonMode.
+			if (!_isExecuting)
+			{
+				button_Export.Enabled = state;
+			}
+
 			button_addAdditionalConnection.Enabled = state;
 			button_manageConnections.Enabled = state;
 			button_Settings.Enabled = state;
@@ -1119,6 +1217,9 @@ namespace Com.AiricLenz.XTB.Plugin
 				IsCancelable = true,
 				Work = (worker, args) =>
 				{
+					// Kept for the abort path of button_Export_Click.
+					_executionBackgroundWorker = worker;
+
 					try
 					{
 						if (flipSwitch_publishSource.IsOn &&
@@ -1202,6 +1303,10 @@ namespace Com.AiricLenz.XTB.Plugin
 				PostWorkCallBack = (args) =>
 				{
 					StopProgressTimer();
+
+					_isExecuting = false;
+					_executionBackgroundWorker = null;
+					SetExecuteButtonMode(ExecuteButtonMode.Execute);
 
 					// The flag also covers a step that threw after the abort was
 					// requested, where args.Cancelled is false and args.Error is set.
@@ -2709,7 +2814,11 @@ namespace Com.AiricLenz.XTB.Plugin
 					flipSwitch_importUnmanaged.IsOn
 				);
 
-			button_Export.Enabled = exportEnabled;
+			// While a run is active the button is the Abort button.
+			if (!_isExecuting)
+			{
+				button_Export.Enabled = exportEnabled;
+			}
 
 
 			// Version Format
