@@ -36,7 +36,11 @@
 - 1: Approach "(no new field)" wording aligned with guard (c) (writer decision)
 - 2: report guards folded — re-check `_isExecuting` after Yes; `CancelAsync()` on the captured execution worker alongside `CancelWorker()` (writer decision)
 
-## 1. Make the execution worker stop between steps when cancellation is requested
+## 1. Make the execution worker stop between steps when cancellation is requested — ✅ DONE (2026-10-08)
+
+NOTES (2026-10-08): `ExecuteWithRetries` now returns `bool` (false = abort requested before a retry could run); `ImportSolution` returns false on that without the success log, and `ImportCheckedSolutions` breaks on `!importResult && IsAbortRequested(worker)` before the Continue-On-Error error. The abort flag is a `volatile bool _isAbortRequested`, set and logged once inside `IsAbortRequested`. The `Work` lambda sets `args.Cancel = true` and returns without touching `args.Result` when an abort was requested.
+NOTES (2026-10-08): the `Work` lambda body is wrapped in `try { ... } catch { IsAbortRequested(worker); throw; }`, so a step that throws after the abort request still sets the abort flag and `PostWorkCallBack` ends with `##### Aborted by user.` (guard (c)).
+NOTES (2026-10-08): retry: the retry-wait slice length is the named constant `RetryWaitSliceInMilliseconds = 250` (next to the other constants) instead of a bare `250`; no other bare magic numbers in the item's new code.
 
 **What:**
 **Goal:** When `CancellationPending` is set on the execution worker, the run starts no further step: no further version update, export (managed or unmanaged), Git phase, target, import, or Publish All. A holding install still runs its apply-upgrade. A retry delay in `ExecuteWithRetries` ends within ~250 ms and no further retry starts. The worker marks the run cancelled. `PostWorkCallBack` then logs orange `##### Aborted by user.` instead of green `##### Done.`, skips the auto-disable of export switches, and still calls `LoadAllSolutions()` and `SetUiEnabledState(true)`.

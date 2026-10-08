@@ -53,6 +53,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private Logger _logger = null;
 
 		private WorkAsyncInfo _executionWorker = null;
+		private volatile bool _isAbortRequested = false;
 		private Timer _progressTimer;
 		private Timer _saveDebounceTimer;
 		private DateTime _progressStartTime;
@@ -66,12 +67,16 @@ namespace Com.AiricLenz.XTB.Plugin
 		private const string ColorFile = "<color=#777700>";
 		private const string ColorIndent = "<color=#DDDDDD>";
 		private const string ColorGreen = "<color=#227700>";
+		private const string ColorOrange = "<color=#CC6600>";
 		private const string ColorConnection = "<color=#337799>";
 		private const string ColorTeeth = "<color=#CCCCCE>";
 
 		private const string ColorEndTag = "</color>";
 
 		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+
+		// Longest single sleep of the retry wait: an abort ends the wait within this time.
+		private const int RetryWaitSliceInMilliseconds = 250;
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1095,6 +1100,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			richTextBox_log.Text = string.Empty;
 			_logger.ResetIndent();
 			_sessionFiles.Clear();
+			_isAbortRequested = false;
 
 			// Taken on the UI thread: the list is rebuilt during the run, so the
 			// worker phases must not read listBoxSolutions.CheckedItems live.
@@ -1113,57 +1119,95 @@ namespace Com.AiricLenz.XTB.Plugin
 				IsCancelable = true,
 				Work = (worker, args) =>
 				{
-					if (flipSwitch_publishSource.IsOn)
+					try
 					{
-						ReportExtendedProgress(
-							worker,
-							$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
-							resetTimer: true);
-
-						PublishAll(ConnectionDetail);
-					}
-
-					UpdateCheckedVersionNumbers(
-						checkedSolutions,
-						worker);
-
-					ExportCheckedSolutions(
-						checkedSolutions,
-						worker);
-
-					HandleGit(worker);
-
-					foreach (var targetConnection in TargetConnections)
-					{
-
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-
-						Log();
-
-						ImportCheckedSolutions(
-							targetConnection,
-							checkedSolutions,
-							worker);
-
-						if (flipSwitch_publishTarget.IsOn)
+						if (flipSwitch_publishSource.IsOn &&
+							!IsAbortRequested(worker))
 						{
 							ReportExtendedProgress(
 								worker,
-								$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
+								$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
 								resetTimer: true);
 
-							PublishAll(targetConnection);
+							PublishAll(ConnectionDetail);
 						}
-					}
 
-					args.Result = null;
+						if (!IsAbortRequested(worker))
+						{
+							UpdateCheckedVersionNumbers(
+								checkedSolutions,
+								worker);
+						}
+
+						if (!IsAbortRequested(worker))
+						{
+							ExportCheckedSolutions(
+								checkedSolutions,
+								worker);
+						}
+
+						if (!IsAbortRequested(worker))
+						{
+							HandleGit(worker);
+						}
+
+						foreach (var targetConnection in TargetConnections)
+						{
+							if (IsAbortRequested(worker))
+							{
+								break;
+							}
+
+							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+							Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
+							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+
+							Log();
+
+							ImportCheckedSolutions(
+								targetConnection,
+								checkedSolutions,
+								worker);
+
+							if (flipSwitch_publishTarget.IsOn &&
+								!IsAbortRequested(worker))
+							{
+								ReportExtendedProgress(
+									worker,
+									$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
+									resetTimer: true);
+
+								PublishAll(targetConnection);
+							}
+						}
+
+						if (IsAbortRequested(worker))
+						{
+							// Marks the run as cancelled; args.Result must then not be read.
+							args.Cancel = true;
+							return;
+						}
+
+						args.Result = null;
+					}
+					catch
+					{
+						// Records an abort requested while the failing step was running, so
+						// PostWorkCallBack still reports the run as aborted.
+						IsAbortRequested(worker);
+						throw;
+					}
 				},
 
 				PostWorkCallBack = (args) =>
 				{
 					StopProgressTimer();
+
+					// The flag also covers a step that threw after the abort was
+					// requested, where args.Cancelled is false and args.Error is set.
+					var isAborted =
+						args.Cancelled ||
+						_isAbortRequested;
 
 					if (args.Error != null)
 					{
@@ -1176,11 +1220,19 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					LoadAllSolutions();
 
-					Log(ColorGreen + "##### Done." + ColorEndTag);
+					if (isAborted)
+					{
+						Log(ColorOrange + "##### Aborted by user." + ColorEndTag);
+					}
+					else
+					{
+						Log(ColorGreen + "##### Done." + ColorEndTag);
+					}
 
 					SetUiEnabledState(true);
 
-					if (args.Error == null &&
+					if (!isAborted &&
+						args.Error == null &&
 						_settings.AutoDisableExportButtons)
 					{
 						flipSwitch_updateVersion.IsOn = false;
@@ -1219,6 +1271,31 @@ namespace Com.AiricLenz.XTB.Plugin
 			};
 
 			WorkAsync(_executionWorker);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns whether the user requested an abort of the execution worker.
+		/// The first time the request is observed, the abort is remembered for
+		/// the post-work callback and logged once.
+		/// </summary>
+		/// <param name="worker">The execution worker; null never reports an abort.</param>
+		private bool IsAbortRequested(
+			BackgroundWorker worker)
+		{
+			if (worker?.CancellationPending != true)
+			{
+				return false;
+			}
+
+			if (!_isAbortRequested)
+			{
+				_isAbortRequested = true;
+				Log(ColorOrange + "Abort requested — skipping remaining steps." + ColorEndTag);
+			}
+
+			return true;
 		}
 
 
@@ -1458,6 +1535,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < solutions.Count; i++)
 			{
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
 				var solution = solutions[i];
 
 				var solutionConfig =
@@ -1496,6 +1578,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < solutions.Count; i++)
 			{
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
 				var solution = solutions[i];
 
 				var solutionConfig =
@@ -1633,6 +1720,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			for (int i = 0; i < solutions.Count; i++)
 			{
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
 				var solution = solutions[i];
 
 				var solutionConfig =
@@ -1678,6 +1770,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					_settings.UpdateSolutionConfiguration(solutionConfig);
 					SaveSettings();
+				}
+
+				// An import ended by the abort is not reported as an import error.
+				if (!importResult &&
+					IsAbortRequested(worker))
+				{
+					break;
 				}
 
 				if (!importResult &&
@@ -1731,6 +1830,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
+			// Abort between the managed and the unmanaged export: the managed
+			// export completed, so this is not an export error.
+			if (IsAbortRequested(worker))
+			{
+				_logger.DecreaseIndent();
+				return true;
+			}
 
 			if (flipSwitch_exportManaged.IsOn &&
 				flipSwitch_exportUnmanaged.IsOn)
@@ -2165,14 +2271,21 @@ namespace Com.AiricLenz.XTB.Plugin
 						resetTimer: true);
 				}
 
-				ExecuteWithRetries(
-					() => targetServiceClient.Execute(importRequest),
-					worker,
-					$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-					maxRetries,
-					retryDelay,
-					$"installing solution '{solution.FriendlyName}'",
-					continueOnError);
+				var isInstallCompleted =
+					ExecuteWithRetries(
+						() => targetServiceClient.Execute(importRequest),
+						worker,
+						$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						maxRetries,
+						retryDelay,
+						$"installing solution '{solution.FriendlyName}'",
+						continueOnError);
+
+				if (!isInstallCompleted)
+				{
+					_logger.DecreaseIndent();
+					return false;
+				}
 
 
 				if (isHolding)
@@ -2192,14 +2305,21 @@ namespace Com.AiricLenz.XTB.Plugin
 						UniqueName = solution.UniqueName,
 					};
 
-					ExecuteWithRetries(
-						() => targetServiceClient.Execute(applyUpgradeRequest),
-						worker,
-						$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						maxRetries,
-						retryDelay,
-						$"applying upgrade '{solution.FriendlyName}'",
-						continueOnError);
+					var isApplyCompleted =
+						ExecuteWithRetries(
+							() => targetServiceClient.Execute(applyUpgradeRequest),
+							worker,
+							$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+							maxRetries,
+							retryDelay,
+							$"applying upgrade '{solution.FriendlyName}'",
+							continueOnError);
+
+					if (!isApplyCompleted)
+					{
+						_logger.DecreaseIndent();
+						return false;
+					}
 				}
 			}
 
@@ -2234,7 +2354,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExecuteWithRetries(
+		/// <summary>
+		/// Runs the action, retrying it after a delay when it fails.
+		/// The first attempt always runs; an abort request ends the retry
+		/// delay early and starts no further retry.
+		/// </summary>
+		/// <returns>False when the abort was requested before a retry could run; true otherwise.</returns>
+		private bool ExecuteWithRetries(
 		Action action,
 		BackgroundWorker worker,
 		string retryMessageFormat,
@@ -2252,12 +2378,28 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					if (currentRetry > 0)
 					{
+						if (IsAbortRequested(worker))
+						{
+							return false;
+						}
+
 						Log($"Retry attempt {currentRetry} of {maxRetries} for {operationDescription ?? "operation"}...");
 						var retryMessage = string.Format(retryMessageFormat, currentRetry, maxRetries);
 						ReportExtendedProgress(worker, retryMessage, null, resetTimer: false);
 
-						// Wait before retrying
-						System.Threading.Thread.Sleep(retryDelaySeconds * 1000);
+						// Wait before retrying, in short slices so an abort ends the wait at once
+						var retryAt = DateTime.UtcNow.AddSeconds(retryDelaySeconds);
+
+						while (DateTime.UtcNow < retryAt)
+						{
+							var remainingMilliseconds = (int) (retryAt - DateTime.UtcNow).TotalMilliseconds;
+							System.Threading.Thread.Sleep(Math.Max(0, Math.Min(RetryWaitSliceInMilliseconds, remainingMilliseconds)));
+
+							if (IsAbortRequested(worker))
+							{
+								return false;
+							}
+						}
 					}
 
 					action();
@@ -2273,7 +2415,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment") ||
 					ex.Message.Contains("_Upgrade already exists"))
 				{
-					return;
+					return true;
 
 					/*
 					if (continueOnError)
@@ -2299,6 +2441,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				currentRetry++;
 			}
+
+			return true;
 		}
 
 
