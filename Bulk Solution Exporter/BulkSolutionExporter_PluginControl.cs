@@ -839,15 +839,21 @@ namespace Com.AiricLenz.XTB.Plugin
 					return;
 				}
 
-				// CancelWorker() cancels the plugin's current worker and removes the
-				// working panel; CancelAsync() makes sure the execution worker itself
-				// is cancelled even when another worker became the current one.
-				CancelWorker();
-				_executionBackgroundWorker?.CancelAsync();
+				// Cancel the execution worker directly so the working panel stays open
+				// until the run ends; CancelWorker() would remove it. CancelWorker() is
+				// only the fallback when the worker has not started yet.
+				if (_executionBackgroundWorker != null)
+				{
+					_executionBackgroundWorker.CancelAsync();
+				}
+				else
+				{
+					CancelWorker();
+				}
 
 				SetExecuteButtonMode(ExecuteButtonMode.Aborting);
 
-				// The progress timer recreates the working panel with this message.
+				// The progress timer keeps showing this message until the run ends.
 				_progressBaseMessage =
 					$"Aborting...{Environment.NewLine}Waiting for the current step to finish.";
 
@@ -1350,7 +1356,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					var extendedArgs = args.UserState as ExtendedProgressChangedEventArgs;
 
-					if (extendedArgs != null)
+					// While aborting, the step still running must not replace the
+					// "Aborting..." message on the working panel.
+					var isAborting =
+						_executionBackgroundWorker?.CancellationPending == true;
+
+					if (extendedArgs != null &&
+						!isAborting)
 					{
 						// Use the extended information
 						var workerMessage = extendedArgs.Message;
