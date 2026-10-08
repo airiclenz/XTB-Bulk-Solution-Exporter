@@ -8,9 +8,12 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
-## Added in Release 2026.03.<mark>XX</mark>
+## Added in Release 2026.10.08
 
+- requires XrmToolBox 1.2025.10.74 or newer
+- added Abort button: the Execute button turns into an Abort button while a run is active and stops the run after the current step
 - performance optimization for environments with large numbers of solutions (300-400+): dictionary cache for O(1) config lookups, eliminated O(n²) loops, added save debounce, fixed stale-config cleanup bug
+- fixed a bug where a run could process a different set of solutions than the ones checked when Execute was pressed
 
 ## Added in Release 2026.03.05
 
