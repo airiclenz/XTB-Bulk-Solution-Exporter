@@ -53,6 +53,12 @@ namespace Com.AiricLenz.XTB.Plugin
 		private Logger _logger = null;
 
 		private WorkAsyncInfo _executionWorker = null;
+		private volatile BackgroundWorker _executionBackgroundWorker = null;
+		private volatile bool _isAbortRequested = false;
+		private bool _isExecuting = false;
+		private Image _executeButtonImage;
+		private string _executeButtonToolTip;
+		private readonly Image _abortButtonImage = Properties.Resources.delete_32px;
 		private Timer _progressTimer;
 		private Timer _saveDebounceTimer;
 		private DateTime _progressStartTime;
@@ -66,12 +72,24 @@ namespace Com.AiricLenz.XTB.Plugin
 		private const string ColorFile = "<color=#777700>";
 		private const string ColorIndent = "<color=#DDDDDD>";
 		private const string ColorGreen = "<color=#227700>";
+		private const string ColorOrange = "<color=#CC6600>";
 		private const string ColorConnection = "<color=#337799>";
 		private const string ColorTeeth = "<color=#CCCCCE>";
 
 		private const string ColorEndTag = "</color>";
 
 		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+
+		// Longest single sleep of the retry wait: an abort ends the wait within this time.
+		private const int RetryWaitSliceInMilliseconds = 250;
+
+		// Looks of the toolbar's Execute button; see SetExecuteButtonMode.
+		private enum ExecuteButtonMode
+		{
+			Execute,
+			Abort,
+			Aborting
+		}
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -127,11 +145,15 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			InitializeComponent();
 
+			// Kept so the Execute look is restored without reloading it from the resx.
+			_executeButtonImage = button_Export.Image;
+			_executeButtonToolTip = button_Export.ToolTipText;
+
 			richTextBox_log.Text = string.Empty;
 
 			_saveDebounceTimer = new Timer();
 			_saveDebounceTimer.Interval = 500;
-			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); ExecuteSaveSettings(); };
+			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); PersistSettings(); };
 
 			_logger = new Logger(richTextBox_log);
 			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
@@ -801,6 +823,48 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void button_Export_Click(object sender, EventArgs e)
 		{
+			if (_isExecuting)
+			{
+				var answer =
+					MessageBox.Show(
+						"Abort after the current step finishes?",
+						"Abort Execution",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Question);
+
+				// The run may have ended while the dialog was open.
+				if (answer != DialogResult.Yes ||
+					!_isExecuting)
+				{
+					return;
+				}
+
+				// Cancel the execution worker directly so the working panel stays open
+				// until the run ends; CancelWorker() would remove it. CancelWorker() is
+				// only the fallback when the worker has not started yet.
+				if (_executionBackgroundWorker != null)
+				{
+					_executionBackgroundWorker.CancelAsync();
+				}
+				else
+				{
+					CancelWorker();
+				}
+
+				SetExecuteButtonMode(ExecuteButtonMode.Aborting);
+
+				// The progress timer keeps showing this message until the run ends.
+				_progressBaseMessage =
+					$"Aborting...{Environment.NewLine}Waiting for the current step to finish.";
+
+				SetWorkingMessage(
+					_progressBaseMessage,
+					_workerPanelSize.Width,
+					_workerPanelSize.Height);
+
+				return;
+			}
+
 			listBoxSolutions.DeselectAll();
 			UpdateSolutionSettingsScreen();
 
@@ -809,9 +873,50 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
+			// Flush the current check state before the run starts
+			SaveSettings(immediate: true);
+
 			SetUiEnabledState(false);
 
+			_isExecuting = true;
+			SetExecuteButtonMode(ExecuteButtonMode.Abort);
+
 			ExecuteOperations();
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Sets the text, image, tooltip and enabled state of the Execute button.
+		/// The Execute look takes its enabled state from SetExportButtonState(),
+		/// so _isExecuting must be false before switching back to it.
+		/// </summary>
+		private void SetExecuteButtonMode(
+			ExecuteButtonMode mode)
+		{
+			switch (mode)
+			{
+				case ExecuteButtonMode.Abort:
+					button_Export.Text = " Abort ";
+					button_Export.Image = _abortButtonImage;
+					button_Export.ToolTipText = "Abort the execution";
+					button_Export.Enabled = true;
+					break;
+
+				case ExecuteButtonMode.Aborting:
+					button_Export.Text = " Aborting... ";
+					button_Export.Image = _abortButtonImage;
+					button_Export.ToolTipText = "Abort the execution";
+					button_Export.Enabled = false;
+					break;
+
+				default:
+					button_Export.Text = " Execute ";
+					button_Export.Image = _executeButtonImage;
+					button_Export.ToolTipText = _executeButtonToolTip;
+					SetExportButtonState();
+					break;
+			}
 		}
 
 
@@ -873,7 +978,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			comboBox_gitBranches.Enabled = state;
 
 			button_loadSolutions.Enabled = state;
-			button_Export.Enabled = state;
+
+			// While a run is active the button is the Abort button, owned by
+			// SetExecuteButtonMode.
+			if (!_isExecuting)
+			{
+				button_Export.Enabled = state;
+			}
+
 			button_addAdditionalConnection.Enabled = state;
 			button_manageConnections.Enabled = state;
 			button_Settings.Enabled = state;
@@ -1092,6 +1204,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			richTextBox_log.Text = string.Empty;
 			_logger.ResetIndent();
 			_sessionFiles.Clear();
+			_isAbortRequested = false;
+
+			// Taken on the UI thread: the list is rebuilt during the run, so the
+			// worker phases must not read listBoxSolutions.CheckedItems live.
+			var checkedSolutions =
+				listBoxSolutions.CheckedItems
+					.Select(item => item.ItemObject as Solution)
+					.ToList();
 
 			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
 
@@ -1103,51 +1223,102 @@ namespace Com.AiricLenz.XTB.Plugin
 				IsCancelable = true,
 				Work = (worker, args) =>
 				{
-					if (flipSwitch_publishSource.IsOn)
+					// Kept for the abort path of button_Export_Click.
+					_executionBackgroundWorker = worker;
+
+					try
 					{
-						ReportExtendedProgress(
-							worker,
-							$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
-							resetTimer: true);
-
-						PublishAll(ConnectionDetail);
-					}
-
-					UpdateCheckedVersionNumbers(worker);
-					ExportCheckedSolutions(worker);
-
-					HandleGit(worker);
-
-					foreach (var targetConnection in TargetConnections)
-					{
-
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-						Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-						Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-
-						Log();
-
-						ImportCheckedSolutions(
-							targetConnection,
-							worker);
-
-						if (flipSwitch_publishTarget.IsOn)
+						if (flipSwitch_publishSource.IsOn &&
+							!IsAbortRequested(worker))
 						{
 							ReportExtendedProgress(
 								worker,
-								$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
+								$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
 								resetTimer: true);
 
-							PublishAll(targetConnection);
+							PublishAll(ConnectionDetail);
 						}
-					}
 
-					args.Result = null;
+						if (!IsAbortRequested(worker))
+						{
+							UpdateCheckedVersionNumbers(
+								checkedSolutions,
+								worker);
+						}
+
+						if (!IsAbortRequested(worker))
+						{
+							ExportCheckedSolutions(
+								checkedSolutions,
+								worker);
+						}
+
+						if (!IsAbortRequested(worker))
+						{
+							HandleGit(worker);
+						}
+
+						foreach (var targetConnection in TargetConnections)
+						{
+							if (IsAbortRequested(worker))
+							{
+								break;
+							}
+
+							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+							Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
+							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
+
+							Log();
+
+							ImportCheckedSolutions(
+								targetConnection,
+								checkedSolutions,
+								worker);
+
+							if (flipSwitch_publishTarget.IsOn &&
+								!IsAbortRequested(worker))
+							{
+								ReportExtendedProgress(
+									worker,
+									$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
+									resetTimer: true);
+
+								PublishAll(targetConnection);
+							}
+						}
+
+						if (IsAbortRequested(worker))
+						{
+							// Marks the run as cancelled; args.Result must then not be read.
+							args.Cancel = true;
+							return;
+						}
+
+						args.Result = null;
+					}
+					catch
+					{
+						// Records an abort requested while the failing step was running, so
+						// PostWorkCallBack still reports the run as aborted.
+						IsAbortRequested(worker);
+						throw;
+					}
 				},
 
 				PostWorkCallBack = (args) =>
 				{
 					StopProgressTimer();
+
+					_isExecuting = false;
+					_executionBackgroundWorker = null;
+					SetExecuteButtonMode(ExecuteButtonMode.Execute);
+
+					// The flag also covers a step that threw after the abort was
+					// requested, where args.Cancelled is false and args.Error is set.
+					var isAborted =
+						args.Cancelled ||
+						_isAbortRequested;
 
 					if (args.Error != null)
 					{
@@ -1160,11 +1331,19 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					LoadAllSolutions();
 
-					Log(ColorGreen + "##### Done." + ColorEndTag);
+					if (isAborted)
+					{
+						Log(ColorOrange + "##### Aborted by user." + ColorEndTag);
+					}
+					else
+					{
+						Log(ColorGreen + "##### Done." + ColorEndTag);
+					}
 
 					SetUiEnabledState(true);
 
-					if (args.Error == null &&
+					if (!isAborted &&
+						args.Error == null &&
 						_settings.AutoDisableExportButtons)
 					{
 						flipSwitch_updateVersion.IsOn = false;
@@ -1177,7 +1356,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					var extendedArgs = args.UserState as ExtendedProgressChangedEventArgs;
 
-					if (extendedArgs != null)
+					// While aborting, the step still running must not replace the
+					// "Aborting..." message on the working panel.
+					var isAborting =
+						_executionBackgroundWorker?.CancellationPending == true;
+
+					if (extendedArgs != null &&
+						!isAborting)
 					{
 						// Use the extended information
 						var workerMessage = extendedArgs.Message;
@@ -1203,6 +1388,31 @@ namespace Com.AiricLenz.XTB.Plugin
 			};
 
 			WorkAsync(_executionWorker);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns whether the user requested an abort of the execution worker.
+		/// The first time the request is observed, the abort is remembered for
+		/// the post-work callback and logged once.
+		/// </summary>
+		/// <param name="worker">The execution worker; null never reports an abort.</param>
+		private bool IsAbortRequested(
+			BackgroundWorker worker)
+		{
+			if (worker?.CancellationPending != true)
+			{
+				return false;
+			}
+
+			if (!_isAbortRequested)
+			{
+				_isAbortRequested = true;
+				Log(ColorOrange + "Abort requested — skipping remaining steps." + ColorEndTag);
+			}
+
+			return true;
 		}
 
 
@@ -1422,10 +1632,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void UpdateCheckedVersionNumbers(
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			if (!flipSwitch_updateVersion.IsOn ||
-				listBoxSolutions.CheckedItems.Count == 0)
+				solutions.Count == 0)
 			{
 				return;
 			}
@@ -1439,10 +1650,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			_logger.IncreaseIndent();
 
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1453,7 +1668,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				UpdateVersionNumberInSource(solution);
 				RefreshSolutionInListBox(solution);
 
-				if (i < listBoxSolutions.CheckedItems.Count - 1)
+				if (i < solutions.Count - 1)
 				{
 					Log();
 				}
@@ -1466,6 +1681,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		private void ExportCheckedSolutions(
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			if (flipSwitch_exportManaged.IsOff &&
@@ -1477,10 +1693,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("##### Exporting:");
 			_logger.IncreaseIndent();
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1501,7 +1721,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					break;
 				}
 
-				if (i < listBoxSolutions.CheckedItems.Count - 1)
+				if (i < solutions.Count - 1)
 				{
 					Log();
 				}
@@ -1596,6 +1816,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ImportCheckedSolutions(
 			ConnectionDetail targetService,
+			List<Solution> solutions,
 			BackgroundWorker worker)
 		{
 			var targetServiceClient = targetService?.ServiceClient;
@@ -1614,10 +1835,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("##### Importing:");
 			_logger.IncreaseIndent();
 
-			for (int i = 0; i < listBoxSolutions.CheckedItems.Count; i++)
+			for (int i = 0; i < solutions.Count; i++)
 			{
-				var listItem = listBoxSolutions.CheckedItems[i];
-				var solution = listItem.ItemObject as Solution;
+				if (IsAbortRequested(worker))
+				{
+					break;
+				}
+
+				var solution = solutions[i];
 
 				var solutionConfig =
 					_settings.GetSolutionConfiguration(
@@ -1644,7 +1869,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					Log("The import was successful.");
 					Log("Duration: " + duration);
 
-					if (i < listBoxSolutions.CheckedItems.Count - 1)
+					if (i < solutions.Count - 1)
 					{
 						Log();
 					}
@@ -1662,6 +1887,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					_settings.UpdateSolutionConfiguration(solutionConfig);
 					SaveSettings();
+				}
+
+				// An import ended by the abort is not reported as an import error.
+				if (!importResult &&
+					IsAbortRequested(worker))
+				{
+					break;
 				}
 
 				if (!importResult &&
@@ -1715,6 +1947,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
+			// Abort between the managed and the unmanaged export: the managed
+			// export completed, so this is not an export error.
+			if (IsAbortRequested(worker))
+			{
+				_logger.DecreaseIndent();
+				return true;
+			}
 
 			if (flipSwitch_exportManaged.IsOn &&
 				flipSwitch_exportUnmanaged.IsOn)
@@ -2149,14 +2388,21 @@ namespace Com.AiricLenz.XTB.Plugin
 						resetTimer: true);
 				}
 
-				ExecuteWithRetries(
-					() => targetServiceClient.Execute(importRequest),
-					worker,
-					$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-					maxRetries,
-					retryDelay,
-					$"installing solution '{solution.FriendlyName}'",
-					continueOnError);
+				var isInstallCompleted =
+					ExecuteWithRetries(
+						() => targetServiceClient.Execute(importRequest),
+						worker,
+						$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+						maxRetries,
+						retryDelay,
+						$"installing solution '{solution.FriendlyName}'",
+						continueOnError);
+
+				if (!isInstallCompleted)
+				{
+					_logger.DecreaseIndent();
+					return false;
+				}
 
 
 				if (isHolding)
@@ -2176,14 +2422,21 @@ namespace Com.AiricLenz.XTB.Plugin
 						UniqueName = solution.UniqueName,
 					};
 
-					ExecuteWithRetries(
-						() => targetServiceClient.Execute(applyUpgradeRequest),
-						worker,
-						$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						maxRetries,
-						retryDelay,
-						$"applying upgrade '{solution.FriendlyName}'",
-						continueOnError);
+					var isApplyCompleted =
+						ExecuteWithRetries(
+							() => targetServiceClient.Execute(applyUpgradeRequest),
+							worker,
+							$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
+							maxRetries,
+							retryDelay,
+							$"applying upgrade '{solution.FriendlyName}'",
+							continueOnError);
+
+					if (!isApplyCompleted)
+					{
+						_logger.DecreaseIndent();
+						return false;
+					}
 				}
 			}
 
@@ -2218,7 +2471,13 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExecuteWithRetries(
+		/// <summary>
+		/// Runs the action, retrying it after a delay when it fails.
+		/// The first attempt always runs; an abort request ends the retry
+		/// delay early and starts no further retry.
+		/// </summary>
+		/// <returns>False when the abort was requested before a retry could run; true otherwise.</returns>
+		private bool ExecuteWithRetries(
 		Action action,
 		BackgroundWorker worker,
 		string retryMessageFormat,
@@ -2236,12 +2495,28 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					if (currentRetry > 0)
 					{
+						if (IsAbortRequested(worker))
+						{
+							return false;
+						}
+
 						Log($"Retry attempt {currentRetry} of {maxRetries} for {operationDescription ?? "operation"}...");
 						var retryMessage = string.Format(retryMessageFormat, currentRetry, maxRetries);
 						ReportExtendedProgress(worker, retryMessage, null, resetTimer: false);
 
-						// Wait before retrying
-						System.Threading.Thread.Sleep(retryDelaySeconds * 1000);
+						// Wait before retrying, in short slices so an abort ends the wait at once
+						var retryAt = DateTime.UtcNow.AddSeconds(retryDelaySeconds);
+
+						while (DateTime.UtcNow < retryAt)
+						{
+							var remainingMilliseconds = (int) (retryAt - DateTime.UtcNow).TotalMilliseconds;
+							System.Threading.Thread.Sleep(Math.Max(0, Math.Min(RetryWaitSliceInMilliseconds, remainingMilliseconds)));
+
+							if (IsAbortRequested(worker))
+							{
+								return false;
+							}
+						}
 					}
 
 					action();
@@ -2257,7 +2532,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment") ||
 					ex.Message.Contains("_Upgrade already exists"))
 				{
-					return;
+					return true;
 
 					/*
 					if (continueOnError)
@@ -2283,6 +2558,8 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				currentRetry++;
 			}
+
+			return true;
 		}
 
 
@@ -2512,10 +2789,13 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 					}
 
-					SaveSettings(cleanUpNonExistingSolutions: true);
-
 					UpdateColumns();
 					UpdateSolutionList();
+
+					// After the rebuild, so the sync does not walk the old list
+					// and re-create the configs the cleanup just removed
+					SaveSettings(cleanUpNonExistingSolutions: true);
+
 					UpdateImportOptionsVisibility();
 					SetExportButtonState();
 				}
@@ -2546,7 +2826,11 @@ namespace Com.AiricLenz.XTB.Plugin
 					flipSwitch_importUnmanaged.IsOn
 				);
 
-			button_Export.Enabled = exportEnabled;
+			// While a run is active the button is the Abort button.
+			if (!_isExecuting)
+			{
+				button_Export.Enabled = exportEnabled;
+			}
 
 
 			// Version Format
@@ -2624,6 +2908,15 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool cleanUpNonExistingSolutions = false,
 			bool immediate = false)
 		{
+			// Called from the export worker too: the debounce timer and the
+			// list must only be touched on the UI thread, so re-dispatch there
+			// (BeginInvoke, so the worker does not block on the UI thread)
+			if (InvokeRequired)
+			{
+				BeginInvoke((MethodInvoker) (() => SaveSettings(caller, cleanUpNonExistingSolutions, immediate)));
+				return;
+			}
+
 			if (CodeUpdate)
 			{
 				return;
@@ -2636,10 +2929,15 @@ namespace Com.AiricLenz.XTB.Plugin
 				RemoveNonExistantSolutions();
 			}
 
+			// The in-memory settings are synced right away so that any list
+			// rebuild from _settings restores the current check state;
+			// only the disk write is debounced
+			SyncSolutionConfigsFromList();
+
 			if (immediate)
 			{
 				_saveDebounceTimer.Stop();
-				ExecuteSaveSettings(caller);
+				PersistSettings(caller);
 				return;
 			}
 
@@ -2650,22 +2948,33 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void ExecuteSaveSettings(
-			[CallerMemberName] string caller = "")
+		private void SyncSolutionConfigsFromList()
 		{
-			// Update the Solution Configs from the solutions...
 			foreach (var listBoxItem in listBoxSolutions.Items)
 			{
 				var solution = listBoxItem.ItemObject as Solution;
 				var config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier, true);
+
+				// Skip unchanged configs: re-serializing every config on each
+				// keystroke-triggered save is costly with hundreds of solutions
+				if (config.Checked == listBoxItem.IsChecked &&
+					config.SortingIndex == listBoxItem.SortingIndex)
+				{
+					continue;
+				}
 
 				config.Checked = listBoxItem.IsChecked;
 				config.SortingIndex = listBoxItem.SortingIndex;
 
 				_settings.UpdateSolutionConfiguration(config);
 			}
+		}
 
-			// Save
+
+		// ============================================================================
+		private void PersistSettings(
+			[CallerMemberName] string caller = "")
+		{
 			SettingsManager.Instance.Save(GetType(), _settings);
 
 			LogDebug($"Settings have been saved ({caller}): ({_settings.SplitContainerPosition})");

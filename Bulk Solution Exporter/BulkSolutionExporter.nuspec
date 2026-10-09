@@ -4,7 +4,7 @@
         <!-- Required elements-->
         <id>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</id>
 		<title>Bulk Solution Manager</title>
-        <version>2026.3.5.28</version>
+        <version>2026.10.8.29</version>
         <authors>Airic Lenz</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>Export smarter, not harder.
@@ -41,8 +41,11 @@ Save time, reduce errors, and bring consistency to your ALM process.
 		<projectUrl>https://github.com/airiclenz/XTB-Bulk-Solution-Exporter</projectUrl>
 		<iconUrl>https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/refs/heads/master/Images/bulk%20solution%20exporter.150px.png</iconUrl>
 		<tags>XrmToolBox Plugins Solutions SolutionManager BulkSolutionExporter Deploy Export Import</tags>
+		<!-- Must match the XrmToolBoxPackage version in packages.config (checked by Scripts\NuGet Pack.ps1) -->
 		<dependencies>
-			<dependency id="XrmToolBox" version="1.2023.10.67" />
+			<group targetFramework="net48">
+				<dependency id="XrmToolBox" version="1.2025.10.74" />
+			</group>
 		</dependencies>
     </metadata>
 	<files>

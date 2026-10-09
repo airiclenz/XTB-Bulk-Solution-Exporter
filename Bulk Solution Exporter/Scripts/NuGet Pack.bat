@@ -1,22 +1,8 @@
 @echo off
 
-cls
-ECHO This will pack the compiled code into a new nuget package
-ECHO :::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-ECHO.
+REM Builds the plugin in Release and packs it into "Bulk Solution Exporter.nuget".
+REM Update the version in BulkSolutionExporter.nuspec and Properties\AssemblyInfo.cs first -
+REM the script stops if they do not match.
 
-setlocal
-:PROMPT
-SET /P AREYOUSURE=Did you update the version number in the '*.nuspec' file? Y/[N] 
-IF /I "%AREYOUSURE%" NEQ "Y" GOTO END
-
-cd ..
-
-Scripts\\nuget.exe pack -Prop Configuration=Release
-
-copy "Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.*.nupkg" "Bulk Solution Exporter.nuget" /Y
-del "Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.*.nupkg"
-
-
-:END
-endlocal
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0NuGet Pack.ps1"
+exit /b %ERRORLEVEL%

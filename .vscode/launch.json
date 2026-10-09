@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug in XrmToolBox",
+      "type": "clr",
+      "request": "launch",
+      "preLaunchTask": "build-debug",
+      "program": "${workspaceFolder}\\Bulk Solution Exporter\\bin\\Debug\\XrmToolBox.exe",
+      "args": ["/overridepath:."],
+      "cwd": "${workspaceFolder}\\Bulk Solution Exporter\\bin\\Debug",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "justMyCode": true
+    }
+  ]
+}

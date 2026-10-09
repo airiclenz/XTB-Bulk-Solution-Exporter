@@ -17,7 +17,7 @@ Bulk Solution Exporter automates the export *and* import of multiple Power Platf
 |------------|-------------|
 | **Batch export / import** | Select dozens of solutions and run a single operation—managed or unmanaged. |
 | **Automated versioning** | Apply custom version patterns and auto-increment rules to stay release-ready. |
-| **Git integration** | Commit or tag exported ZIPs directly to your repo for easy traceability. |
+| **Git integration** | Commit exported ZIPs directly to your repo for easy traceability. |
 | **Custom output paths** | Define destination folders per solution, project, or environment. |
 | **Reusable history** | Rerun previous exports with identical settings for consistent builds. |
 | **Check solution status in target** | Comnpares solution version numberas in source and target and displays status icons. |
@@ -29,10 +29,10 @@ Bulk Solution Exporter automates the export *and* import of multiple Power Platf
 1. **Install** via XrmToolBox > *Plugins Store* > **Bulk Solution Exporter**.
 2. Connect to your Dataverse environment.
 3. Pick the solutions, choose *Managed* or *Unmanaged*, tweak versioning if needed.
-4. Hit **Export** (or **Import**) and enjoy the coffee break you just earned.
+4. Hit **Execute** and enjoy the coffee break you just earned.
 
-> **Tip:** Check **Settings → Git** to enable auto-commit.
-> The plugin creates lightweight commits referencing each exported file.
+> **Tip:** Turn on **Create Git Commit** to commit the exported files automatically.
+> The plugin creates one commit per run, using the commit message you enter.
 ---
 
 ## 🤝 Contributing
