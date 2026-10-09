@@ -8,9 +8,16 @@
 - allow execution of powershell at any point in the execution flow
 - allow for custom text size in solution list
 
+
+
 ## Added in Release 2026.03.<mark>XX</mark>
 
-- performance optimization for environments with large numbers of solutions (300-400+): dictionary cache for O(1) config lookups, eliminated O(n²) loops, added save debounce, fixed stale-config cleanup bug
+## Added in Release 2026.03.09
+
+- performance optimization for environments with large numbers of solutions (300-400+): 
+  dictionary cache for O(1) config lookups, eliminated O(n²) loops 
+- added save debounce
+- fixed stale-config cleanup bug
 
 ## Added in Release 2026.03.05
 
