@@ -278,7 +278,7 @@ Bulk Solution Exporter/BulkSolutionExporter.nuspec — file src bin\Release; Bul
 **Acceptance:** `powershell -NoProfile -Command "Get-Content .vscode/tasks.json -Raw | ConvertFrom-Json | Out-Null"` exits 0; `grep -n "bin\\\\Debug" "Bulk Solution Exporter/Scripts/Deploy Locally.bat"` has no hit; `grep -n '"%~dp0' "Bulk Solution Exporter/Scripts/Deploy Locally.bat"` has a hit; `grep -c "/restore" .vscode/tasks.json` prints 2.
 **Commit:** `fix(build): propagate build and deploy failures`
 
-## 14. Declare GPL-3.0-only consistently
+## 14. Declare GPL-3.0-only consistently — ✅ DONE (2026-10-11)
 
 **What:** The csproj declares `<PackageLicenseExpression>MIT</PackageLicenseExpression>` while `LICENSE` and `README.md` are GPL v3; its package-metadata `PropertyGroup` (`PackageId`, `Version`, `Authors`, `Description`, `PackageTags`, `PackageLicenseExpression`, `RepositoryUrl`) is unused — packing is nuspec-only.
 **Goal:** no file in the repo declares the plugin MIT-licensed; `BulkSolutionExporter.nuspec` declares `<license type="expression">GPL-3.0-only</license>`; the csproj carries no `Package*`, `Version`, `Authors`, `Description` or `RepositoryUrl` package-metadata properties (`ForceDesignerDPIUnaware` stays).

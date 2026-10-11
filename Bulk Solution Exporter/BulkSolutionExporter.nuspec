@@ -6,6 +6,7 @@
 		<title>Bulk Solution Manager</title>
         <version>2026.10.8.29</version>
         <authors>Airic Lenz</authors>
+		<license type="expression">GPL-3.0-only</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>Export smarter, not harder.
 The Bulk Solution Exporter is a powerful XrmToolBox plugin designed to streamline and automate the export and import of multiple Dataverse / Dynamics 365 solutions.

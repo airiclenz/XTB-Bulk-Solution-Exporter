@@ -16,13 +16,6 @@
     </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup>
-    <PackageId>Com.AiricLenz.XTB.Plugin.BulkSolutionExporter</PackageId>
-    <Version>2024.10.07.9</Version>
-    <Authors>Airic Lenz</Authors>
-    <Description>Your package description</Description>
-    <PackageTags>Bulk;Solution;Export</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/airiclenz/XTB-Bulk-Solution-Exporter.git</RepositoryUrl>
     <ForceDesignerDPIUnaware>true</ForceDesignerDPIUnaware>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
