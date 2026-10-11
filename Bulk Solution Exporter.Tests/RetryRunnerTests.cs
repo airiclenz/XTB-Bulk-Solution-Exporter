@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ServiceModel;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -26,6 +27,11 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 		private const int RetryDelaySeconds = 1;
 		private const int SleepCallAbortingTheWait = 2;
 		private const string OperationDescription = "test operation";
+		private const int FailingImportAttempts = 2;
+		private const string ImportAlreadyRunningMessage =
+			"Cannot start another [Import] because there is a previous [Import] running at this moment";
+		private const string UpgradeAlreadyExistsMessage =
+			"The solution MySolution_Upgrade already exists";
 
 
 		// ============================================================================
@@ -151,6 +157,129 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 		// ============================================================================
 		[TestMethod]
+		[DataRow(false)]
+		[DataRow(true)]
+		public void Execute_ImportAlreadyRunningTwiceThenSuccess_RetriesAndReturnsTrue(
+			bool continueOnError)
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+
+					if (actionCallCount <= FailingImportAttempts)
+					{
+						throw new FaultException(ImportAlreadyRunningMessage);
+					}
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError);
+
+			// Assert
+			Assert.IsTrue(isCompleted);
+			Assert.AreEqual(FailingImportAttempts + 1, actionCallCount);
+			Assert.AreEqual(FailingImportAttempts, environment.RetryCallCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow(false)]
+		[DataRow(true)]
+		public void Execute_UpgradeAlreadyExists_ReturnsFalseWithoutRetry(
+			bool continueOnError)
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+					throw new FaultException(UpgradeAlreadyExistsMessage);
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError);
+
+			// Assert
+			Assert.IsFalse(isCompleted);
+			Assert.AreEqual(1, actionCallCount);
+			Assert.AreEqual(0, environment.RetryCallCount);
+			Assert.AreEqual(1, environment.ErrorLogCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Execute_AlwaysFailingWithContinueOnError_ReturnsFalseAfterAllRetries()
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+					throw new Exception("always fails");
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError: true);
+
+			// Assert
+			Assert.IsFalse(isCompleted);
+			Assert.AreEqual(MaxRetries + 1, actionCallCount);
+			Assert.AreEqual(MaxRetries, environment.RetryCallCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Execute_ImportAlreadyRunningOnEveryAttempt_ReturnsFalseAfterAllRetries()
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+					throw new FaultException(ImportAlreadyRunningMessage);
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError: false);
+
+			// Assert
+			Assert.IsFalse(isCompleted);
+			Assert.AreEqual(MaxRetries + 1, actionCallCount);
+			Assert.AreEqual(1, environment.ErrorLogCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
 		[DataRow(false, false, false)]
 		[DataRow(true, false, true)]
 		[DataRow(false, true, true)]
@@ -197,6 +326,9 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 			public int RetryCallCount { get; private set; }
 
+			// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+			public int ErrorLogCount { get; private set; }
+
 
 			// ============================================================================
 			public RetryRunner CreateRunner()
@@ -204,7 +336,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				return new RetryRunner(
 					() => IsAbortRequested,
 					message => { },
-					message => { },
+					message => ErrorLogCount++,
 					(currentRetry, maxRetries) => RetryCallCount++,
 					Sleep,
 					() => _utcNow);

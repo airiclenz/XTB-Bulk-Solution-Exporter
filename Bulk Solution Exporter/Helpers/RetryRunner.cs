@@ -21,6 +21,13 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// Longest single sleep of the retry wait: an abort ends the wait within this time.
 		internal const int RetryWaitSliceInMilliseconds = 250;
 
+		// Fault text of a target that is still busy with another import: retried.
+		internal const string ImportAlreadyRunningFaultText =
+			"Cannot start another [Import] because there is a previous [Import] running at this moment";
+
+		// Fault text of a target that already holds this solution's upgrade: never retried.
+		internal const string UpgradeAlreadyExistsFaultText = "_Upgrade already exists";
+
 		private readonly Func<bool> _isAbortRequested;
 		private readonly Action<string> _log;
 		private readonly Action<string> _logError;
@@ -68,8 +75,13 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// <param name="maxRetries">Number of retries after the first attempt.</param>
 		/// <param name="retryDelaySeconds">Wait before each retry.</param>
 		/// <param name="operationDescription">Names the operation in log lines.</param>
-		/// <param name="continueOnError">False rethrows a non-retryable error on the attempt that raised it.</param>
-		/// <returns>False when the abort was requested before a retry could run; true otherwise.</returns>
+		/// <param name="continueOnError">False rethrows a non-retryable error on the attempt that raised it.
+		/// A "Cannot start another [Import]" fault is retried either way.</param>
+		/// <returns>True only when the action completed; false when the abort was requested
+		/// before a retry could run, when the target already holds the solution's upgrade,
+		/// or when every attempt failed.</returns>
+		/// <exception cref="Exception">continueOnError is false and the action raised an error
+		/// other than "Cannot start another [Import]" or "_Upgrade already exists".</exception>
 		public bool Execute(
 			Action action,
 			int maxRetries,
@@ -119,21 +131,18 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				}
 				// ------------------------------------------
 				catch (FaultException ex) when (
-					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment") ||
-					ex.Message.Contains("_Upgrade already exists"))
+					ex.Message.Contains(ImportAlreadyRunningFaultText))
 				{
-					return true;
-
-					/*
-					if (continueOnError)
-					{
-						return;
-					}
-					else
-					{
-						throw;
-					}
-					*/
+					// The target is busy with another import: wait and retry, whatever continueOnError says
+					_log($"Another import is still running on the target; {operationDescription ?? "operation"} will be retried.");
+				}
+				// ------------------------------------------
+				catch (FaultException ex) when (
+					ex.Message.Contains(UpgradeAlreadyExistsFaultText))
+				{
+					// A pending upgrade blocks this one; retrying cannot clear it
+					_logError($"Error with {operationDescription}: {ex.Message}");
+					return false;
 				}
 				// ------------------------------------------
 				catch (Exception ex)
@@ -149,7 +158,12 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				currentRetry++;
 			}
 
-			return true;
+			if (!success)
+			{
+				_logError($"Gave up on {operationDescription ?? "operation"} after {maxRetries} retries.");
+			}
+
+			return success;
 		}
 
 

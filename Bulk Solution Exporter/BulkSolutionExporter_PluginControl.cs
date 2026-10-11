@@ -2473,7 +2473,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		/// The first attempt always runs; an abort request ends the retry
 		/// delay early and starts no further retry.
 		/// </summary>
-		/// <returns>False when the abort was requested before a retry could run; true otherwise.</returns>
+		/// <returns>True only when the action completed; false on abort or failure.</returns>
 		private bool ExecuteWithRetries(
 		Action action,
 		BackgroundWorker worker,
