@@ -10,7 +10,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repository Items", "Repository Items", "{359E76BD-8ED2-4B9C-9DD9-72ADAFCC30AF}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
-		ToDo.md = ToDo.md
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "XTB Components", "XTB Components\XTB Components.shproj", "{FA24C448-17A0-4CD6-BFAD-DA2202F2056E}"
