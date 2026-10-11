@@ -8,7 +8,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /p:Configuration=Debug; if ($LASTEXITCODE -eq 0) { Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll' \"$env:APPDATA\\MscrmTools\\XrmToolBox\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll\" -Force }"
+        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /restore /p:RestorePackagesConfig=true /p:Configuration=Debug; if ($LASTEXITCODE -eq 0) { Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll' \"$env:APPDATA\\MscrmTools\\XrmToolBox\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll\" -Force }"
       ],
       "group": "build",
       "presentation": {
@@ -22,7 +22,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /p:Configuration=Debug /v:minimal; exit $LASTEXITCODE"
+        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /restore /p:RestorePackagesConfig=true /p:Configuration=Debug /v:minimal; exit $LASTEXITCODE"
       ],
       "group": "build",
       "problemMatcher": "$msCompile",

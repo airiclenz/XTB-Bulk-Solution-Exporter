@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
@@ -20,6 +21,9 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("1cb7ef9b-b7dc-4e6a-8f2f-f97c448b9cd3")]
+
+// Lets the MSTest project exercise internal types (the assembly is not strong-named)
+[assembly: InternalsVisibleTo("Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.Tests")]
 
 // Version information for an assembly consists of the following four values:
 //

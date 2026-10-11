@@ -49,7 +49,11 @@
 - Cross-thread reads of `flipSwitch_*.IsOn` / textbox text by the worker.
 - Committed historical `.nupkg` files; any version bump or release.
 
-## 1. Add the MSTest test project
+## 1. Add the MSTest test project — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): MSTest chosen per the ratified design call, overriding the coding-standards C# testing extension's xUnit/FluentAssertions default; package versions pinned to Microsoft.NET.Test.Sdk 17.12.0 and MSTest.TestAdapter/TestFramework 3.6.4.
+NOTES (2026-10-11): SmokeTests has two tests — the plugin assembly name via the public BulkSolutionExporter_Plugin type, and an internal type (Helpers.Formatter) resolving to the plugin assembly, which proves InternalsVisibleTo at compile time.
+NOTES (2026-10-11): Scripts/NuGet Pack.ps1 not executed (it creates a package and fails its version-exists check); the test project builds to its own bin folder and the pack uses the nuspec with the plugin project as BasePath, so the package content is unchanged.
 
 **What:**
 **Regression guard.** Add `/restore /p:RestorePackagesConfig=true` to both `.vscode/tasks.json` MSBuild calls (`build-solution`, `build-debug`): they build the `.sln` without restore, so F5 fails with NETSDK1004 on a checkout where the new PackageReference test project was never restored. Item 13 edits the same task strings and must keep these flags.
