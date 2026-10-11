@@ -261,7 +261,10 @@ Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — LogError, Impor
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~MarkdownParserTests` exits 0.
 **Commit:** `fix(log): bound markdown recursion and cap oversized log input`
 
-## 13. Make the build task and deploy script fail honestly
+## 13. Make the build task and deploy script fail honestly — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): build-solution's deploy-failure message uses single-quoted string concatenation (`'Deploy copy failed: ' + $_`) rather than an embedded `\"...\"` string, so the command does not depend on how the launcher escapes embedded double quotes.
+NOTES (2026-10-11): Deploy Locally.bat keeps its existing UTF-8 BOM first line (pre-existing; cmd prints a harmless "not recognized" line for it). The copy's own failure is still caught, because `copy` resets errorlevel on success (verified: missing DLL exits 1, present DLL exits 0, run from a different working directory).
 
 **What:** Fixes two confirmed pipeline defects: `.vscode/tasks.json` `build-solution` exits 0 when MSBuild fails or the deploy `Copy-Item` fails (DLL locked by a running XrmToolBox); `Scripts/Deploy Locally.bat` copies the Debug DLL via a working-directory-relative path, so after `NuGet Pack.bat` it deploys a stale Debug build. Depends on item 1.
 **Regression guard.** Depends on item 1. If item 1 changed .vscode/tasks.json MSBuild command strings (e.g. /restore), item 13 keeps those flags while adding its exit-code/copy handling.
