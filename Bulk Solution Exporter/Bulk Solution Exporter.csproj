@@ -348,6 +348,7 @@
     <Compile Include="Helpers\FileAndFolderHelper.cs" />
     <Compile Include="Helpers\Formatter.cs" />
     <Compile Include="Helpers\GitHelper.cs" />
+    <Compile Include="Helpers\RetryRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

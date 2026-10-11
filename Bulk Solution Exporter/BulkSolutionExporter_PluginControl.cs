@@ -80,9 +80,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-		// Longest single sleep of the retry wait: an abort ends the wait within this time.
-		private const int RetryWaitSliceInMilliseconds = 250;
-
 		// Looks of the toolbar's Execute button; see SetExecuteButtonMode.
 		private enum ExecuteButtonMode
 		{
@@ -1316,9 +1313,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					// The flag also covers a step that threw after the abort was
 					// requested, where args.Cancelled is false and args.Error is set.
-					var isAborted =
-						args.Cancelled ||
-						_isAbortRequested;
+					var isAborted = RetryRunner.IsRunAborted(
+						args.Cancelled,
+						_isAbortRequested);
 
 					if (args.Error != null)
 					{
@@ -2486,80 +2483,24 @@ namespace Com.AiricLenz.XTB.Plugin
 		string operationDescription = null,
 		bool continueOnError = false)
 		{
-			int currentRetry = 0;
-			bool success = false;
+			var retryRunner = new RetryRunner(
+				() => IsAbortRequested(worker),
+				message => Log(message),
+				message => LogError(message),
+				(currentRetry, maxRetryCount) => ReportExtendedProgress(
+					worker,
+					string.Format(retryMessageFormat, currentRetry, maxRetryCount),
+					null,
+					resetTimer: false),
+				milliseconds => System.Threading.Thread.Sleep(milliseconds),
+				() => DateTime.UtcNow);
 
-			while (currentRetry <= maxRetries && !success)
-			{
-				try
-				{
-					if (currentRetry > 0)
-					{
-						if (IsAbortRequested(worker))
-						{
-							return false;
-						}
-
-						Log($"Retry attempt {currentRetry} of {maxRetries} for {operationDescription ?? "operation"}...");
-						var retryMessage = string.Format(retryMessageFormat, currentRetry, maxRetries);
-						ReportExtendedProgress(worker, retryMessage, null, resetTimer: false);
-
-						// Wait before retrying, in short slices so an abort ends the wait at once
-						var retryAt = DateTime.UtcNow.AddSeconds(retryDelaySeconds);
-
-						while (DateTime.UtcNow < retryAt)
-						{
-							var remainingMilliseconds = (int) (retryAt - DateTime.UtcNow).TotalMilliseconds;
-							System.Threading.Thread.Sleep(Math.Max(0, Math.Min(RetryWaitSliceInMilliseconds, remainingMilliseconds)));
-
-							if (IsAbortRequested(worker))
-							{
-								return false;
-							}
-						}
-					}
-
-					action();
-					success = true;
-
-					if (currentRetry > 0)
-					{
-						Log($"Succeeded on retry {currentRetry}.");
-					}
-				}
-				// ------------------------------------------
-				catch (FaultException ex) when (
-					ex.Message.Contains("Cannot start another [Import] because there is a previous [Import] running at this moment") ||
-					ex.Message.Contains("_Upgrade already exists"))
-				{
-					return true;
-
-					/*
-					if (continueOnError)
-					{
-						return;
-					}
-					else
-					{
-						throw;
-					}
-					*/
-				}
-				// ------------------------------------------
-				catch (Exception ex)
-				{
-					// Non-retryable error: preserve original behavior (log + rethrow)
-					LogError($"Error with {operationDescription}: {ex.Message}");
-					if (!continueOnError)
-					{
-						throw;
-					}
-				}
-
-				currentRetry++;
-			}
-
-			return true;
+			return retryRunner.Execute(
+				action,
+				maxRetries,
+				retryDelaySeconds,
+				operationDescription,
+				continueOnError);
 		}
 
 

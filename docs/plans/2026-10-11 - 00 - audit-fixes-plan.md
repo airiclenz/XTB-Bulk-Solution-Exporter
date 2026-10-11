@@ -83,7 +83,11 @@ Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — UpdateVersionNu
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~VersionTests` exits 0.
 **Commit:** `fix(version): stop 2- and 3-part version formats from crashing the run`
 
-## 3. Extract the retry runner and test the abort handshake
+## 3. Extract the retry runner and test the abort handshake — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): `RetryRunner` also takes a `Func<DateTime> getUtcNow` clock beside the five dependencies the Approach lists, so the wall-clock retry wait keeps its exact behaviour while tests advance a fake clock from the fake sleep and never wait on real time.
+NOTES (2026-10-11): `IsRunAborted` is an `internal static` member of `RetryRunner` (called as `RetryRunner.IsRunAborted(...)` in the `PostWorkCallBack` lambda), not of the plugin control: a static call on `BulkSolutionExporter_PluginControl` does not compile in the test project without an `XrmToolBox.Extensibility` reference (CS0012), which this item's Files do not include.
+NOTES (2026-10-11): `RetryWaitSliceInMilliseconds` moved from the plugin control into `RetryRunner` (now `internal const`, same value 250) together with the wait loop that uses it; the fault-swallowing `FaultException` filter and its commented-out block moved verbatim for item 4.
 
 **What:** Refactor, no behaviour change: the retry/abort logic of `ExecuteWithRetries` and the abort decision of `PostWorkCallBack` become testable helpers, then gain the abort-handshake tests the audit found missing. The fault-swallowing filter is moved as-is (item 4 fixes it). Depends on item 1.
 **Regression guard.** Every RetryRunner test that expects a retry passes continueOnError: true (at base, non-fault exceptions are rethrown on attempt 1 when continueOnError is false); add one test pinning that rethrow with continueOnError false. Acceptance also greps that `ExecuteWithRetries` delegates to `RetryRunner` and that the `PostWorkCallBack` lambda calls `IsRunAborted(`.
