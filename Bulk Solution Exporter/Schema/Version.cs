@@ -18,6 +18,9 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	// ============================================================================
 	internal class Version
 	{
+		// Marks a version slot that holds no part (absent or unparsed).
+		private const int UnsetPart = -1;
+
 		private int[] _version = { -1, -1, -1, -1 };
 		private int[] _versionDigits = { 1, 1, 1, 1 };
 
@@ -62,9 +65,17 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 			for (int i = 0; i < 4; i++)
 			{
-				if (i > formatParts.Length)
+				// The result has exactly as many parts as the format.
+				if (i >= formatParts.Length)
 				{
-					_version[i] = -1;
+					_version[i] = UnsetPart;
+					continue;
+				}
+
+				// A part the source version lacks reads as 0.
+				if (_version[i] == UnsetPart)
+				{
+					_version[i] = 0;
 				}
 
 				var partString = formatParts[i];
@@ -128,6 +139,11 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 			for (int i = 0; i < 4; i++)
 			{
+				if (_version[i] == UnsetPart)
+				{
+					break;
+				}
+
 				var versionPartLen =
 					 _version[i].ToString().Length;
 
@@ -136,7 +152,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				
 				_versionString +=
 					(i > 0 ? "." : "") +
-					(_version[i] == -1 ? "" : _version[i].ToString("D" + digits));
+					_version[i].ToString("D" + digits);
 			}
 		}
 

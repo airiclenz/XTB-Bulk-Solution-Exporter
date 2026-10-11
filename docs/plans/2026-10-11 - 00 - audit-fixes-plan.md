@@ -68,7 +68,10 @@ Bulk Solution Exporter/Scripts/NuGet Pack.ps1 — nuget restore, msbuild /t:Rebu
 - The same `BUILD` command with `/p:Configuration=Release` exits 0.
 **Commit:** `test: add MSTest project for the plugin`
 
-## 2. Fix the version-format off-by-one for 2- and 3-part formats
+## 2. Fix the version-format off-by-one for 2- and 3-part formats — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): a 4-part format on a shorter source version now treats the missing parts as 0 before applying the token, so `+` on a missing part yields 1 (previously 0), per the item's Goal; 4-part formats on 4-part versions are unchanged.
+NOTES (2026-10-11): added a named `UnsetPart` constant for the -1 sentinel in the code this item touches; the existing array initialiser keeps its literal -1 values. The `Version(string)` constructor still throws on a source version with more than 4 parts (pre-existing, not in this item's scope).
 
 **What:** Fixes the confirmed crash in `Schema/Version.cs` `IncreaseVersionNumber`: a format with fewer than 4 parts indexes past `formatParts` and throws `IndexOutOfRangeException`, aborting the batch. Depends on item 1.
 **Goal:** for every format `ValidateFormat` accepts (2–4 parts), `IncreaseVersionNumber` does not throw and the resulting version string has exactly as many dot-separated parts as the format, with no empty parts; a source part missing for a present format part reads as 0.
