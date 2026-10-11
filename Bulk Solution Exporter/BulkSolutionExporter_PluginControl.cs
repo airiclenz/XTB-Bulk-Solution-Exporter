@@ -2309,15 +2309,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			foreach (var file in _sessionFiles)
 			{
-				var fileShortened = file.Replace(_gitHelper.GitRootDirectory, "");
-
-				if (fileShortened.StartsWith("\\"))
-				{
-					// remove the first backslash
-					fileShortened = fileShortened.Substring(1);
-				}
-
-				if (!_gitHelper.ExecuteCommand("add \"" + fileShortened + "\"", out _, out errorMessage))
+				if (!_gitHelper.AddFile(file, out errorMessage))
 				{
 					LogError("Error staging: *" + errorMessage + "*");
 				}
@@ -2326,7 +2318,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			var message = textBox_commitMessage.Text;
 
 
-			if (!_gitHelper.ExecuteCommand("commit -m \"" + message + "\"", out _, out errorMessage))
+			if (!_gitHelper.Commit(message, out errorMessage))
 			{
 				LogError("Error commiting: *" + errorMessage + "*");
 			}
@@ -2343,7 +2335,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			if (!_gitHelper.ExecuteCommand("push", out _, out errorMessage))
+			if (!_gitHelper.Push(out errorMessage))
 			{
 				LogError("Error pushing: *" + errorMessage + "*");
 			}

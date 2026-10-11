@@ -228,7 +228,10 @@ Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — HandleGit, Upda
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~GitHelperTests` exits 0; `grep -n "GIT_TERMINAL_PROMPT" "Bulk Solution Exporter/Helpers/GitHelper.cs"` has a hit.
 **Commit:** `fix(git): read git output concurrently to avoid pipe deadlocks`
 
-## 11. Stop building git command lines from raw text
+## 11. Stop building git command lines from raw text — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): `ExecuteCommand` is now private and takes a nullable `standardInput` argument; `RunProcess` gained a matching `standardInput` parameter (before the out parameters), so the existing deadlock test passes `null` for it. `AddFile`, `Commit` and `Push` follow `SwitchToBranch`'s `bool` + `out string errorMessage` shape.
+NOTES (2026-10-11): ParseBranchList strips the fixed two-character marker column ("* ", "+ ", "  ") instead of trimming `*`/`+` characters, so a legitimate branch name starting with `+` keeps its first character; GetActiveBranch now returns an empty string for a detached HEAD. An added test covers SwitchToBranch refusing a name that starts with `-`.
 
 **What:** Fixes the confirmed argument injection: `HandleGit` concatenates `"commit -m \"" + message + "\""` (a `"` in the commit message injects options) and `"add \"" + file + "\""`; `SwitchToBranch` runs `checkout {branchName}` unquoted with names parsed from `git branch` (including `(HEAD detached …)` lines). Depends on item 10.
 **Regression guard.** Write the commit message as UTF-8 without BOM (`new UTF8Encoding(false)`) to `process.StandardInput.BaseStream`, then close stdin: on net48 the `StandardInput` writer uses `Console.InputEncoding` (BOM under a UTF-8 console, cp1252 in XrmToolBox), while today's `-m` stores correct UTF-8. The temp-repo test sets `user.name`, `user.email` and `commit.gpgsign=false` via `git config` in the repo before `Commit`, and compares `%B` after `TrimEnd('\r', '\n')`.
