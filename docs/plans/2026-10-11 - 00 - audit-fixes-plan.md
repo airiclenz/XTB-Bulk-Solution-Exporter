@@ -138,7 +138,9 @@ Bulk Solution Exporter/Settings.cs — ConnectionTimeoutInMinutes; Bulk Solution
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~SettingsTests|FullyQualifiedName~ExportedSolutionVersionsTests` exits 0.
 **Commit:** `fix(settings): clamp the connection timeout and never throw from the version-JSON loader`
 
-## 6. Fix the unmanaged-switch, null-config and unmanaged-warning bugs in the control
+## 6. Fix the unmanaged-switch, null-config and unmanaged-warning bugs in the control — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): UpdateSolutionStatusImages now creates a missing config via `GetSolutionConfiguration(solution.SolutionIdentifier, true)` (in-memory only, same as the AddSolutionConfiguration path in UpdateSolutionSettingsScreen) rather than skipping the solution.
 
 **What:** Fixes three confirmed UI defects in `BulkSolutionExporter_PluginControl.cs`: `flipSwitch_exportUnmanaged_Toggled` persists the managed switch's state; `UpdateSolutionSettingsScreen` (and `UpdateSolutionStatusImages`) dereference a null solution config; the unmanaged branches of `UpdateFileWarningStatus` and `UpdateSolutionStatusImages` load version JSON with `FileNameManaged`. Depends on item 5.
 **Regression guard.** Depends on item 5 and never lands alone: at base the loader's unmanaged loop compares `LogicalSolutionName.ToLower()` with the as-stored UniqueName, so passing `FileNameUnmanaged` without item 5 hides the unmanaged outdated-version warning for any mixed-case unique name. Acceptance uses `grep -A3` (the file argument sits on the line after `TryLoadExportedSolution(`) and checks the null-config half.

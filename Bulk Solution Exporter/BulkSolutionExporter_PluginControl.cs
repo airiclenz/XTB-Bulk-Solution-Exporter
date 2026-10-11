@@ -457,7 +457,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			_settings.ExportUnmanaged = flipSwitch_exportManaged.IsOn;
+			_settings.ExportUnmanaged = flipSwitch_exportUnmanaged.IsOn;
 
 			CodeUpdate = true;
 
@@ -1506,8 +1506,9 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (_currentSolutionConfig == null)
 			{
-				_settings.AddSolutionConfiguration(
-					_currentSolution.SolutionIdentifier);
+				_currentSolutionConfig =
+					_settings.AddSolutionConfiguration(
+						_currentSolution.SolutionIdentifier);
 			}
 
 			CodeUpdate = true;
@@ -1571,7 +1572,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				var loadedUnmanaged =
 					ExportedSolutionVersions.TryLoadExportedSolution(
-						_currentSolutionConfig.FileNameManaged,
+						_currentSolutionConfig.FileNameUnmanaged,
 						_currentSolution,
 						out var exportedSolutionUnmanaged);
 
@@ -3161,7 +3162,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (config == null)
 			{
-				config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier);
+				config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier, true);
 			}
 
 			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
@@ -3214,7 +3215,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				{
 					var loadedUnmanaged =
 						ExportedSolutionVersions.TryLoadExportedSolution(
-							config.FileNameManaged,
+							config.FileNameUnmanaged,
 							solution,
 							out var exportedSolutionUnmanaged);
 
