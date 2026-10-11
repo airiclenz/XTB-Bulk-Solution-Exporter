@@ -244,7 +244,10 @@ Bulk Solution Exporter/Helpers/GitHelper.cs — ExecuteCommand, GetAllBranches, 
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~GitHelperTests` exits 0; `grep -n "commit -m" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` has no hit.
 **Commit:** `fix(git): pass commit messages, paths and branches to git safely`
 
-## 12. Bound the markdown log renderer and the error-XML formatter
+## 12. Bound the markdown log renderer and the error-XML formatter — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): took the plan's `MaxNestingDepth` route only (no iterative heading collapse): `ProcessFormattedText` gained an `int depth` parameter (before the optional `textColor`), threaded through the heading, color and marker recursions; at `MaxNestingDepth` (10) the remaining text is appended literally with the current styles. Limits chosen: `MaxLogLineLength` = 10,000 (applied per line in `ParseAndAppend`, since the parser renders line by line and its marker scan is quadratic per line), `MaxFormattableErrorLength` = 100,000. The three constants and `TruncationMarker` are `internal` so the tests size their inputs from them.
+NOTES (2026-10-11): verified the heading test discriminates: with the depth cap lifted it terminates the test host with a StackOverflowException on the 256 KB stack thread.
 
 **What:** Fixes the confirmed crash: `MarkdownParser.ProcessFormattedText` recurses once per `"# "` heading prefix with no depth limit, so a server error of `# # # …` overflows the stack and kills XrmToolBox (`StackOverflowException` is uncatchable); `Formatter.FormatErrorStringWithXml` regex-scans and XML-parses messages of any size; it runs in `ImportSolution`'s catch blocks on the export worker, not the UI thread — its length cap bounds work size only; the UI-thread concern is the `MarkdownParser` rendering. Depends on item 1.
 **Regression guard.** Collapsing heading prefixes does not bound depth (`# **x**` repeated recurses once per repeat), so a `MaxNestingDepth` cap (≥ 8; heading → italic → color is legitimate) is threaded through every recursive `ProcessFormattedText` call (heading, color, marker). Heading tests are sized from the constants (just under `MaxLogLineLength`) and run on a small-stack thread (e.g. `new Thread(..., 256 * 1024)`).

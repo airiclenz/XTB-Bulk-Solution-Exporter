@@ -17,6 +17,22 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 	// ============================================================================
 	public class MarkdownParser
 	{
+		// Longest log line rendered; longer lines are cut to this length and
+		// end with TruncationMarker, so one huge message cannot stall the UI thread.
+		internal const int MaxLogLineLength = 10000;
+
+		// Appended to a line cut at MaxLogLineLength.
+		internal const string TruncationMarker = " … [truncated]";
+
+		// Deepest nesting of headings and format markers parsed; text below
+		// this depth is appended literally. Bounds the recursion so a line
+		// such as "# # # ..." cannot overflow the stack.
+		internal const int MaxNestingDepth = 10;
+
+		// Closes a color token; re-appended to a cut line whose color token
+		// would otherwise lose its end tag.
+		private const string ColorEndTag = "</color>";
+
 
 		// ============================================================================
 		private readonly RichTextBox _richTextBox;
@@ -86,6 +102,9 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// - # Heading (rest of line in bold, bigger font)
 		/// - <color=#000066>colored</color> text
 		/// - Regular text
+		/// Lines longer than <see cref="MaxLogLineLength"/> are truncated and
+		/// end with <see cref="TruncationMarker"/>; markers nested deeper than
+		/// <see cref="MaxNestingDepth"/> are rendered as plain text.
 		/// </summary>
 		/// <param name="message"></param>
 		public void ParseAndAppend(string markdown)
@@ -104,9 +123,10 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			foreach (string line in lines)
 			{
 				ProcessFormattedText(
-					line.TrimEnd(),
+					TruncateLine(line.TrimEnd()),
 					Array.Empty<FontStyle>(),
-					_richTextBox.Font.Size);
+					_richTextBox.Font.Size,
+					0);
 
 				_richTextBox.AppendText(Environment.NewLine);
 			}
@@ -117,13 +137,66 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 
 		// ============================================================================
+		/// <summary>
+		/// Cuts a line longer than <see cref="MaxLogLineLength"/> and appends
+		/// <see cref="TruncationMarker"/>. A color token left open by the cut
+		/// is closed before the marker, so the kept text keeps its color.
+		/// </summary>
+		private string TruncateLine(string line)
+		{
+			if (line.Length <= MaxLogLineLength)
+			{
+				return line;
+			}
+
+			string keptText = line.Substring(0, MaxLogLineLength);
+
+			if (HasUnclosedColorToken(keptText))
+			{
+				keptText += ColorEndTag;
+			}
+
+			return keptText + TruncationMarker;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns true when a color token follows the last end tag; the parser
+		/// pairs every token with the next end tag, so that token is unclosed.
+		/// </summary>
+		private bool HasUnclosedColorToken(string text)
+		{
+			int lastEndTagIndex = text.LastIndexOf(ColorEndTag, StringComparison.Ordinal);
+
+			int searchStart =
+				lastEndTagIndex < 0
+					? 0
+					: lastEndTagIndex + ColorEndTag.Length;
+
+			return _colorTokenRegex.IsMatch(text, searchStart);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Appends the text with its headings and format markers applied.
+		/// Every heading or marker parses its content one level deeper; at
+		/// <see cref="MaxNestingDepth"/> the text is appended literally.
+		/// </summary>
 		private void ProcessFormattedText(
 			string text,
 			FontStyle[]
 			currentStyles,
 			float fontSize,
+			int depth,
 			Color? textColor = null)
 		{
+			if (depth >= MaxNestingDepth)
+			{
+				AppendWithStyles(text, currentStyles, fontSize, textColor);
+				return;
+			}
 
 			int currentPos = 0;
 
@@ -178,7 +251,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 						var headingStyles = currentStyles.Concat(new[] { FontStyle.Bold }).ToArray();
 
 						// Recursively parse the heading text so we still detect **bold**, <color=...>, etc.
-						ProcessFormattedText(headingContent, headingStyles, headingSize, textColor);
+						ProcessFormattedText(headingContent, headingStyles, headingSize, depth + 1, textColor);
 
 						// Advance currentPos past the heading text
 						currentPos = nextLineBreak;
@@ -230,7 +303,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 						if (endPosInner != -1)
 						{
 							string contentInner = text.Substring(contentStartInner, endPosInner - contentStartInner);
-							ProcessFormattedText(contentInner, currentStyles, fontSize, tokenColor);
+							ProcessFormattedText(contentInner, currentStyles, fontSize, depth + 1, tokenColor);
 							currentPos = endPosInner + "</color>".Length;
 							continue;
 						}
@@ -267,7 +340,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				var newStyles = currentStyles.Concat(new[] { nextMarker.marker.Style }).ToArray();
 
 				// Recursively process the content with the new style combination
-				ProcessFormattedText(content, newStyles, fontSize, textColor);
+				ProcessFormattedText(content, newStyles, fontSize, depth + 1, textColor);
 
 				// Move position past the end marker
 				currentPos = contentStart + endPos + nextMarker.marker.End.Length;

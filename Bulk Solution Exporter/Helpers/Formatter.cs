@@ -13,12 +13,28 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 	// ============================================================================
 	internal class Formatter
 	{
+		// Longest error message reformatted; a longer one is returned
+		// unchanged so the regex scan and XML parse stay bounded. Not below
+		// MarkdownParser.MaxLogLineLength, so every line the log can show in
+		// full is still formatted.
+		internal const int MaxFormattableErrorLength = 100000;
+
 
 		// ============================================================================
+		/// <summary>
+		/// Pretty-prints the missing-dependencies XML of an import error and
+		/// breaks its lead-in sentences onto their own lines. Messages longer
+		/// than <see cref="MaxFormattableErrorLength"/> are returned unchanged.
+		/// </summary>
 		public static string FormatErrorStringWithXml(
 			string errorString,
 			string currentIndent = "")
 		{
+			if (errorString.Length > MaxFormattableErrorLength)
+			{
+				return errorString;
+			}
+
 			// Use a regex to extract the XML portion
 			var match = Regex.Match(
 				errorString,
