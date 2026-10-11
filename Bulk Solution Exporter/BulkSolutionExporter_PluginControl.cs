@@ -1761,8 +1761,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				for (int i = 0; i < exportedSolutions.Managed.Count; i++)
 				{
-					if (exportedSolutions.Managed[i].LogicalSolutionName == solution.UniqueName &&
-						exportedSolutions.Managed[i].FileName == fileName)
+					if (exportedSolutions.Managed[i].Matches(solution.UniqueName, fileName))
 					{
 						exportedSolutions.Managed[i].Version = solution.Version.ToString();
 						found = true;
@@ -1773,8 +1772,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				for (int i = 0; i < exportedSolutions.Unmanaged.Count; i++)
 				{
-					if (exportedSolutions.Unmanaged[i].LogicalSolutionName == solution.UniqueName &&
-						exportedSolutions.Unmanaged[i].FileName == fileName)
+					if (exportedSolutions.Unmanaged[i].Matches(solution.UniqueName, fileName))
 					{
 						exportedSolutions.Unmanaged[i].Version = solution.Version.ToString();
 						found = true;

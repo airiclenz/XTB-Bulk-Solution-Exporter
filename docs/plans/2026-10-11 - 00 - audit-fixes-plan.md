@@ -121,7 +121,11 @@ docs/plans/archived/2026-10-08 - 00 - abort-execution-plan.md — NOTES (Execute
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~RetryRunnerTests` exits 0; `grep -n "return true" "Bulk Solution Exporter/Helpers/RetryRunner.cs"` shows no hit inside a `catch` block.
 **Commit:** `fix(import): report failed and blocked imports as failures`
 
-## 5. Clamp the connection timeout and harden the version-JSON loader
+## 5. Clamp the connection timeout and harden the version-JSON loader — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): the shared predicate is `ExportedSolution.Matches(logicalSolutionName, fileName)` (name OrdinalIgnoreCase, file name exact, empty name never matches); the loader and both SaveVersionJson loops use it.
+NOTES (2026-10-11): the loader catches only IOException, UnauthorizedAccessException and JsonException (not a bare Exception) and also null-guards the Managed/Unmanaged lists and null entries; the Schema class has no logger, so the false return is the only signal.
+NOTES (2026-10-11): SaveVersionJson still reads and deserializes the version file without a try or null check, so a malformed file still throws on the export worker (pre-existing; outside this item's goal).
 
 **What:** Fixes two confirmed defects: the `Settings.ConnectionTimeoutInMinutes` setter clamps the backing field instead of `value` (typing 1000 stores 1000), and `ExportedSolutionVersions.TryLoadExportedSolution` reads and deserializes outside its `try`, so a truncated `exported_versions.json` throws into the UI. Depends on item 1.
 **Regression guard.** `SaveVersionJson`'s Managed and Unmanaged matches use the same `OrdinalIgnoreCase` comparison as the loader (one shared predicate); otherwise a stale `mysolution` entry is returned by the case-insensitive loader while the exact-case writer keeps appending `MySolution`, and the outdated icon never clears. The mixed-case loader test must fail at base: an Unmanaged entry `MySolution` with UniqueName `MySolution`, or a Managed entry whose case differs from UniqueName.

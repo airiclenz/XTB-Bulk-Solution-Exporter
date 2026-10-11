@@ -65,41 +65,61 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				return false;
 			}
 
-			string json = File.ReadAllText(jsonFilePath);
-			var exportedSolutions =
-				JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
+			ExportedSolutionVersions exportedSolutions;
 
 			try
 			{
-				foreach (var exporedSolution in exportedSolutions.Managed)
-				{
-					if (!exporedSolution.LogicalSolutionName.IsEmpty() &&
-						exporedSolution.LogicalSolutionName == solution.UniqueName &&
-						exporedSolution.FileName == fileName)
-					{
-						exportedSolutionResult = exporedSolution;
-						return true;
-					}
-				}
-
-				foreach (var exporedSolution in exportedSolutions.Unmanaged)
-				{
-					if (!exporedSolution.LogicalSolutionName.IsEmpty() &&
-						exporedSolution.LogicalSolutionName.ToLower() == solution.UniqueName &&
-						exporedSolution.FileName == fileName)
-					{
-						exportedSolutionResult = exporedSolution;
-						return true;
-					}
-				}
+				string json = File.ReadAllText(jsonFilePath);
+				exportedSolutions =
+					JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
 			}
-			catch (Exception)
+			catch (Exception ex) when (
+				ex is IOException ||
+				ex is UnauthorizedAccessException ||
+				ex is JsonException)
 			{
-				// ignore
+				// An unreadable or malformed version file is reported as
+				// "no exported version known" - the caller treats the
+				// solution as outdated instead of failing the UI.
+				exportedSolutionResult = null;
+				return false;
 			}
 
-			exportedSolutionResult = null;
-			return false;
+			if (exportedSolutions == null)
+			{
+				exportedSolutionResult = null;
+				return false;
+			}
+
+			exportedSolutionResult =
+				FindMatch(exportedSolutions.Managed, solution.UniqueName, fileName) ??
+				FindMatch(exportedSolutions.Unmanaged, solution.UniqueName, fileName);
+
+			return exportedSolutionResult != null;
+		}
+
+
+		// ============================================================================
+		private static ExportedSolution FindMatch(
+			List<ExportedSolution> exportedSolutions,
+			string logicalSolutionName,
+			string fileName)
+		{
+			if (exportedSolutions == null)
+			{
+				return null;
+			}
+
+			foreach (var exportedSolution in exportedSolutions)
+			{
+				if (exportedSolution != null &&
+					exportedSolution.Matches(logicalSolutionName, fileName))
+				{
+					return exportedSolution;
+				}
+			}
+
+			return null;
 		}
 
 	}
@@ -133,6 +153,26 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		public string SolutionId
 		{
 			get; set;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The one identity rule shared by the version-file reader and writer:
+		/// the logical solution name matches case-insensitively, the file name
+		/// exactly.
+		/// </summary>
+		public bool Matches(
+			string logicalSolutionName,
+			string fileName)
+		{
+			return
+				!LogicalSolutionName.IsEmpty() &&
+				string.Equals(
+					LogicalSolutionName,
+					logicalSolutionName,
+					StringComparison.OrdinalIgnoreCase) &&
+				FileName == fileName;
 		}
 
 

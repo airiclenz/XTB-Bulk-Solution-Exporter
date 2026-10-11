@@ -22,6 +22,9 @@ namespace Com.AiricLenz.XTB.Plugin
 	public class Settings
 	{
 
+		private const int MinConnectionTimeoutInMinutes = 2;
+		private const int MaxConnectionTimeoutInMinutes = 600;
+
 		private int _connectionTimeoutInMinutes = 120;
 
 		private List<string> _solutionConfigurations;
@@ -158,18 +161,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			set
 			{
-				if (_connectionTimeoutInMinutes < 2)
-				{
-					_connectionTimeoutInMinutes = 2;
-				}
-				else if (_connectionTimeoutInMinutes > 600)
-				{
-					_connectionTimeoutInMinutes = 600;
-				}
-				else
-				{
-					_connectionTimeoutInMinutes = value;
-				}
+				_connectionTimeoutInMinutes =
+					Math.Max(
+						MinConnectionTimeoutInMinutes,
+						Math.Min(
+							MaxConnectionTimeoutInMinutes,
+							value));
 			}
 		}
 
