@@ -153,7 +153,11 @@ Bulk Solution Exporter/Settings.cs — GetSolutionConfiguration(createIfNotFound
 **Acceptance:** `BUILD` exits 0; `grep -n "ExportUnmanaged = flipSwitch_exportManaged" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` has no hit; `grep -n -A3 "TryLoadExportedSolution" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` shows `FileNameUnmanaged` in both blocks binding `exportedSolutionUnmanaged`; `grep -n -B1 "_settings.AddSolutionConfiguration(\|GetSolutionConfiguration(solution.SolutionIdentifier, true)" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` shows `_currentSolutionConfig =` bound to the add in `UpdateSolutionSettingsScreen` and a hit inside `UpdateSolutionStatusImages` (or that method skips a null config).
 **Commit:** `fix(ui): persist the unmanaged switch and use the unmanaged file for its warning`
 
-## 7. Sanitize export file names derived from Dataverse data
+## 7. Sanitize export file names derived from Dataverse data — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): ExportToFile validates the file path before the ExportSolutionRequest is sent (the `filePath` local moved up), so an invalid path skips the server export too instead of exporting and then discarding the bytes; the wizard logs an error and leaves that solution's file locations unchanged when either default path would resolve outside the selected folder.
+
+NOTES (2026-10-11): `IsValidSolutionFilePath` uses `Path.IsPathRooted` (via `IsValidPath`), so a user-typed drive-relative path such as `C:foo.zip` still counts as rooted and is accepted, as before; default names can never produce one because `:` is sanitized.
 
 **What:** Fixes the confirmed path traversal: `GetDefaultFileName` builds names from the server-controlled `uniquename` (strips only `#`), and the file wizard `Path.Combine`s it with the chosen folder, so `..\` or drive prefixes escape it before `File.WriteAllBytes`. User-typed absolute paths anywhere stay a supported feature. Depends on item 1.
 **Regression guard.** `IsValidSolutionFilePath` wraps its checks in try/catch → false, as `IsValidPath` does: on net48 `Path.IsPathRooted`/`GetFileName` throw `ArgumentException` for `C:\exports\a|b.zip`, which would end the run instead of logging. The wizard compares against `Path.GetFullPath(folder).TrimEnd('\\', '/') + Path.DirectorySeparatorChar` with `OrdinalIgnoreCase`, so a drive-root folder (`D:\`) still accepts `D:\Managed.X.zip`. `ToSafeFileNamePart` also trims leading dots, so `GetDefaultFileName` never composes `Managed..x.zip`.

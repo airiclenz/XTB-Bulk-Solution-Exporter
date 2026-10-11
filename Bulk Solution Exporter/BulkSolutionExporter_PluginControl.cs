@@ -1130,6 +1130,11 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
+			var selectedFolder = folderBrowserDialog1.SelectedPath;
+			var folderPrefix =
+				Path.GetFullPath(selectedFolder).TrimEnd('\\', '/') +
+				Path.DirectorySeparatorChar;
+
 			foreach (var selectedSolution in listBoxSolutions.CheckedItems)
 			{
 				var solution = selectedSolution.ItemObject as Solution;
@@ -1148,16 +1153,28 @@ namespace Com.AiricLenz.XTB.Plugin
 					continue;
 				}
 
-				solutionConfig.FileNameManaged =
+				var fileNameManaged =
 					Path.Combine(
-						folderBrowserDialog1.SelectedPath,
+						selectedFolder,
 						GetDefaultFileName(solution, true));
 
-				solutionConfig.FileNameUnmanaged =
+				var fileNameUnmanaged =
 					Path.Combine(
-						folderBrowserDialog1.SelectedPath,
+						selectedFolder,
 						GetDefaultFileName(solution, false));
 
+				// Never store a path that resolves outside the selected folder
+				if (!Path.GetFullPath(fileNameManaged).StartsWith(folderPrefix, StringComparison.OrdinalIgnoreCase) ||
+					!Path.GetFullPath(fileNameUnmanaged).StartsWith(folderPrefix, StringComparison.OrdinalIgnoreCase))
+				{
+					LogError(
+						"The default file name for the solution '" + solution.UniqueName +
+						"' resolves outside the selected folder. The file locations were not changed.");
+					continue;
+				}
+
+				solutionConfig.FileNameManaged = fileNameManaged;
+				solutionConfig.FileNameUnmanaged = fileNameUnmanaged;
 
 				_settings.UpdateSolutionConfiguration(solutionConfig);
 			}
@@ -2008,6 +2025,16 @@ namespace Com.AiricLenz.XTB.Plugin
 				return -1;
 			}
 
+			var filePath =
+				isManaged ? solutionConfiguration.FileNameManaged : solutionConfiguration.FileNameUnmanaged;
+
+			if (!FileAndFolderHelper.IsValidSolutionFilePath(filePath))
+			{
+				LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
+				_logger.DecreaseIndent();
+				return -1;
+			}
+
 			var startTime = DateTime.Now;
 
 			Log("Start Time: " + startTime.ToString(dateTimeFormat));
@@ -2021,9 +2048,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			var exportSolutionResponse =
 				(ExportSolutionResponse) Service.Execute(
 					exportSolutionRequest);
-
-			var filePath =
-				isManaged ? solutionConfiguration.FileNameManaged : solutionConfiguration.FileNameUnmanaged;
 
 			string directoryPath = Path.GetDirectoryName(filePath);
 
@@ -2316,6 +2340,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			else
 			{
 				solutionPath = config.FileNameUnmanaged;
+			}
+
+			if (!FileAndFolderHelper.IsValidSolutionFilePath(solutionPath))
+			{
+				LogError("The file path '" + solutionPath + "' is not a valid absolute file path. The file is skipped.");
+				_logger.DecreaseIndent();
+				return false;
 			}
 
 			if (!File.Exists(solutionPath))
@@ -3573,6 +3604,10 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			solutionName = solutionName.Trim();
+
+			// The unique name comes from the server: never let it carry a
+			// path separator, a drive prefix or a ".." out of the folder.
+			solutionName = FileAndFolderHelper.ToSafeFileNamePart(solutionName);
 
 			if (isManaged)
 			{
