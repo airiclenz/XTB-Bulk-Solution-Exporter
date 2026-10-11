@@ -170,7 +170,15 @@ Bulk Solution Exporter/Schema/ExportedSolutionVersions.cs — TryLoadExportedSol
 **Acceptance:** `BUILD` exits 0; `TEST FullyQualifiedName~FileAndFolderHelperTests` exits 0; `grep -n "IsValidSolutionFilePath\|GetFullPath" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` has hits inside `ExportToFile`, `ImportSolution` and `button_fileWizzard_Click`.
 **Commit:** `fix(security): keep Dataverse solution names from escaping the export folder`
 
-## 8. Give the export worker a per-run settings snapshot
+## 8. Give the export worker a per-run settings snapshot — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): the snapshot is not passed into `UpdateCheckedVersionNumbers` or `HandleGit`: once the dead `GetSolutionConfiguration` read is dropped, neither reads any setting, so the parameter would be unused; the snapshot is a private nested `ExecutionSettingsSnapshot` class whose constructor makes the copies.
+
+NOTES (2026-10-11): durations are written to the run's copy (so a later target's "Last Import" hint still sees the previous target's duration, as before) and pushed via a new `WriteBackSolutionConfiguration` helper, which `BeginInvoke`s a change that sets only the one changed duration field on `_settings.GetSolutionConfiguration(id, true)`, then calls `UpdateSolutionConfiguration` and `SaveSettings()`.
+
+NOTES (2026-10-11): `SaveSettings` is no longer called from any worker; its `InvokeRequired` re-dispatch is kept as a guard and its comment was corrected (the prose guard's only stale hit).
+
+NOTES (2026-10-11): `SetUiEnabledState` re-enables `button_fileWizzard` only when solutions are checked, matching `listSolutions_ItemCheck`.
 
 **What:** Fixes the confirmed data race: the worker reads and writes `Settings`' unlocked `_configCache` / `_solutionConfigurations` while the UI thread mutates and serializes them (`SaveSettings` re-dispatch, `SyncSolutionConfigsFromList`, debounce `PersistSettings`, file wizard). Depends on items 4, 6 and 7 (same file).
 **Regression guard.** Keep item 7's IsValidSolutionFilePath guards in ExportToFile and ImportSolution when re-plumbing configs through the snapshot. Prose guard: every comment claiming SaveSettings or _settings is reached from the export worker becomes stale — find them with `grep -n "worker" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` and correct each.

@@ -967,6 +967,12 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_browseManaged.Enabled = state;
 			button_browseUnmananged.Enabled = state;
 
+			// The wizard rewrites solution configurations; a run reads them from
+			// its snapshot, so they must not change while it is active.
+			button_fileWizzard.Enabled =
+				state &&
+				listBoxSolutions.CheckedItems.Count > 0;
+
 			textBox_versionFormat.Enabled = state;
 			textBox_commitMessage.Enabled = state;
 			textBox_managed.Enabled = state;
@@ -1227,6 +1233,13 @@ namespace Com.AiricLenz.XTB.Plugin
 					.Select(item => item.ItemObject as Solution)
 					.ToList();
 
+			// Taken on the UI thread too: Settings is not thread-safe, so the
+			// worker phases read this snapshot and never touch _settings.
+			var settingsSnapshot =
+				new ExecutionSettingsSnapshot(
+					_settings,
+					checkedSolutions);
+
 			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
 
 			_executionWorker = new WorkAsyncInfo()
@@ -1264,6 +1277,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						{
 							ExportCheckedSolutions(
 								checkedSolutions,
+								settingsSnapshot,
 								worker);
 						}
 
@@ -1288,6 +1302,7 @@ namespace Com.AiricLenz.XTB.Plugin
 							ImportCheckedSolutions(
 								targetConnection,
 								checkedSolutions,
+								settingsSnapshot,
 								worker);
 
 							if (flipSwitch_publishTarget.IsOn &&
@@ -1402,6 +1417,39 @@ namespace Com.AiricLenz.XTB.Plugin
 			};
 
 			WorkAsync(_executionWorker);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Applies a change to the solution configuration in _settings and saves
+		/// the settings. Callable from the execution worker: the change runs on
+		/// the UI thread (BeginInvoke, so the worker does not block on it), the
+		/// only thread that touches _settings.
+		/// </summary>
+		/// <param name="solutionIdentifier">The solution whose configuration changes.</param>
+		/// <param name="applyChange">Applies the change to the configuration in _settings.</param>
+		private void WriteBackSolutionConfiguration(
+			string solutionIdentifier,
+			Action<SolutionConfiguration> applyChange)
+		{
+			BeginInvoke((MethodInvoker) (() =>
+			{
+				var config =
+					_settings.GetSolutionConfiguration(
+						solutionIdentifier,
+						true);
+
+				if (config == null)
+				{
+					return;
+				}
+
+				applyChange(config);
+
+				_settings.UpdateSolutionConfiguration(config);
+				SaveSettings();
+			}));
 		}
 
 
@@ -1674,10 +1722,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				var solution = solutions[i];
 
-				var solutionConfig =
-					_settings.GetSolutionConfiguration(
-						solution.SolutionIdentifier);
-
 				Log("Updating version number for solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag);
 
 				UpdateVersionNumberInSource(solution);
@@ -1697,6 +1741,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void ExportCheckedSolutions(
 			List<Solution> solutions,
+			ExecutionSettingsSnapshot settingsSnapshot,
 			BackgroundWorker worker)
 		{
 			if (flipSwitch_exportManaged.IsOff &&
@@ -1718,7 +1763,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = solutions[i];
 
 				var solutionConfig =
-					_settings.GetSolutionConfiguration(
+					settingsSnapshot.GetSolutionConfiguration(
 						solution.SolutionIdentifier);
 
 				Log("**Exporting solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
@@ -1727,6 +1772,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					ExportSolution(
 						solution,
 						solutionConfig,
+						settingsSnapshot,
 						worker);
 
 				if (!exportResult)
@@ -1830,6 +1876,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void ImportCheckedSolutions(
 			ConnectionDetail targetService,
 			List<Solution> solutions,
+			ExecutionSettingsSnapshot settingsSnapshot,
 			BackgroundWorker worker)
 		{
 			var targetServiceClient = targetService?.ServiceClient;
@@ -1858,7 +1905,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var solution = solutions[i];
 
 				var solutionConfig =
-					_settings.GetSolutionConfiguration(
+					settingsSnapshot.GetSolutionConfiguration(
 						solution.SolutionIdentifier);
 
 				var startTime = DateTime.Now;
@@ -1870,6 +1917,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					ImportSolution(
 						targetService,
 						solution,
+						settingsSnapshot,
 						worker,
 						importManagd);
 
@@ -1892,14 +1940,19 @@ namespace Com.AiricLenz.XTB.Plugin
 					if (importManagd)
 					{
 						solutionConfig.LastImportDurationManagedInSeconds = durationSeconds;
+
+						WriteBackSolutionConfiguration(
+							solution.SolutionIdentifier,
+							config => config.LastImportDurationManagedInSeconds = durationSeconds);
 					}
 					else
 					{
 						solutionConfig.LastImportDurationUnmanagedInSeconds = durationSeconds;
-					}
 
-					_settings.UpdateSolutionConfiguration(solutionConfig);
-					SaveSettings();
+						WriteBackSolutionConfiguration(
+							solution.SolutionIdentifier,
+							config => config.LastImportDurationUnmanagedInSeconds = durationSeconds);
+					}
 				}
 
 				// An import ended by the abort is not reported as an import error.
@@ -1910,7 +1963,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 
 				if (!importResult &&
-					!_settings.ContinueOnError)
+					!settingsSnapshot.ContinueOnError)
 				{
 					LogError("The import was not successful and Continue-On-Error is disabled.");
 					break;
@@ -1929,6 +1982,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private bool ExportSolution(
 			Solution solution,
 			SolutionConfiguration solutionConfiguration,
+			ExecutionSettingsSnapshot settingsSnapshot,
 			BackgroundWorker worker)
 		{
 			_logger.IncreaseIndent();
@@ -1950,13 +2004,16 @@ namespace Com.AiricLenz.XTB.Plugin
 					ExportToFile(
 						solution,
 						solutionConfiguration,
+						settingsSnapshot,
 						true);
 
 				if (durationInSeconds > 0)
 				{
 					solutionConfiguration.LastExportDurationManagedInSeconds = durationInSeconds;
-					_settings.UpdateSolutionConfiguration(solutionConfiguration);
-					SaveSettings();
+
+					WriteBackSolutionConfiguration(
+						solutionConfiguration.SolutionIndentifier,
+						config => config.LastExportDurationManagedInSeconds = durationInSeconds);
 				}
 			}
 
@@ -1991,13 +2048,16 @@ namespace Com.AiricLenz.XTB.Plugin
 					ExportToFile(
 						solution,
 						solutionConfiguration,
+						settingsSnapshot,
 						false);
 
 				if (durationInSeconds > 0)
 				{
 					solutionConfiguration.LastExportDurationUnamangedInSeconds = durationInSeconds;
-					_settings.UpdateSolutionConfiguration(solutionConfiguration);
-					SaveSettings();
+
+					WriteBackSolutionConfiguration(
+						solutionConfiguration.SolutionIndentifier,
+						config => config.LastExportDurationUnamangedInSeconds = durationInSeconds);
 				}
 			}
 
@@ -2011,6 +2071,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private int ExportToFile(
 			Solution solution,
 			SolutionConfiguration solutionConfiguration,
+			ExecutionSettingsSnapshot settingsSnapshot,
 			bool isManaged)
 		{
 			Log("Exporting as " + (isManaged ? "" : "un") + "managed solution now...");
@@ -2065,17 +2126,12 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_sessionFiles.Add(filePath);
 
-			// update the settings
-			var configToBeUpdated =
-				_settings.GetSolutionConfiguration(
-					solutionConfiguration.SolutionIndentifier);
-
 			var duration = GetDurationString(startTime);
 			var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
 
 			Log("Duration: " + duration);
 
-			if (_settings.SaveVersionJson)
+			if (settingsSnapshot.SaveVersionJson)
 			{
 				SaveVersionJson(
 					filePath,
@@ -2311,18 +2367,19 @@ namespace Com.AiricLenz.XTB.Plugin
 		private bool ImportSolution(
 			ConnectionDetail targetService,
 			Solution solution,
+			ExecutionSettingsSnapshot settingsSnapshot,
 			BackgroundWorker worker,
 			bool isManaged = true)
 		{
 			_logger.IncreaseIndent();
 
 			var targetServiceClient = targetService?.ServiceClient;
-			int maxRetries = _settings.RetryCount > 0 ? _settings.RetryCount : 3;
-			int retryDelay = _settings.RetryDelayInSeconds > 0 ? _settings.RetryDelayInSeconds : 5;
-			bool continueOnError = _settings.ContinueOnError;
+			int maxRetries = settingsSnapshot.RetryCount > 0 ? settingsSnapshot.RetryCount : 3;
+			int retryDelay = settingsSnapshot.RetryDelayInSeconds > 0 ? settingsSnapshot.RetryDelayInSeconds : 5;
+			bool continueOnError = settingsSnapshot.ContinueOnError;
 
 			var config =
-				_settings.GetSolutionConfiguration(
+				settingsSnapshot.GetSolutionConfiguration(
 					solution.SolutionIdentifier);
 
 			if (config == null)
@@ -2879,9 +2936,10 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool cleanUpNonExistingSolutions = false,
 			bool immediate = false)
 		{
-			// Called from the export worker too: the debounce timer and the
-			// list must only be touched on the UI thread, so re-dispatch there
-			// (BeginInvoke, so the worker does not block on the UI thread)
+			// No worker calls this: the execution worker writes back through
+			// WriteBackSolutionConfiguration on the UI thread. Kept as a guard,
+			// since the debounce timer and the list must only be touched on the
+			// UI thread (BeginInvoke, so a caller does not block on the UI thread)
 			if (InvokeRequired)
 			{
 				BeginInvoke((MethodInvoker) (() => SaveSettings(caller, cleanUpNonExistingSolutions, immediate)));
@@ -3620,6 +3678,94 @@ namespace Com.AiricLenz.XTB.Plugin
 					"Unmanaged." + solutionName + ".zip";
 			}
 			// ============================================================================
+		}
+
+
+		// ============================================================================
+		// ============================================================================
+		/// <summary>
+		/// The settings an execution run reads, copied on the UI thread when the
+		/// run starts. Settings is not thread-safe, so the execution worker reads
+		/// this snapshot and never touches _settings.
+		/// </summary>
+		private sealed class ExecutionSettingsSnapshot
+		{
+			private readonly Dictionary<string, SolutionConfiguration> _solutionConfigurations =
+				new Dictionary<string, SolutionConfiguration>(StringComparer.Ordinal);
+
+			public bool SaveVersionJson
+			{
+				get; private set;
+			}
+			public int RetryCount
+			{
+				get; private set;
+			}
+			public int RetryDelayInSeconds
+			{
+				get; private set;
+			}
+			public bool ContinueOnError
+			{
+				get; private set;
+			}
+
+
+			// ============================================================================
+			/// <param name="settings">The settings to copy; read on the UI thread only.</param>
+			/// <param name="solutions">The solutions of the run; their configurations are copied.</param>
+			public ExecutionSettingsSnapshot(
+				Settings settings,
+				IEnumerable<Solution> solutions)
+			{
+				SaveVersionJson = settings.SaveVersionJson;
+				RetryCount = settings.RetryCount;
+				RetryDelayInSeconds = settings.RetryDelayInSeconds;
+				ContinueOnError = settings.ContinueOnError;
+
+				foreach (var solution in solutions)
+				{
+					if (solution == null)
+					{
+						continue;
+					}
+
+					var config =
+						settings.GetSolutionConfiguration(
+							solution.SolutionIdentifier);
+
+					if (config == null)
+					{
+						continue;
+					}
+
+					// A copy: the live object belongs to _settings, which the UI
+					// thread keeps changing during the run
+					_solutionConfigurations[solution.SolutionIdentifier] =
+						SolutionConfiguration.GetConfigFromJson(
+							config.GetJson());
+				}
+			}
+
+
+			// ============================================================================
+			/// <summary>
+			/// Returns the run's copy of the solution configuration.
+			/// </summary>
+			/// <returns>The copy; null when the solution had no configuration at the start of the run.</returns>
+			public SolutionConfiguration GetSolutionConfiguration(
+				string solutionIdentifier)
+			{
+				if (string.IsNullOrWhiteSpace(solutionIdentifier))
+				{
+					return null;
+				}
+
+				return
+					_solutionConfigurations.TryGetValue(solutionIdentifier, out var config) ?
+					config :
+					null;
+			}
 		}
 
 
