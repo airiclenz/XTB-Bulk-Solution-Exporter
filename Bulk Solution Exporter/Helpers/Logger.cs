@@ -56,16 +56,34 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		public void Log(string message)
 		{
+			Log(message, GenerateIndent());
+		}
+
+		// ============================================================================
+		/// <summary>
+		/// Appends a message with an indent the caller captured beforehand
+		/// (via <see cref="GetCurrentIndent"/>), so a line marshalled to the UI
+		/// thread keeps the indent level of the thread that logged it.
+		/// </summary>
+		public void Log(
+			string message,
+			string indent)
+		{
 			if (message.IsEmpty())
 			{
 				_markdownParser.ParseAndAppend(string.Empty);
 			}
 			else
 			{
-				var indent = GenerateIndent();
 				_markdownParser.ParseAndAppend(indent + message);
 			}
 
+		}
+
+		// ============================================================================
+		public string GetCurrentIndent()
+		{
+			return GenerateIndent();
 		}
 
 		// ============================================================================

@@ -2186,30 +2186,24 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void RefreshSolutionInListBox(
 			Solution solution)
 		{
-			for (int i = 0; i < listBoxSolutions.Items.Count; i++)
+			// The list box is UI-thread-only. Invoke, not BeginInvoke: the
+			// refresh reads the export folder's version JSON, which the worker's
+			// next SaveVersionJson writes, so the two must not overlap.
+			if (InvokeRequired)
 			{
-				var listItem = listBoxSolutions.Items[i];
-				var solutionItem = listItem.ItemObject as Solution;
+				Invoke(new MethodInvoker(() => RefreshSolutionInListBox(solution)));
+				return;
+			}
 
-				if (solutionItem.SolutionIdentifier == solution.SolutionIdentifier)
-				{
-					listBoxSolutions.Items[i].ItemObject = solution;
-					listBoxSolutions.Invalidate();
+			// The list items wrap the same Solution objects as _solutionsOrigin,
+			// so rebuilding the list from it picks up the changed solution.
+			var isListed =
+				_solutionsOrigin.Any(
+					s => s.SolutionIdentifier == solution.SolutionIdentifier);
 
-					if (InvokeRequired)
-					{
-						Invoke(new MethodInvoker(() =>
-						{
-							UpdateSolutionList();
-						}));
-					}
-					else
-					{
-						UpdateSolutionList();
-					}
-
-					return;
-				}
+			if (isListed)
+			{
+				UpdateSolutionList();
 			}
 		}
 
@@ -3111,18 +3105,31 @@ namespace Com.AiricLenz.XTB.Plugin
 		/// <param name="message"></param>
 		private void Log(string message = "")
 		{
-			if (richTextBox_log.InvokeRequired)
+			// Captured on the calling thread: the worker changes the indent
+			// level between lines, so reading it later on the UI thread would
+			// give a queued line the wrong indent.
+			var indent = _logger.GetCurrentIndent();
+
+			// Invoke, not BeginInvoke: keeps the log order in step with the worker
+			if (InvokeRequired)
 			{
-				richTextBox_log.Invoke(new Action(() => _logger.Log(message)));
-				richTextBox_log.Invoke(new Action(() => richTextBox_log.SelectionStart = richTextBox_log.Text.Length));
-				richTextBox_log.Invoke(new Action(() => richTextBox_log.ScrollToCaret()));
+				richTextBox_log.Invoke(new Action(() => AppendLogLine(message, indent)));
 			}
 			else
 			{
-				_logger.Log(message);
-				richTextBox_log.SelectionStart = richTextBox_log.Text.Length;
-				richTextBox_log.ScrollToCaret();
+				AppendLogLine(message, indent);
 			}
+		}
+
+
+		// ============================================================================
+		private void AppendLogLine(
+			string message,
+			string indent)
+		{
+			_logger.Log(message, indent);
+			richTextBox_log.SelectionStart = richTextBox_log.Text.Length;
+			richTextBox_log.ScrollToCaret();
 		}
 
 		// ============================================================================

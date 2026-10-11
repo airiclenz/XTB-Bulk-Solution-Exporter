@@ -192,7 +192,15 @@ Bulk Solution Exporter/Settings.cs — GetSolutionConfiguration; Bulk Solution E
 **Acceptance:** `BUILD` exits 0; inside the bodies of the seven worker methods named above and of `PublishAll`, `SaveVersionJson` and `ExecuteWithRetries`, `grep`/read shows no `_settings` reference; `grep -n "button_fileWizzard.Enabled" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` has a hit inside `SetUiEnabledState`; the duration write-back to `_settings` sits inside a `BeginInvoke`.
 **Commit:** `fix(concurrency): run the export worker on a UI-thread settings snapshot`
 
-## 9. Marshal the list-box refresh and the log indent to the UI thread
+## 9. Marshal the list-box refresh and the log indent to the UI thread — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): `RefreshSolutionInListBox` re-dispatches itself with a synchronous `Invoke` when `InvokeRequired`; on the UI thread it checks the solution is in `_solutionsOrigin` (the list items wrap those same objects) and calls `UpdateSolutionList()`. The per-item `ItemObject` assignment and `Invalidate()` are gone.
+
+NOTES (2026-10-11): `Logger` gained `GetCurrentIndent()` (public accessor over the private `GenerateIndent`) and a `Log(message, indent)` overload; `Log(message)` now delegates to it. `PluginControl.Log` captures the indent on the calling thread and makes one `richTextBox_log.Invoke` into a new `AppendLogLine` helper that appends, moves the caret and scrolls. `LogError`/`LogDebug` already route through `Log`, so they needed no change.
+
+NOTES (2026-10-11): `Log`'s guard now tests the plugin control's `InvokeRequired`, not `richTextBox_log.InvokeRequired` (same UI thread). This keeps the `grep -c "richTextBox_log.Invoke"` acceptance at 1, since the old guard also matched that pattern.
+
+NOTES (2026-10-11): the acceptance grep `Items\[i\].ItemObject` still matches 6 UI-thread lines that only read `ItemObject` (never assign it) that were already there at base (`UpdateItemSortingIndexesFromListBox`, `UpdateSolutionList`, `UpdateTargetVersionStatusImages`). The item's target was the worker-thread assignment `listBoxSolutions.Items[i].ItemObject = solution`, and `grep -n "Items\[i\].ItemObject = "` now has no hit.
 
 **What:** Fixes two confirmed cross-thread defects: `RefreshSolutionInListBox` iterates `listBoxSolutions.Items`, assigns `ItemObject` and calls `Invalidate()` on the worker; `PluginControl.Log` marshals three separate `Invoke`s and computes the indent on the UI thread from a worker-mutated `_indentLevel`. Depends on item 8 (same file).
 **Regression guard.** Keep `Invoke` (not `BeginInvoke`) for the `UpdateSolutionList` re-dispatch, overriding the standing `BeginInvoke` rule as the item already does for `Log`: an async refresh reads the export folder's version JSON (`UpdateSolutionStatusImages` → `TryLoadExportedSolution`) while the worker's next `SaveVersionJson` `File.WriteAllText`s the same file — a sharing-violation `IOException` on either thread. Acceptance checks the single-`Invoke` log clause.
