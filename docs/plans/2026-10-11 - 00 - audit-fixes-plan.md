@@ -213,7 +213,9 @@ Bulk Solution Exporter/Helpers/Logger.cs — Log, GenerateIndent (private; captu
 **Acceptance:** `BUILD` exits 0; `grep -n "Items\[i\].ItemObject" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` has no hit; `grep -c "richTextBox_log.Invoke" "Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs"` prints 1 (all base hits are in `Log`); `Bulk Solution Exporter/Helpers/Logger.cs` has a `Log` overload taking a pre-computed indent.
 **Commit:** `fix(concurrency): marshal list refresh and log indent to the UI thread`
 
-## 10. Drain git output without deadlocking
+## 10. Drain git output without deadlocking — ✅ DONE (2026-10-11)
+
+NOTES (2026-10-11): RunProcess takes a fourth `environmentVariables` parameter (nullable) and returns stdout/stderr as out parameters beside the int exit code, so GIT_TERMINAL_PROMPT=0 is set only by ExecuteCommand for git, not for every process RunProcess starts (the test runs powershell.exe through it).
 
 **What:** Fixes the confirmed deadlock in `Helpers/GitHelper.cs` `ExecuteCommand`: `WaitForExit()` runs before `ReadToEnd()` on both redirected streams, so git output above the pipe buffer hangs the worker (or the UI for `checkout`/`branch`). Depends on item 1.
 **Regression guard.** Use `ReadToEndAsync` on both streams, started before `WaitForExit()`; the Approach's `BeginOutputReadLine` option is dropped (line events strip newlines: `AppendLine` adds characters and plain `Append` merges `git branch` lines in `GetAllBranches`). Output stays byte-for-byte what `ReadToEnd` returned before. Acceptance checks the `GIT_TERMINAL_PROMPT` clause.
