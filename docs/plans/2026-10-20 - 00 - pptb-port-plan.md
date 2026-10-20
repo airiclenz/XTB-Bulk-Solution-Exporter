@@ -1,0 +1,281 @@
+# Power Platform ToolBox port — shared core, .NET worker, React UI
+
+**Goal:** Bulk Solution Exporter runs in Power Platform ToolBox (PPTB) with full XrmToolBox feature parity, while the XTB plugin keeps working unchanged for its users. Both hosts drive one shared C# run engine in a new core library.
+**Date:** 2026-10-20
+**Status:** unexecuted
+**sized for:** ~200k-context host
+**base:** 4a1296e
+
+**Sources:**
+- https://docs.powerplatformtoolbox.com — tool-development/dotnet-workers, manifest, pptb-config, api-reference
+- `@pptb/types@1.2.7` (`toolboxAPI.d.ts`, `dataverseAPI.d.ts`)
+- https://github.com/PowerPlatformToolBox/sample-tools/tree/main/new/html-sample (worker .csproj, package.json, pptb.config.json)
+- capcom knowledge: `run-and-abort-rules`, `untrusted-dataverse-data`, `code-style`, `versioning-and-release`, `build-and-test`
+
+**Ratified design calls (user, 2026-10-20):**
+- **Repo layout:** same repo; UI-free logic moves to `Bulk Solution Exporter.Core` (SDK-style, `net48;net8.0`), used by the XTB plugin and the PPTB worker.
+- **PPTB architecture:** TypeScript UI plus a .NET 8 worker (StreamJsonRpc, `jsonrpc-stdio-v1`, framework-dependent dotnet tool on nuget.org, declared in `pptb.config.json`).
+- **Run engine:** one C# `RunEngine` in core; Dataverse is reached only through `IDataverseGateway`. XTB adapter = `IOrganizationService`; PPTB adapter = worker→TS reverse calls that use `dataverseAPI`.
+- **UI stack:** React 18 + Fluent UI v9, Vite IIFE single bundle.
+- **Scope:** full parity in the first PPTB release (multiple targets, holding upgrade, CSV, versions JSON, git branch/commit/push, retries, abort, file wizard, status icons, settings).
+- **PPTB settings:** `toolboxAPI.settings`, per-solution config keyed by lower-cased environment URL + `.` + unique name; no XTB settings import.
+- **Plugin build:** the plugin .csproj becomes SDK-style net48 so `dotnet build` works on macOS.
+- **Names:** npm `@airiclenz/pptb-bulk-solution-exporter`, NuGet `AiricLenz.BulkSolutionExporter.PptbWorker`, display name "Bulk Solution Exporter".
+- **XTB run toggles:** read from the on-screen switches/text boxes on the UI thread, as today (user, 2026-10-20).
+
+**Standing requirements:**
+- skills: coding-standards
+- C# follows capcom `code-style` (tabs, Allman, `// ===` method dividers, named constants). Every moved core type AND every member the plugin, worker or tests call is `public`; no `InternalsVisibleTo` from core.
+- Never edit `XTB Components/` (submodule).
+- `run-and-abort-rules` and `untrusted-dataverse-data` hold for both hosts.
+- Deviations from item text land as a dated NOTES line under the item.
+- XTB runtime behaviour (live export/import in XrmToolBox) is checked manually on Windows by the user; items prove it with builds and tests.
+
+**Out of scope:** importing XTB settings into PPTB; the VS Code PPTB host; open capcom ideas (`connection-profiles`, `powershell-run-hooks`, `data-transfer`, `dynamic-file-names`, `commit-message-placeholders`); version bumps or publishing a release.
+
+**Regression check (2026-10-20, 4a1296e):**
+- 1: guard folded (System.Resources.Extensions shipping per writer decision)
+- 2: guard folded (writer decision; plan-wide public-members rule moved to Standing requirements)
+- 3: guard folded (core members public per Standing requirements instead of InternalsVisibleTo)
+- 4: guard folded (public members per Standing requirements)
+- 5: guard folded
+- 6: guard folded; yields to `Helpers/Formatter.cs:16-20` (per-line cap)
+- 7: recast (writer decision); yields to `.capcom/issues/release-2026-03-05/install-upgrade-retries.md:12`
+- 8: guard folded (GitClient per writer decision)
+- 9: recast (writer decision); yields to `BulkSolutionExporter_PluginControl.cs:2189` and `:3105` ("Invoke, not BeginInvoke")
+- 10: guard folded (notifications per writer decision)
+- 11: guard folded (writer decision)
+- 12: guard folded; supersedes `.capcom/knowledge/versioning-and-release.md:10` ("GPL-3.0-only everywhere") for the npm package
+- 13: guard folded
+- 14: guard folded
+- 15: guard folded
+- 16: guard folded
+- 7 (re-check): guard folded (gateway exceptions propagate; per-solution `SolutionProcessed` sink event; invalid format/path logged and skipped)
+- 9 (re-check): recast (writer decision: run toggles from the controls); yields to `.capcom/issues/worker-reads-ui-controls.md:14`
+- 10 (re-check): guard extended (`run/solutionProcessed` notification per writer decision on 7)
+
+## 1. Convert the plugin and test projects to SDK-style net48
+
+**What:**
+**Goal:** `dotnet build "Bulk Solution Exporter.sln"` succeeds on macOS and Windows; plugin assembly name, root namespace and embedded resources are unchanged.
+**Approach (assumed at the header base):** Rewrite `Bulk Solution Exporter/Bulk Solution Exporter.csproj` as `<Project Sdk="Microsoft.NET.Sdk">` with `TargetFramework net48`, `UseWindowsForms true`, `GenerateResourceUsePreserializedResources true` + `System.Resources.Extensions`, `Microsoft.NETFramework.ReferenceAssemblies` (PrivateAssets all). Turn every `packages.config` entry into a `PackageReference` with the same version (the XrmToolBox package version stays the one `versioning-and-release` names) and delete `packages.config`. Keep `AssemblyInfo.cs` (`GenerateAssemblyInfo false`). Update `Scripts/NuGet Pack.ps1` so its XrmToolBox dependency check reads the `PackageReference` and it builds with `dotnet build -c Release`. Update `.vscode/tasks.json` and the capcom note `build-and-test` (`capcom know` edit) to the `dotnet build` / `dotnet test` commands.
+**Regression guard.** Replace the `PostBuildEvent` (empty `$(ConfigurationName)` in SDK style → MSB3073) with `<Target AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">` that `<Copy>`s `$(TargetPath)` + pdb to `$(OutDir)Plugins`; set `AppendTargetFrameworkToOutputPath false` so outputs stay `bin\Debug\` / `bin\Release\` (nuspec, `Deploy Locally.bat`, `launch.json`, tasks.json depend on it). Add `Properties/launchSettings.json` with an `Executable` profile running `bin\Debug\XrmToolBox.exe` with `/overridepath:.` (SDK ignores `StartProgram`). Ship `System.Resources.Extensions.dll` via the nuspec `<files>` (`lib\net48\Plugins`) and `Deploy Locally.bat` unless the executor confirms XrmToolBox already provides that assembly version (record which in NOTES). Update the capcom note `versioning-and-release` (title, line 7) and the nuspec:45 comment from `packages.config` to the `PackageReference`. On macOS the test Acceptance is build-only (mono cannot run the Windows-only GitHelper/FileAndFolderHelper/RichTextBox tests); the full `dotnet test` runs on Windows.
+**Files:** `Bulk Solution Exporter/Bulk Solution Exporter.csproj`, `Bulk Solution Exporter/packages.config`, `Bulk Solution Exporter/Scripts/NuGet Pack.ps1`, `Bulk Solution Exporter.Tests/Bulk Solution Exporter.Tests.csproj`, `.vscode/tasks.json`, `.capcom/knowledge/build-and-test.md`, `.vscode/launch.json`, `Bulk Solution Exporter/Properties/launchSettings.json`, `Bulk Solution Exporter/BulkSolutionExporter.nuspec`, `Bulk Solution Exporter/Scripts/Deploy Locally.bat`, `.capcom/knowledge/versioning-and-release.md`
+**Read first:** `Bulk Solution Exporter/Bulk Solution Exporter.csproj — PostBuildEvent, OutputPath, StartProgram, Import XTB Components.projitems; Bulk Solution Exporter/BulkSolutionExporter.nuspec — files, dependencies; Bulk Solution Exporter/Scripts/NuGet Pack.ps1 — $packagesFile, build block, content check`
+`.vscode/tasks.json — build-solution, build-debug; .vscode/launch.json — Debug in XrmToolBox; .capcom/knowledge/build-and-test.md; .capcom/knowledge/versioning-and-release.md`
+**Tests:** existing suite, unchanged.
+**Acceptance:**
+- `dotnet build "Bulk Solution Exporter.sln" -c Debug` exits 0.
+- `dotnet test "Bulk Solution Exporter.Tests"` exits 0 on Windows. On macOS this item is build-only; record "build only" in NOTES.
+- `ls "Bulk Solution Exporter/bin/Debug/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll" "Bulk Solution Exporter/bin/Debug/Plugins/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll"` succeeds; after `dotnet build -c Release`, `ls "Bulk Solution Exporter/bin/Release/"` lists every file each nuspec `<file src>` names.
+**Commit:** `build: convert plugin and tests to SDK-style net48 projects`
+
+## 2. Create the core library and its net8 test project
+
+**What:**
+**Goal:** `Bulk Solution Exporter.Core` (`net48;net8.0`, namespace `Com.AiricLenz.BulkSolutionExporter.Core`) and `Bulk Solution Exporter.Core.Tests` (MSTest, `net8.0`, `RollForward Major`) are in the solution, the plugin references the core, and `StringExtention`, `Formatter` and `Version`/`VersionTokens` live in core with their tests.
+**Approach (assumed at the header base):** New SDK projects. Move `Extentions/StringExtention.cs`, `Helpers/Formatter.cs`, `Schema/Version.cs` with `git mv`. Make them `public`, drop the stray `System.Windows.Forms` using, and give `Version.IncreaseVersionNumber` an optional `DateTime` for today (default `DateTime.Now`). Core references `Newtonsoft.Json` at the plugin's version. Move `VersionTests.cs` and the formatter tests into core tests. Fix plugin `using`s.
+**Regression guard.** Core `AssemblyName` is `Com.AiricLenz.BulkSolutionExporter.Core`; its net48 DLL is added to the nuspec `<files>` (`lib\net48\Plugins`), `Deploy Locally.bat`, the tasks.json copy and the Debug `Plugins` copy. `SmokeTests.InternalType_Reference_ResolvesToPluginAssembly` points at a type that stays in the plugin (e.g. `ColorHelper`). `MarkdownParserTests.cs` is the source of the moved formatter test (`FormatErrorStringWithXml_OverLimitMessage_ReturnsItUnchanged`); `Formatter.MaxFormattableErrorLength` becomes `public`. `Schema/Solution.cs`, `Settings.cs` and `BulkSolutionExporter_PluginControl.cs` get an explicit using/alias for core `Version` so `using System;` cannot bind `System.Version`.
+**Files:** `Bulk Solution Exporter.Core/Bulk Solution Exporter.Core.csproj`, `Bulk Solution Exporter.Core/Extensions/StringExtention.cs`, `Bulk Solution Exporter.Core/Formatter.cs`, `Bulk Solution Exporter.Core/Version.cs`, `Bulk Solution Exporter.Core.Tests/Bulk Solution Exporter.Core.Tests.csproj`, `Bulk Solution Exporter.Core.Tests/VersionTests.cs`, `Bulk Solution Exporter.sln`, `Bulk Solution Exporter/Bulk Solution Exporter.csproj`, `Bulk Solution Exporter/BulkSolutionExporter.nuspec`, `Bulk Solution Exporter/Scripts/Deploy Locally.bat`, `.vscode/tasks.json`, `Bulk Solution Exporter.Tests/SmokeTests.cs`, `Bulk Solution Exporter.Tests/MarkdownParserTests.cs`, `Bulk Solution Exporter/Schema/Solution.cs`, `Bulk Solution Exporter/Settings.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`
+**Read first:** `Bulk Solution Exporter/Schema/Version.cs — Version.IncreaseVersionNumber, ValidateFormat, VersionTokens; Bulk Solution Exporter/Helpers/Formatter.cs — MaxFormattableErrorLength; Bulk Solution Exporter/Schema/Solution.cs — Version property`
+`Bulk Solution Exporter.Tests/SmokeTests.cs — InternalType_Reference_ResolvesToPluginAssembly; Bulk Solution Exporter.Tests/MarkdownParserTests.cs — FormatErrorStringWithXml_OverLimitMessage_ReturnsItUnchanged; Bulk Solution Exporter.Tests/VersionTests.cs; Bulk Solution Exporter/BulkSolutionExporter.nuspec — files`
+**Tests:** moved version and formatter tests (formatter test from `MarkdownParserTests.cs`), plus one test that pins `YYYY.MM.DD.+` with a fixed date; `SmokeTests` assembly-name test retargeted to a plugin type.
+**Acceptance:** `dotnet build "Bulk Solution Exporter.sln"` exits 0; `dotnet test "Bulk Solution Exporter.Core.Tests"` exits 0.
+**Commit:** `refactor(core): add shared core library with version and formatting helpers`
+Depends on item 1.
+
+## 3. Move file and git helpers to core, cross-platform
+
+**What:**
+**Goal:** `FileAndFolderHelper` and `GitHelper` live in core, behave identically on net48, and on net8 run correctly on macOS/Linux: the repo-root walk terminates and git arguments are passed without hand-quoting.
+**Approach (assumed at the header base):** `git mv` both into `Bulk Solution Exporter.Core/IO/`. Replace the `Path.Combine(x, @"..\")` walk in `FindRepositoryRootPath` with `Directory.GetParent`. In `GitHelper.RunProcess`, use `ProcessStartInfo.ArgumentList` under `#if NET` and keep `QuoteArgument` for net48. Commit message stays on stdin; dash refusal stays. Move `FileAndFolderHelperTests` and `GitHelperTests` into core tests.
+**Regression guard.** `ToSafeFileNamePart` strips the Windows invalid-char set plus `:` and `\` explicitly on every platform; `IsValidSolutionFilePath_AbsoluteZipPath_ReturnsTrue` builds its input from `Path.GetTempPath()`. `RunProcess_LargeOutputOnBothStreams_Completes` uses `sh -c` off Windows, powershell on Windows. `RunProcess` takes `IReadOnlyList<string>` on both targets (net48 joins with `QuoteArgument`, net8 fills `ArgumentList`); update `RunGit` and every `RunProcess` call; `QuoteArgument` stays compiled on both targets. `FindRepositoryRootPath`, `IsValidSolutionFilePath`, `ToSafeFileNamePart`, `RunProcess`, `QuoteArgument`, `ParseBranchList` are `public` (Standing requirements). Update capcom note `untrusted-dataverse-data` refs and its QuoteArgument wording (`capcom know` edit).
+**Files:** `Bulk Solution Exporter.Core/IO/FileAndFolderHelper.cs`, `Bulk Solution Exporter.Core/IO/GitHelper.cs`, `Bulk Solution Exporter.Core.Tests/FileAndFolderHelperTests.cs`, `Bulk Solution Exporter.Core.Tests/GitHelperTests.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `.capcom/knowledge/untrusted-dataverse-data.md`
+**Read first:** `Bulk Solution Exporter/Helpers/FileAndFolderHelper.cs — FindRepositoryRootPath, ToSafeFileNamePart, IsValidSolutionFilePath; Bulk Solution Exporter/Helpers/GitHelper.cs — RunProcess, QuoteArgument, Commit; Bulk Solution Exporter.Tests/GitHelperTests.cs — RunProcess_LargeOutputOnBothStreams_Completes, RunGit`
+`Bulk Solution Exporter.Tests/FileAndFolderHelperTests.cs — ToSafeFileNamePart_HostileName_ContainsNoPathElements, IsValidSolutionFilePath_AbsoluteZipPath_ReturnsTrue; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — InitializeGitHelper; .capcom/knowledge/untrusted-dataverse-data.md`
+**Tests:** new `FindRepositoryRootPath` tests (temp dir with `.git` two levels up; no repo → `string.Empty`); `GitHelper` commit test on a real temp repo passes on macOS.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~FileAndFolder|FullyQualifiedName~GitHelper"` exits 0; solution builds.
+**Commit:** `refactor(core): move file and git helpers to core and make them cross-platform`
+Depends on item 2.
+
+## 4. Move RetryRunner to core with a host-neutral error classifier
+
+**What:**
+**Goal:** `RetryRunner` lives in core with no `System.ServiceModel` dependency. Its retry/fail decisions match today's `run-and-abort-rules` for any exception whose message carries the Dataverse fault text.
+**Approach (assumed at the header base):** `git mv` to `Bulk Solution Exporter.Core/Run/RetryRunner.cs`. Replace `FaultException` matching with message-text classification over `Exception.Message`, including inner exceptions. Add `DataverseOperationException` (core) that gateways throw with the server message. Keep the injected `isAbortRequested`, `log`, `sleep`, `getUtcNow` delegates. Move `RetryRunnerTests`.
+**Regression guard.** `RetryRunner.IsRunAborted` (called by the plugin and `RetryRunnerTests`) and every constant a test reads (`ImportAlreadyRunningFaultText`, `UpgradeAlreadyExistsFaultText`, `RetryWaitSliceInMilliseconds`) are `public` (Standing requirements). Update the capcom note `run-and-abort-rules` (refs line 4, text line 14) to the core path and the message-based fault wording.
+**Files:** `Bulk Solution Exporter.Core/Run/RetryRunner.cs`, `Bulk Solution Exporter.Core/Run/DataverseOperationException.cs`, `Bulk Solution Exporter.Core.Tests/RetryRunnerTests.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `.capcom/knowledge/run-and-abort-rules.md`
+**Read first:** `Bulk Solution Exporter/Helpers/RetryRunner.cs — Execute, IsRunAborted, ImportAlreadyRunningFaultText, UpgradeAlreadyExistsFaultText; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — ExecuteWithRetries, IsRunAborted call site, import catch (FaultException)`
+`Bulk Solution Exporter.Tests/RetryRunnerTests.cs — FakeRetryEnvironment, IsRunAborted_CancelledOrLatchSet_ReportsAbort; .capcom/knowledge/run-and-abort-rules.md`
+**Tests:** every existing RetryRunner case, with `FaultException` swapped for `DataverseOperationException`; one case wrapping the fault text in an inner exception.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RetryRunner"` exits 0; solution builds.
+**Commit:** `refactor(core): move RetryRunner to core with message-based fault classification`
+Depends on item 2.
+
+## 5. Move solution schema and versions file to core
+
+**What:**
+**Goal:** Core owns `SolutionConfiguration`, `ExportedSolutionVersions` and a UI-free `SolutionInfo` (id, unique/friendly name, version, managed flag, description). The plugin's `Solution` keeps only its UI state and wraps `SolutionInfo`. The `exported_versions.json` file name is a core constant.
+**Approach (assumed at the header base):** `git mv` `Schema/SolutionConfiguration.cs` and `Schema/ExportedSolutionVersions.cs` to `Bulk Solution Exporter.Core/Schema/`. Move `BulkSolutionExporter_Plugin.JsonSettingsFileName` to `ExportedSolutionVersions.FileName`. Keep the JSON property names byte-identical, including the `SolutionIndentifier` spelling (persisted data). Add a parameterless ctor. `Solution.ConvertFrom(Entity, Guid)` stays in the plugin and builds a `SolutionInfo`. Move `ExportedSolutionVersionsTests`.
+**Regression guard.** `Solution` keeps public `FriendlyName`, `UniqueName`, `Version` and `SolutionId` properties that delegate to its `SolutionInfo` (the grid binds columns by reflection on these names). `TryLoadExportedSolution` becomes `(string exportFilePath, string uniqueName, out ExportedSolution)`; update the 4 control callers and the test helper `CreateSolution` → a unique-name constant. `ExportedSolution` becomes `public`. `Settings.cs` switches its `using` to the core schema namespace.
+**Files:** `Bulk Solution Exporter.Core/Schema/SolutionConfiguration.cs`, `Bulk Solution Exporter.Core/Schema/ExportedSolutionVersions.cs`, `Bulk Solution Exporter.Core/Schema/SolutionInfo.cs`, `Bulk Solution Exporter/Schema/Solution.cs`, `Bulk Solution Exporter/BulkSolutionExporter_Plugin.cs`, `Bulk Solution Exporter.Core.Tests/ExportedSolutionVersionsTests.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `Bulk Solution Exporter/Settings.cs`
+**Read first:** `Bulk Solution Exporter/Schema/ExportedSolutionVersions.cs — TryLoadExportedSolution, FindMatch; Bulk Solution Exporter/Schema/Solution.cs — Solution, ConvertFrom, SolutionIdentifier; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — UpdateColumns, UpdateSolutionStatusImages`
+`Bulk Solution Exporter/Settings.cs — GetSolutionConfiguration; XTB Components/Sortable Checklist/SortableCheckList.cs — property lookup by PropertyName; Bulk Solution Exporter.Tests/ExportedSolutionVersionsTests.cs — CreateSolution`
+**Tests:** a round-trip test: the JSON from today's `GetJson` deserializes and re-serializes byte-identically.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~ExportedSolution|FullyQualifiedName~SolutionConfiguration"` exits 0; solution builds. Manual Windows check (user): the solution grid shows friendly/unique names and versions and sorts by them.
+**Commit:** `refactor(core): move solution schema and exported versions file to core`
+Depends on items 2, 4.
+
+## 6. Core run log: markup lines with indentation
+
+**What:**
+**Goal:** Core has `RunLog`, which produces the log mini-markup strings (headings, bold/italic/code, `<color=#RRGGBB>`, indent, 10000-char cap) and hands each line to an `Action<string>` sink. The plugin renders the same strings through its existing `MarkdownParser`, so log output is unchanged.
+**Approach (assumed at the header base):** Lift the string-building half of the control's `Log`/`LogError`/`LogDebug` and the indent state of `Helpers/Logger.cs` into `Bulk Solution Exporter.Core/Run/RunLog.cs`, including the colour/markup constants. `Logger` becomes the RichTextBox renderer only. The markup string is the contract both UIs parse.
+**Regression guard.** The 10000-char cap applies per rendered line (split on `"\n"`/`NewLine`, same colour-end-tag closing and `TruncationMarker` as `MarkdownParser.TruncateLine`) or is left to the renderer — never to the whole message; this yields to `Helpers/Formatter.cs:16-20` (the cap is MarkdownParser's per-line limit). `MarkdownParser` keeps `MaxLogLineLength`/`TruncationMarker`. `RunLog` takes a runtime `isDebugEnabled` flag; the plugin passes `#if DEBUG isDebugMode #else false`.
+**Files:** `Bulk Solution Exporter.Core/Run/RunLog.cs`, `Bulk Solution Exporter/Helpers/Logger.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `Bulk Solution Exporter.Core.Tests/RunLogTests.cs`
+**Read first:** `Bulk Solution Exporter/Helpers/Logger.cs — Log(message, indent), GetCurrentIndent, IncreaseIndent; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — Log, LogDebug, LogError, Color* constants, ImportSolution`
+`Bulk Solution Exporter/Helpers/MarkdownParser.cs — ParseAndAppend, TruncateLine; Bulk Solution Exporter/Helpers/Formatter.cs — FormatErrorStringWithXml; Bulk Solution Exporter.Tests/MarkdownParserTests.cs — ParseAndAppend_HugeLine_EndsWithTruncationMarker`
+**Tests:** `RunLogTests` pin the exact strings for heading, error, debug (with `isDebugEnabled` on and off), indented line and per-line truncation (a multi-line message longer than 10000 chars in total, each line shorter, is not cut).
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunLog"` exits 0; solution builds.
+**Commit:** `refactor(core): extract log markup building into RunLog`
+Depends on item 2.
+
+## 7. RunEngine part 1: options, gateway, publish/version/export phases
+
+**What:** Recast at the regression check (2026-10-20).
+**Goal:** Core `RunEngine.Run(RunRequest, IDataverseGateway source, IReadOnlyList<IDataverseGateway> targets, IRunSink sink, CancellationToken)` executes publish-all (source), version update and export (file write + `exported_versions.json`) for exactly the solutions in the request. Behaviour matches the plugin's phases per `run-and-abort-rules`, proven against an in-memory fake gateway.
+**Approach (assumed at the header base):** Deep module, small interface. `RunRequest` = every run setting (the `Settings` toggles, version format, commit message, retry count/delay, continue-on-error, save-version-json) plus the checked `SolutionInfo` list, each paired with its `SolutionConfiguration` clone. `IDataverseGateway`: `ConnectionName`, `PublishAll()`, `UpdateSolutionVersion(id, version)`, `ExportSolution(uniqueName, managed) → byte[]`, `SolutionExists(uniqueName) → bool`, `ImportSolution(bytes, ImportOptions)`, `DeleteAndPromote(uniqueName)`, `RetrieveSolutions(includeManaged) → IReadOnlyList<SolutionInfo>`. `IRunSink`: `Log(string)`, `SolutionVersionChanged(id, version)`, `ConfigurationChanged(SolutionConfiguration)`, `Progress(stepStatus)`. Port the logic of `PublishAll`, `UpdateCheckedVersionNumbers`/`UpdateVersionNumberInSource`, `ExportCheckedSolutions`/`ExportSolution`/`ExportToFile`, `SaveVersionJson` and `GetDefaultFileName`. File paths pass `IsValidSolutionFilePath`. Abort = token, checked between steps.
+**Regression guard.** Publish/version/export are NOT retried: an export or version failure ends the run; source `PublishAll` logs `ex.Message` and continues (as `PluginControl.cs:1677-1684`). This yields to `.capcom/issues/release-2026-03-05/install-upgrade-retries.md:12` (retries for installs and upgrades only); the "Cannot start another" retry test moves to item 8. The engine writes only to each solution's configured `FileNameManaged`/`FileNameUnmanaged` path — no output root; `GetDefaultFileName` is not on the export path. `RunRequest` pairs each `SolutionInfo` with its `SolutionConfiguration` clone. Abort logs "Abort requested — skipping remaining steps." once. `IDataverseGateway.ConnectionName` keeps the logs "Publishing All now (<conn>)", "Handling Target *<conn>*", "[<conn>]".
+Only a thrown gateway call ends the run: a gateway exception from version update or export propagates out of `RunEngine.Run` unchanged (the host keeps `args.Error`, its MessageBox and the no-auto-disable path, `PluginControl.cs:1352`, `:1373-1379`). An invalid version format, a missing file name and an invalid file path are logged and skipped, and the run continues (as `:2162`/`:1727`, `:2084`, `:2094`). `IRunSink` gains `SolutionProcessed(solutionId)`, raised after each solution's export (item 8: after each import too); its contract says the host handles it synchronously (the list refresh must not race `SaveVersionJson`, `.capcom/knowledge/ui-thread-rules.md:10`).
+**Files:** `Bulk Solution Exporter.Core/Run/RunEngine.cs`, `Bulk Solution Exporter.Core/Run/RunRequest.cs`, `Bulk Solution Exporter.Core/Run/IDataverseGateway.cs`, `Bulk Solution Exporter.Core/Run/IRunSink.cs`, `Bulk Solution Exporter.Core.Tests/Fakes/FakeDataverseGateway.cs`, `Bulk Solution Exporter.Core.Tests/RunEngineExportTests.cs`
+**Read first:** `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — ExecuteOperations, ExportCheckedSolutions, ExportToFile, UpdateVersionNumberInSource, SaveVersionJson; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — RefreshSolutionInListBox, WriteBackSolutionConfiguration`
+`.capcom/knowledge/ui-thread-rules.md`
+**Tests:** only the checked solutions are processed; abort after export of solution 1 stops solution 2 and logs the abort line once; a non-rooted traversal file name is rejected; the version JSON is written; an export failure ends the run without retry; a source publish-all failure is logged and the run continues; the configured file path is written as-is; a gateway exception from version update or export is thrown out of `Run` and no later phase is called; an invalid version format, a missing file name and an invalid path are logged and the next solution is still exported; `SolutionProcessed` is raised once per exported solution.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunEngine"` exits 0.
+**Commit:** `feat(core): add RunEngine with publish, version and export phases`
+Depends on items 3, 4, 5, 6.
+
+## 8. RunEngine part 2: git and import phases
+
+**What:**
+**Goal:** `RunEngine` also runs the git phase (add session files, commit, optional push; skipped entirely on abort) and, per target, import with holding-upgrade + `DeleteAndPromote`, optional publish-all, and continue-on-error. Every engine-side rule in `run-and-abort-rules` (git skipped on abort; "Cannot start another [Import]" retried; "_Upgrade already exists" fails without promote; exhausted retries → failure; holding install + promote; continue-on-error) has a fake-gateway test; host-side rules (UI-thread snapshot, settings flush, no auto-disable on abort, "Aborted by user." line) belong to item 9.
+**Approach (assumed at the header base):** Port `HandleGit`, `ImportCheckedSolutions`/`ImportSolution`/`DoesSolutionExistInTarget` and target `PublishAll`. Holding = managed && exists && upgrade on; holding install + promote is one step. "_Upgrade already exists" fails that solution without promote. The result is `RunResult` (aborted flag, per-solution outcomes, step durations), so the hosts render Done/Aborted. Git goes through an injected `IGitClient` that wraps core `GitHelper`. Preserve today's import quirks: RetryCount ≤ 0 → 3 retries, delay ≤ 0 → 5 s; a `SolutionExists` error is logged and treated as not installed; a commit failure still attempts push; `ImportSolution` catches everything and returns false.
+**Regression guard.** Core ships a production `GitClient : IGitClient` wrapping `GitHelper`. The engine derives the repo root from the first configured file path via `FindRepositoryRootPath`, exactly as `InitializeGitHelper` does.
+**Files:** `Bulk Solution Exporter.Core/Run/RunEngine.cs`, `Bulk Solution Exporter.Core/Run/RunResult.cs`, `Bulk Solution Exporter.Core/Run/IGitClient.cs`, `Bulk Solution Exporter.Core/Run/GitClient.cs`, `Bulk Solution Exporter.Core.Tests/Fakes/FakeGitClient.cs`, `Bulk Solution Exporter.Core.Tests/RunEngineImportTests.cs`
+**Read first:** `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — ExecuteOperations (target loop), ImportSolution, ExecuteWithRetries, DoesSolutionExistInTarget, HandleGit, InitializeGitHelper`
+`Bulk Solution Exporter/Helpers/GitHelper.cs — AddFile, Commit, Push; Bulk Solution Exporter/Helpers/RetryRunner.cs — Execute, UpgradeAlreadyExistsFaultText; .capcom/knowledge/run-and-abort-rules.md`
+**Tests:** holding path calls `DeleteAndPromote`; an unmanaged import never uses holding; abort skips git; continue-on-error moves on to the next solution; two targets are each imported; exhausted retries → failure; "_Upgrade already exists" fails the solution without calling `DeleteAndPromote`; an import retry on "Cannot start another" succeeds; the git repo root comes from the first configured file path.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunEngine"` exits 0.
+**Commit:** `feat(core): add git and import phases to RunEngine`
+Depends on item 7.
+
+## 9. XTB plugin runs through RunEngine
+
+**What:** Recast at the regression check (2026-10-20).
+**Goal:** The plugin's Execute path builds a complete `RunRequest` on the UI thread and runs `RunEngine` inside `WorkAsync`, through an `OrganizationServiceGateway` adapter. No worker-thread code reads a UI control. Log output, abort and settings write-back behave as before.
+**Approach (assumed at the header base):** New `Bulk Solution Exporter/Run/OrganizationServiceGateway.cs` (wraps `IOrganizationService`: `PublishAllXmlRequest`, `Entity("solution")` update, `ExportSolutionRequest`, `QueryExpression` exists check, `ImportSolutionRequest`, `DeleteAndPromoteRequest`; turns `FaultException` into `DataverseOperationException`; `ConnectionName` = `ConnectionDetail.ConnectionName`). New `Run/ControlRunSink.cs` (marshals to UI as the guard below says). `ExecuteOperations` builds `RunRequest` through `RunRequestFactory` (as the guard below says), replacing `ExecutionSettingsSnapshot`. Delete only the old per-phase methods whose sole callers were in `ExecuteOperations`. `PostWorkCallBack` reads `RunResult` from a field.
+**Regression guard.** `ControlRunSink` uses synchronous `Invoke` for `SolutionVersionChanged` and `Log`, `BeginInvoke` only for progress text (yields to `PluginControl.cs:2189` and `:3105`, "Invoke, not BeginInvoke"). `RunResult` is kept in a field; `isAborted = RunResult?.Aborted ?? cts.IsCancellationRequested`. `IRunSink.Progress` is routed via `ReportProgress` so the `isAborting` guard holds. `GetDefaultFileName` stays callable by browse/wizard. Static `RunRequestFactory` lives in the plugin; `SmokeTests` uses its own tiny fake gateway. Behaviour clauses of the Goal are the user's manual Windows check.
+RunRequestFactory builds publish/version/export/git/push/import/upgrade/overwrite/publish-target toggles, version format and commit message from the controls' IsOn/Text on the UI thread; only SaveVersionJson, retry count/delay, ContinueOnError and the solution configs come from Settings; the smoke test passes explicit toggles rather than relying on `new Settings()` defaults. The CancellationTokenSource is cancelled unconditionally before the if/else in button_Export_Click. ControlRunSink handles item 7's per-solution processed event synchronously (Invoke), like SolutionVersionChanged. Rule: every capcom ref or text naming a deleted symbol is updated (`grep -rn 'ExecutionSettingsSnapshot\|IsAbortRequested\|worker-reads-ui-controls' .capcom` shows only intended hits). This yields to `.capcom/issues/worker-reads-ui-controls.md:14` (switch values captured on the UI thread, not Settings).
+**Files:** `Bulk Solution Exporter/Run/OrganizationServiceGateway.cs`, `Bulk Solution Exporter/Run/ControlRunSink.cs`, `Bulk Solution Exporter/Run/RunRequestFactory.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `Bulk Solution Exporter.Tests/SmokeTests.cs`, `.capcom/knowledge/run-and-abort-rules.md`, `.capcom/knowledge/ui-thread-rules.md`
+**Read first:** `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — ExecuteOperations, button_Export_Click, OnPluginControl_Load, ExecutionSettingsSnapshot; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.designer.cs — flipSwitch_updateVersion`
+`Bulk Solution Exporter/Settings.cs — Settings ctor; Bulk Solution Exporter.Tests/SmokeTests.cs — SmokeTests; .capcom/issues/worker-reads-ui-controls.md`
+**Closes:** worker-reads-ui-controls
+**Tests:** smoke test builds a `RunRequest` via `RunRequestFactory`, passing explicit toggles rather than relying on `new Settings()` defaults, and runs it against the test's own tiny fake gateway.
+**Acceptance:** `dotnet build "Bulk Solution Exporter.sln"` exits 0; `grep -nE "flipSwitch_|textBox_" "Bulk Solution Exporter/Run/"*.cs` prints nothing; the extracted Work method grepped for `flipSwitch_|textBox_|listBox` prints nothing; `dotnet test "Bulk Solution Exporter.Core.Tests"` exits 0; `dotnet test "Bulk Solution Exporter.Tests"` exits 0 on Windows; on macOS it is build-only and "build only" is recorded in NOTES (item 1's rule); `grep -rn 'ExecutionSettingsSnapshot\|IsAbortRequested\|worker-reads-ui-controls' .capcom` shows only intended hits.
+**Commit:** `refactor(plugin): run Execute through the shared RunEngine`
+Depends on item 8.
+
+## 10. PPTB worker: host, protocol and run method
+
+**What:**
+**Goal:** `Bulk Solution Exporter.PptbWorker` (net8.0, `PackAsTool`, PackageId `AiricLenz.BulkSolutionExporter.PptbWorker`, command `bse-pptb-worker`, StreamJsonRpc) answers `platform/initialize` (`jsonrpc-stdio-v1`, v1) and exposes `run/start` and `run/abort`. It runs `RunEngine` with a `RpcDataverseGateway` that reverse-calls TS (`dataverse/publishAll`, `dataverse/updateSolutionVersion`, `dataverse/exportSolution` → base64, `dataverse/solutionExists`, `dataverse/importSolution` ← base64, `dataverse/deleteAndPromote`, `dataverse/retrieveSolutions`; each takes a `target` index, 0 = source), and streams `run/log`, `run/progress`, `run/solutionVersionChanged`, `run/configurationChanged` and `run/solutionProcessed` notifications.
+**Approach (assumed at the header base):** Follow the sample worker .csproj (no RID, no self-contained, `RestorePackagesWithLockFile`). stdout carries only JSON-RPC; diagnostics go to stderr. The JSON-RPC loop keeps dispatching during reverse calls (run on a background task). Remote errors become `DataverseOperationException`.
+**Regression guard.** The protocol also emits `run/solutionVersionChanged`, `run/configurationChanged` and `run/solutionProcessed` (from item 7's `IRunSink.SolutionProcessed`) notifications (items 13–15 consume them). The `packages.lock.json` files that `RestorePackagesWithLockFile` writes (worker, and the tests' if the setting is inherited) are committed.
+**Files:** `Bulk Solution Exporter.PptbWorker/Bulk Solution Exporter.PptbWorker.csproj`, `Bulk Solution Exporter.PptbWorker/Program.cs`, `Bulk Solution Exporter.PptbWorker/WorkerMethods.cs`, `Bulk Solution Exporter.PptbWorker/RpcDataverseGateway.cs`, `Bulk Solution Exporter.PptbWorker.Tests/Bulk Solution Exporter.PptbWorker.Tests.csproj`, `Bulk Solution Exporter.PptbWorker.Tests/WorkerProtocolTests.cs`, `Bulk Solution Exporter.sln`, `Bulk Solution Exporter.PptbWorker/packages.lock.json`, `Bulk Solution Exporter.PptbWorker.Tests/packages.lock.json` (if inherited)
+**Read first:** `Bulk Solution Exporter.sln; Bulk Solution Exporter/Scripts/NuGet Pack.ps1 — msbuild $solutionFile /t:Rebuild (builds every sln project, worker included); Bulk Solution Exporter/Helpers/GitHelper.cs — GitHelper (IGitClient backing); Bulk Solution Exporter/Helpers/RetryRunner.cs — RetryRunner`
+**Tests:** in-process duplex-pipe JSON-RPC: initialize handshake; `run/start` against a TS-side fake that answers the reverse calls writes the ZIP to a temp dir; `run/abort` mid-run yields an aborted result; a version update emits `run/solutionVersionChanged`, a configuration change emits `run/configurationChanged` and each exported solution emits `run/solutionProcessed`.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.PptbWorker.Tests"` exits 0. `dotnet pack "Bulk Solution Exporter.PptbWorker" -c Release -o artifacts/worker` produces a nupkg whose `tools/net8.0/any/` holds `DotnetToolSettings.xml` and the core DLL (`unzip -l`).
+**Commit:** `feat(pptb): add .NET worker hosting RunEngine over JSON-RPC`
+Depends on item 8.
+
+## 11. PPTB worker: workspace methods
+
+**What:**
+**Goal:** The worker exposes the non-run operations the UI needs: `git/branches`, `git/switchBranch`, `files/status` (per solution: exported version and staleness from `exported_versions.json`, file present), `files/exportCsv` (columns `Unique Name, Solution Guid, Version`), `files/suggestFileNames` (the file-location wizard's names via `GetDefaultFileName`). All inputs are validated per `untrusted-dataverse-data`.
+**Approach (assumed at the header base):** Thin methods over core `GitHelper`, `ExportedSolutionVersions`, `FileAndFolderHelper` and the CSV writer, which moves from the control's `ExportSolutionCsv` into core `Schema/SolutionCsv.cs` (the plugin calls the core version).
+**Regression guard.** The `files/status` staleness rules are ported from the control's `UpdateSolutionStatusImages`/`UpdateFileWarningStatus` into core (gated on `SaveVersionJson` as today) and the plugin calls the core version — not re-derived.
+**Files:** `Bulk Solution Exporter.PptbWorker/WorkspaceMethods.cs`, `Bulk Solution Exporter.Core/Schema/SolutionCsv.cs`, `Bulk Solution Exporter.Core/Schema/SolutionFileStatus.cs`, `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs`, `Bulk Solution Exporter.PptbWorker.Tests/WorkspaceMethodsTests.cs`
+**Read first:** `Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — ExportSolutionCsv, UpdateSolutionStatusImages, UpdateFileWarningStatus, button_fileWizzard_Click, InitializeGitHelper`
+`Bulk Solution Exporter/Schema/ExportedSolutionVersions.cs — TryLoadExportedSolution; Bulk Solution Exporter/Helpers/GitHelper.cs — GetAllBranches, SwitchToBranch`
+**Tests:** branch listing on a temp repo; stale-file detection (ported control rules, including the `SaveVersionJson` gate); CSV content pinned; a traversal file name is refused.
+**Acceptance:** `dotnet test "Bulk Solution Exporter.PptbWorker.Tests"` exits 0; solution builds.
+**Commit:** `feat(pptb): add git, file status and CSV methods to the worker`
+Depends on item 10.
+
+## 12. PPTB tool scaffold, manifest and Dataverse bridge
+
+**What:**
+**Goal:** `pptb/` is a buildable PPTB tool with a valid manifest (`npm run validate` = `pptb-validate` passes). Its TS Dataverse bridge answers every reverse call from item 10 using `dataverseAPI` against the right connection index.
+**Approach (assumed at the header base):** Vite + React 18 + Fluent UI v9 + Vitest, IIFE single-bundle config per the PPTB samples. `package.json`: name `@airiclenz/pptb-bulk-solution-exporter`, displayName "Bulk Solution Exporter", license `GPL-3.0`, icon `icons/tool.svg` (from `Images/`, `fill="currentColor"`), `features: { connections: { min: 1, max: 10 }, minAPI: "1.2.7" }`, `configurations.repository` = the GitHub repo. `pptb.config.json` declares worker `engine` (packageId/command from item 10, `net8.0`, `minimumRuntimeVersion 8.0.0`, `rollForward Major`, `platforms ["all"]`); `packageVersion` is a literal in `pptb.config.json` (item 16's check enforces it equals the worker .csproj `Version`). `src/dataverseBridge.ts`: ExportSolution via `execute` (action), import via `execute` `ImportSolution` (with `HoldingSolution`), `DeleteAndPromote`, `PublishAllXml`, `update("solution")`, solutions via `queryData`.
+**Regression guard.** `package.json` also carries `description`, `contributors: [{name:"Airic Lenz"}]` and `configurations.readmeUrl` = `https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/master/README.md` (`@pptb/validate` 1.0.5 requires both). The source icon is `pptb/public/icons/tool.svg` (bundled under dist). The worker entry has `kind: "dotnet-tool"`. License `GPL-3.0` is forced by `APPROVED_LICENSES`; it supersedes `.capcom/knowledge/versioning-and-release.md:10` ("GPL-3.0-only everywhere") for the npm package (item 16 records the exception). `pptb/package-lock.json` is committed; `.gitignore` gains `pptb/dist/` and `pptb/*.tgz`. A rejected `dataverseAPI.execute` surfaces its original message text unchanged (RetryRunner classifies by message text).
+**Files:** `pptb/package.json`, `pptb/pptb.config.json`, `pptb/vite.config.ts`, `pptb/tsconfig.json`, `pptb/index.html`, `pptb/src/main.tsx`, `pptb/src/dataverseBridge.ts`, `pptb/src/dataverseBridge.test.ts`, `pptb/package-lock.json`, `pptb/public/icons/tool.svg`, `.gitignore`
+**Read first:** `pptb/package.json — license, contributors, configurations, features; scratch @pptb/validate dist/validate.js — validatePackageJson, validateWorkers, APPROVED_LICENSES; @pptb/types dataverseAPI.d.ts — execute, queryData, update, ConnectionTarget`
+`@pptb/types toolboxAPI.d.ts — WorkerSessionOptions.requests; Bulk Solution Exporter/Helpers/RetryRunner.cs — ImportAlreadyRunningFaultText, UpgradeAlreadyExistsFaultText; .gitignore`
+**Tests:** Vitest with a mocked `window.dataverseAPI`: each bridge method calls the expected operation with the right connection target; a holding import sets `HoldingSolution: true`; a rejected `dataverseAPI.execute` surfaces its original message text unchanged in the reverse-call error.
+**Acceptance:** `cd pptb && npm ci && npm run build && npm test && npm run validate` exit 0 (`npm run validate` needs network: it HEAD-fetches the repository and readme URLs); `dist/index.html` has no `type="module"`.
+**Commit:** `feat(pptb): scaffold PPTB tool with manifest and Dataverse bridge`
+Depends on item 10.
+
+## 13. PPTB settings store and worker client
+
+**What:**
+**Goal:** `src/settingsStore.ts` persists the global settings (the `Settings` fields, minus XTB-only UI ones) and per-solution `SolutionConfiguration`s through `toolboxAPI.settings`, keyed by lower-cased environment URL + `.` + unique name. `src/workerClient.ts` wraps `toolboxAPI.workers.connect('engine', …)`: it registers the bridge, awaits `ready`, offers typed `startRun`/`abort`/workspace calls and log/progress subscriptions, and stops the worker on unload.
+**Approach (assumed at the header base):** Typed mirrors of `RunRequest`, `RunResult`, `SolutionConfiguration` in `src/types.ts`, field names matching the C# JSON. Saves are debounced. `ConfigurationChanged` notifications write back through the store.
+**Regression guard.** The client routes item 10's `run/configurationChanged` and `run/solutionVersionChanged` notifications to the store. Defaults are those of `new Settings()` (`SaveVersionJson` false, `Upgrade` true, `VersionFormat` "YYYY.MM.DD.+", `RetryCount` 3, `RetryDelayInSeconds` 10), not the property initializers; excluded XTB-only fields: sorting, splitter, tooltips, `LastUsedOrganizationWebappUrl`, `ConnectionTimeoutInMinutes`.
+**Files:** `pptb/src/types.ts`, `pptb/src/settingsStore.ts`, `pptb/src/settingsStore.test.ts`, `pptb/src/workerClient.ts`, `pptb/src/workerClient.test.ts`
+**Read first:** `Bulk Solution Exporter/Settings.cs — Settings ctor, SaveVersionJson, Upgrade, RetryCount; Bulk Solution Exporter/Schema/SolutionConfiguration.cs — SolutionIndentifier, LastExport*/LastImport*`
+`@pptb/types toolboxAPI.d.ts — WorkersAPI.connect, WorkerSession, SettingsAPI, Connection.url; pptb/src/dataverseBridge.ts`
+**Tests:** keying by URL (case-insensitive); defaults match `new Settings()` (values above); the worker client registers every bridge method from item 10 by name; `run/configurationChanged` and `run/solutionVersionChanged` notifications reach the store.
+**Acceptance:** `cd pptb && npm test && npm run build` exit 0.
+**Commit:** `feat(pptb): add settings store and typed worker client`
+Depends on item 12.
+
+## 14. PPTB UI: solution grid and run options
+
+**What:**
+**Goal:** The main view lists source solutions in a Fluent `DataGrid`: checkbox, friendly/logical name toggle, version, target version status icon (equal/different/missing, single target), file status icon (from `files/status`), sortable columns, text filter, persisted check state and order. Above it are the run-option switches (publish source, update version + format with `Version.ValidateFormat` rules, export managed/unmanaged, git commit/push + message, import managed/unmanaged, upgrade, overwrite, publish target).
+**Approach (assumed at the header base):** Components in `src/components/`. Solutions load through the bridge (`retrieveSolutions`) for index 0 and, when exactly one target exists, for index 1. Theme follows `toolboxAPI.utils.getCurrentTheme`.
+**Regression guard.** `versionFormat` mirrors `Version.ValidateFormat`: 2–4 dot-separated parts, each exactly one of `+ # YYYY MM DD`; accept "YYYY.MM.DD.+", "#.+"; reject "1", "#.#.#.#.#", "YYYY.X", "". At least one of friendly/logical name is always shown (turning one off forces the other on, as `SettingsForm` does).
+**Files:** `pptb/src/App.tsx`, `pptb/src/components/SolutionGrid.tsx`, `pptb/src/components/RunOptions.tsx`, `pptb/src/components/SolutionGrid.test.tsx`, `pptb/src/versionFormat.ts`, `pptb/src/versionFormat.test.ts`
+**Read first:** `Bulk Solution Exporter/Schema/Version.cs — ValidateFormat, VersionTokens; Bulk Solution Exporter.Tests/VersionTests.cs; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — SetExportButtonState, column setup (ShowFriendly/ShowLogicalSolutionNames)`
+`Bulk Solution Exporter/SettingsForm.cs — name flip switch handlers; pptb/src/settingsStore.ts`
+**Tests:** React Testing Library: filtering, sorting, check persistence via a mocked store, the name toggle never hides both name columns; `versionFormat` accepts and rejects the cases pinned in the guard.
+**Acceptance:** `cd pptb && npm test && npm run build` exit 0.
+**Commit:** `feat(pptb): add solution grid and run options`
+Depends on item 13.
+
+## 15. PPTB UI: run panel, log view, settings dialog, file wizard, git branch
+
+**What:**
+**Goal:** Execute starts `run/start` with the checked snapshot. The UI is disabled while running and Abort calls `run/abort`. The log view renders the `RunLog` markup safely: text nodes only, no `innerHTML`, `<color>` restricted to `#RRGGBB`. The settings dialog edits retry/continue-on-error/save-version-json/auto-disable. The file-location wizard sets per-solution paths through `selectPath` + `files/suggestFileNames`. A branch picker uses `git/branches`/`git/switchBranch`. CSV export uses `files/exportCsv`. `toolboxAPI.utils.preventClose` is held during a run.
+**Approach (assumed at the header base):** `src/logMarkup.ts` is a pure parser of the item-6 markup into spans, with tests mirroring `MarkdownParserTests` cases.
+**Regression guard.** Execute is enabled only under `SetExportButtonState`'s rules (≥1 solution checked, ≥1 action on, commit message ≥5 chars when commit is on, valid version format when update-version is on), and `AutoDisableExportButtons` is honoured. The settings dialog edits retry count and retry delay explicitly. The log's markup colours (`Color*` constants, e.g. #000077, #770000) map to theme-aware tokens so they stay readable on the PPTB dark theme.
+**Files:** `pptb/src/logMarkup.ts`, `pptb/src/logMarkup.test.ts`, `pptb/src/components/RunPanel.tsx`, `pptb/src/components/SettingsDialog.tsx`, `pptb/src/components/FileWizard.tsx`, `pptb/src/components/GitBranchPicker.tsx`, `pptb/src/App.tsx`, `pptb/src/components/RunPanel.test.tsx`
+**Read first:** `Bulk Solution Exporter/Helpers/MarkdownParser.cs — ProcessFormattedText, TruncateLine, MaxNestingDepth, _colorTokenRegex; Bulk Solution Exporter.Tests/MarkdownParserTests.cs; Bulk Solution Exporter/BulkSolutionExporter_PluginControl.cs — SetExportButtonState, Color* constants`
+`Bulk Solution Exporter/SettingsForm.cs; @pptb/types toolboxAPI.d.ts — preventClose, releasePreventClose, selectPath`
+**Tests:** the markup parser covers headings, nesting cap, colour, and a hostile `<script>` string rendered as text; one test that Execute stays disabled when commit is on and the message is shorter than 5 chars.
+**Acceptance:** `cd pptb && npm test && npm run build && npm run validate` exit 0 (`npm run validate` needs network).
+**Commit:** `feat(pptb): add run panel, log view, settings, file wizard and branch picker`
+Depends on item 14.
+
+## 16. Packaging scripts and docs
+
+**What:**
+**Goal:** One script per artifact builds a publishable package: `pptb/scripts/pack-worker.sh` (`dotnet pack` → `artifacts/worker`) and `npm pack` in `pptb/`, with a check that `pptb.config.json`'s `packageVersion` equals the worker .csproj `Version`. `README.md` gains a "Power Platform ToolBox" section (install, the .NET 8 runtime requirement, connection 0 = source, 1..n = targets). The capcom note `versioning-and-release` describes the worker/npm versions and the nuget-then-npm publish order. A new capcom note `pptb-architecture` covers core/worker/UI and the RPC method list.
+**Regression guard.** Acceptance asserts the `npm pack --dry-run --json` listing contains `dist/index.html`, `pptb.config.json` and the icon; `package.json` `files` is set accordingly. The `versioning-and-release` note states the npm (3-part semver) and worker NuGet version schemes and amends its "GPL-3.0-only everywhere" line for the npm `GPL-3.0` exception. `check-worker-version.mjs` takes path arguments so the mismatch test can target a temp copy.
+**Files:** `pptb/scripts/pack-worker.sh`, `pptb/scripts/check-worker-version.mjs`, `pptb/package.json`, `README.md`, `.capcom/knowledge/versioning-and-release.md`, `.capcom/knowledge/pptb-architecture.md`, `.gitignore`
+**Read first:** `.capcom/knowledge/versioning-and-release.md — version format, licence line; README.md — Quick Start, License; .gitignore — artifacts/, node_modules/; pptb/package.json — files, scripts; pptb/pptb.config.json — workers.engine.packageVersion`
+**Tests:** `check-worker-version.mjs`, given paths to a deliberately mismatched temp copy, fails.
+**Acceptance:** `sh pptb/scripts/pack-worker.sh && cd pptb && node scripts/check-worker-version.mjs && npm pack --dry-run --json` exit 0 and the JSON file list contains `dist/index.html`, `pptb.config.json` and the icon; `capcom know show pptb-architecture` prints the note.
+**Commit:** `docs(pptb): add packaging scripts and PPTB documentation`
+Depends on items 11, 15.
