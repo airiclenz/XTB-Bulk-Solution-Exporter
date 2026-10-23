@@ -1,6 +1,7 @@
-import { FluentProvider, Text, webLightTheme } from "@fluentui/react-components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+
+import { App } from "./App";
 
 const ROOT_ELEMENT_ID = "root";
 
@@ -12,8 +13,6 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
 	<StrictMode>
-		<FluentProvider theme={webLightTheme}>
-			<Text>Bulk Solution Exporter</Text>
-		</FluentProvider>
+		<App />
 	</StrictMode>,
 );
