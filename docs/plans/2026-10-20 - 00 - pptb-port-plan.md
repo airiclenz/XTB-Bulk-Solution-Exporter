@@ -384,7 +384,17 @@ NOTES (2026-10-23): this machine has no Node.js, so checks ran with a portable N
 **Commit:** `feat(pptb): scaffold PPTB tool with manifest and Dataverse bridge`
 Depends on item 10.
 
-## 13. PPTB settings store and worker client
+## 13. PPTB settings store and worker client — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): re-derived from the assumed `RunResult` mirror. `run/start` answers with the worker's `RunReport` and `StepReport` wire classes from item 10, which have durations in seconds. `types.ts` mirrors those under the same names. `SolutionInfo` is an alias of the bridge's `SolutionRecord`, so the two shapes cannot drift apart.
+
+NOTES (2026-10-23): `toolboxAPI.settings` stores the data under two keys. `settings` holds the global `ToolSettings`. `solutionConfigurations` holds an object keyed by identifier (lower-cased URL + `.` + unique name, with the unique name's case kept, as in XTB's `Solution.SolutionIdentifier`). Saves are debounced by 500 ms, and only the dirty keys are written. A failed save keeps its key pending and goes to `onSaveError`, which defaults to `console.error`. Stored values that are missing or have the wrong type fall back to the `new Settings()` defaults. That includes `commitMessage` "XTB Commit - YYYY.MM.DD", kept exactly as the item requires.
+
+NOTES (2026-10-23): `SolutionConfiguration` has no version field, so `run/solutionVersionChanged` needs another place in the store. The store therefore also keeps the source solution list for the session: `setSolutions`/`getSolutions`/`applySolutionVersion`, held in memory and never persisted. This is the PPTB counterpart of XTB's `ApplySolutionVersion`. `run/configurationChanged` merges only the four durations (`applyRunConfiguration`), as in XTB's `ApplyRunConfiguration`. Getters return frozen snapshots that are replaced on change, and `subscribe` notifies after every change, ready for React's `useSyncExternalStore` in items 14–15.
+
+NOTES (2026-10-23): `WorkerClient.connect(store)` registers one handler per `DataverseMethod` at connect time. Each handler delegates to the active run's bridge. `startRun(request, { source, targets })` builds that bridge from `[source.connectionSlot, ...target slots]`, refuses a second concurrent run on the client side, and resets the bridge to `createDataverseBridge([])` when the run ends. A reverse call outside a run therefore rejects without calling Dataverse. Additions beyond the item text: the `onSolutionProcessed` and `onExit` subscriptions. On unload, a `pagehide` handler (`unload` is deprecated) flushes the store and stops the worker. A worker that fails `ready` is disposed and the failure rethrown.
+
+NOTES (2026-10-23): the file names stay camelCase, as the plan names them (and as item 12 did), not the kebab-case of the TS standard. This machine has no Node.js, so the session scratchpad's portable Node 22.23.4 ran `npm test` (48 tests, 32 of them new) and `npm run build`. Both exit 0.
 
 **What:**
 **Goal:** `src/settingsStore.ts` persists the global settings (the `Settings` fields, minus XTB-only UI ones) and per-solution `SolutionConfiguration`s through `toolboxAPI.settings`, keyed by lower-cased environment URL + `.` + unique name. `src/workerClient.ts` wraps `toolboxAPI.workers.connect('engine', …)`: it registers the bridge, awaits `ready`, offers typed `startRun`/`abort`/workspace calls and log/progress subscriptions, and stops the worker on unload.
