@@ -23,6 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{02EA
 		.github\copilot-instructions.md = .github\copilot-instructions.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bulk Solution Exporter.PptbWorker", "Bulk Solution Exporter.PptbWorker\Bulk Solution Exporter.PptbWorker.csproj", "{F850B030-0436-42C0-A687-8FDC5536FAE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bulk Solution Exporter.PptbWorker.Tests", "Bulk Solution Exporter.PptbWorker.Tests\Bulk Solution Exporter.PptbWorker.Tests.csproj", "{D03EDF57-949A-4442-B919-1418496E903A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +49,14 @@ Global
 		{78899F35-284A-4D18-9EA9-2CC4BA4CC320}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78899F35-284A-4D18-9EA9-2CC4BA4CC320}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78899F35-284A-4D18-9EA9-2CC4BA4CC320}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F850B030-0436-42C0-A687-8FDC5536FAE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F850B030-0436-42C0-A687-8FDC5536FAE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F850B030-0436-42C0-A687-8FDC5536FAE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F850B030-0436-42C0-A687-8FDC5536FAE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D03EDF57-949A-4442-B919-1418496E903A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D03EDF57-949A-4442-B919-1418496E903A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D03EDF57-949A-4442-B919-1418496E903A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D03EDF57-949A-4442-B919-1418496E903A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

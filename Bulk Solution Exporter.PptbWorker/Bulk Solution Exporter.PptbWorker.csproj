@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		The Power Platform ToolBox worker: a framework-dependent .NET tool that PPTB
+		launches with `dotnet exec` and talks to over JSON-RPC on stdin/stdout.
+		PPTB runs only the files inside tools/net8.0/any/ of the package, so keep it
+		portable: no RuntimeIdentifier(s), no SelfContained, no PublishAot.
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>Com.AiricLenz.BulkSolutionExporter.PptbWorker</RootNamespace>
+		<AssemblyName>Com.AiricLenz.BulkSolutionExporter.PptbWorker</AssemblyName>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>bse-pptb-worker</ToolCommandName>
+		<PackageId>AiricLenz.BulkSolutionExporter.PptbWorker</PackageId>
+		<Authors>Airic Lenz</Authors>
+		<Description>.NET worker of the Bulk Solution Exporter tool for Power Platform ToolBox.</Description>
+		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+		<DebugType>portable</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="StreamJsonRpc" Version="2.25.29" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Bulk Solution Exporter.Core\Bulk Solution Exporter.Core.csproj" />
+	</ItemGroup>
+
+</Project>
