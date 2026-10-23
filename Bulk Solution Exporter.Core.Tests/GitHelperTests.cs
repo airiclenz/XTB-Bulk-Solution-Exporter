@@ -39,6 +39,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		// space makes the path need quoting.
 		private const string CommittedFileName = "exported solution.zip";
 
+		// Object id git gives a blob with no content: what "git hash-object
+		// --stdin" prints when its standard input is at end of input.
+		private const string EmptyBlobHash = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391";
+
 
 		// ============================================================================
 		[TestMethod]
@@ -170,6 +174,34 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			{
 				DeleteDirectory(repositoryPath);
 			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// A child started without input must read end of input, never the
+		/// test host's own standard input: the PPTB worker's stdin carries its
+		/// JSON-RPC protocol. Run with data piped into the test command (or
+		/// from a terminal) an inherited stdin makes git hash that data or
+		/// block until the timeout.
+		/// </summary>
+		[TestMethod]
+		[Timeout(RunTimeoutInMilliseconds)]
+		public void RunProcess_NoStandardInput_ChildReadsEndOfInput()
+		{
+			// Act
+			int exitCode = GitHelper.RunProcess(
+				GitExecutable,
+				new[] { "hash-object", "--stdin" },
+				Path.GetTempPath(),
+				null,
+				null,
+				out string standardOutput,
+				out string standardError);
+
+			// Assert
+			Assert.AreEqual(0, exitCode, standardError);
+			Assert.AreEqual(EmptyBlobHash, standardOutput.Trim());
 		}
 
 

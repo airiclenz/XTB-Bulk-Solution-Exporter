@@ -125,8 +125,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		/// </param>
 		/// <param name="standardInput">
 		/// Text written to the process's standard input as UTF-8 without a byte
-		/// order mark, after which the input is closed; <c>null</c> leaves the
-		/// standard input untouched.
+		/// order mark, after which the input is closed; <c>null</c> closes it
+		/// at once. The input is always redirected, so the process reads end of
+		/// input and never the caller's own standard input (the PPTB worker
+		/// speaks JSON-RPC on it).
 		/// </param>
 		/// <returns>The process exit code.</returns>
 		/// <exception cref="ArgumentNullException">
@@ -147,12 +149,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 				throw new ArgumentNullException(nameof(arguments));
 			}
 
-			bool hasStandardInput = standardInput != null;
-
 			ProcessStartInfo processStartInfo = new ProcessStartInfo()
 			{
 				FileName = fileName,
-				RedirectStandardInput = hasStandardInput,
+				RedirectStandardInput = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
 				UseShellExecute = false,
@@ -177,9 +177,15 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 				Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
 				Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-				if (hasStandardInput)
+				if (standardInput != null)
 				{
 					WriteStandardInput(process, standardInput);
+				}
+				else
+				{
+					// End of input at once: an inherited stdin could hand the
+					// process bytes that belong to the caller.
+					process.StandardInput.Close();
 				}
 
 				process.WaitForExit();
