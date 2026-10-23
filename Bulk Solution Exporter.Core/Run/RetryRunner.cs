@@ -1,11 +1,10 @@
 ﻿using System;
-using System.ServiceModel;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Helpers
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 {
 
 	// ============================================================================
@@ -15,18 +14,20 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 	/// Runs an action, retrying it after a delay when it fails.
 	/// The first attempt always runs; an abort request ends the retry
 	/// delay early and starts no further retry.
+	/// Dataverse faults are told apart by their message text, searched in the
+	/// exception and every inner exception, so any host's exception type works.
 	/// </summary>
-	internal class RetryRunner
+	public class RetryRunner
 	{
 		// Longest single sleep of the retry wait: an abort ends the wait within this time.
-		internal const int RetryWaitSliceInMilliseconds = 250;
+		public const int RetryWaitSliceInMilliseconds = 250;
 
 		// Fault text of a target that is still busy with another import: retried.
-		internal const string ImportAlreadyRunningFaultText =
+		public const string ImportAlreadyRunningFaultText =
 			"Cannot start another [Import] because there is a previous [Import] running at this moment";
 
 		// Fault text of a target that already holds this solution's upgrade: never retried.
-		internal const string UpgradeAlreadyExistsFaultText = "_Upgrade already exists";
+		public const string UpgradeAlreadyExistsFaultText = "_Upgrade already exists";
 
 		private readonly Func<bool> _isAbortRequested;
 		private readonly Action<string> _log;
@@ -130,15 +131,15 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 					}
 				}
 				// ------------------------------------------
-				catch (FaultException ex) when (
-					ex.Message.Contains(ImportAlreadyRunningFaultText))
+				catch (Exception ex) when (
+					IsMessageInChain(ex, ImportAlreadyRunningFaultText))
 				{
 					// The target is busy with another import: wait and retry, whatever continueOnError says
 					_log($"Another import is still running on the target; {operationDescription ?? "operation"} will be retried.");
 				}
 				// ------------------------------------------
-				catch (FaultException ex) when (
-					ex.Message.Contains(UpgradeAlreadyExistsFaultText))
+				catch (Exception ex) when (
+					IsMessageInChain(ex, UpgradeAlreadyExistsFaultText))
 				{
 					// A pending upgrade blocks this one; retrying cannot clear it
 					_logError($"Error with {operationDescription}: {ex.Message}");
@@ -174,11 +175,35 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// <param name="isCancelled">The worker marked the run cancelled (args.Cancelled).</param>
 		/// <param name="isAbortRequested">The abort latch was set during the run; this also
 		/// covers a step that threw after the abort request, where the run is not marked cancelled.</param>
-		internal static bool IsRunAborted(
+		public static bool IsRunAborted(
 			bool isCancelled,
 			bool isAbortRequested)
 		{
 			return isCancelled || isAbortRequested;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Tells whether the exception or any of its inner exceptions carries the
+		/// fault text in its message; a host may wrap the Dataverse fault.
+		/// </summary>
+		/// <param name="exception">The raised exception; null yields false.</param>
+		/// <param name="faultText">The Dataverse fault text to look for (ordinal match).</param>
+		private static bool IsMessageInChain(
+			Exception exception,
+			string faultText)
+		{
+			for (var current = exception; current != null; current = current.InnerException)
+			{
+				if (current.Message != null &&
+					current.Message.IndexOf(faultText, StringComparison.Ordinal) >= 0)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 	}

@@ -1,13 +1,12 @@
 ﻿using System;
-using System.ServiceModel;
-using Com.AiricLenz.XTB.Plugin.Helpers;
+using Com.AiricLenz.BulkSolutionExporter.Core.Run;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Tests
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 {
 
 	// ============================================================================
@@ -32,6 +31,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			"Cannot start another [Import] because there is a previous [Import] running at this moment";
 		private const string UpgradeAlreadyExistsMessage =
 			"The solution MySolution_Upgrade already exists";
+		private const string HostWrapperMessage = "The host request failed.";
 
 
 		// ============================================================================
@@ -175,7 +175,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 					if (actionCallCount <= FailingImportAttempts)
 					{
-						throw new FaultException(ImportAlreadyRunningMessage);
+						throw new DataverseOperationException(ImportAlreadyRunningMessage);
 					}
 				},
 				MaxRetries,
@@ -187,6 +187,40 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			Assert.IsTrue(isCompleted);
 			Assert.AreEqual(FailingImportAttempts + 1, actionCallCount);
 			Assert.AreEqual(FailingImportAttempts, environment.RetryCallCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Execute_ImportAlreadyRunningInInnerException_RetriesAndReturnsTrue()
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+
+					if (actionCallCount == 1)
+					{
+						throw new InvalidOperationException(
+							HostWrapperMessage,
+							new DataverseOperationException(ImportAlreadyRunningMessage));
+					}
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError: false);
+
+			// Assert
+			Assert.IsTrue(isCompleted);
+			Assert.AreEqual(2, actionCallCount);
+			Assert.AreEqual(1, environment.RetryCallCount);
 		}
 
 
@@ -207,7 +241,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				() =>
 				{
 					actionCallCount++;
-					throw new FaultException(UpgradeAlreadyExistsMessage);
+					throw new DataverseOperationException(UpgradeAlreadyExistsMessage);
 				},
 				MaxRetries,
 				RetryDelaySeconds,
@@ -264,7 +298,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				() =>
 				{
 					actionCallCount++;
-					throw new FaultException(ImportAlreadyRunningMessage);
+					throw new DataverseOperationException(ImportAlreadyRunningMessage);
 				},
 				MaxRetries,
 				RetryDelaySeconds,

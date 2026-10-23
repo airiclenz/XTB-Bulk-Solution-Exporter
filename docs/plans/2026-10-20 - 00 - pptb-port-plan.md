@@ -144,7 +144,15 @@ NOTES (2026-10-23): verified on Linux with .NET SDK 8.0.426: solution builds (0 
 **Commit:** `refactor(core): move file and git helpers to core and make them cross-platform`
 Depends on item 2.
 
-## 4. Move RetryRunner to core with a host-neutral error classifier
+## 4. Move RetryRunner to core with a host-neutral error classifier — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): `RetryRunner` (namespace `Com.AiricLenz.BulkSolutionExporter.Core.Run`, mirrors the folder) catches any `Exception` whose message, or any inner exception's message in the `InnerException` chain, contains the fault text (ordinal match, private `IsMessageInChain`). Before, only a `FaultException` matched, so a non-fault exception that carries the fault text is now classified as a fault too. The XTB plugin still passes `FaultException`s, and these classify exactly as before.
+
+NOTES (2026-10-23): the class, `IsRunAborted` and the three constants are `public`. The plugin control gained `using Com.AiricLenz.BulkSolutionExporter.Core.Run;`. Its import `catch (FaultException)` and its `System.ServiceModel` using stay unchanged, because nothing in this item changes the plugin's behaviour. The moved tests use the flat `Com.AiricLenz.BulkSolutionExporter.Core.Tests` namespace. Added test: `Execute_ImportAlreadyRunningInInnerException_RetriesAndReturnsTrue`, which wraps the fault in an `InvalidOperationException` and uses continueOnError false.
+
+NOTES (2026-10-23): `Bulk Solution Exporter.Tests.csproj` still has its `System.ServiceModel` reference, which nothing in that project uses now. It was left alone because the item's Files do not list it.
+
+NOTES (2026-10-23): checked on Linux with .NET SDK 8.0.426. The solution builds with 0 errors (only the NU190x Pkcs warnings, which were already there). The RetryRunner filter passes 15/15 core tests. `capcom check` and `capcom know verify` are clean.
 
 **What:**
 **Goal:** `RetryRunner` lives in core with no `System.ServiceModel` dependency. Its retry/fail decisions match today's `run-and-abort-rules` for any exception whose message carries the Dataverse fault text.
