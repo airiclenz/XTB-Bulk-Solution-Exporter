@@ -56,6 +56,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private GitHelper _gitHelper = null;
 		private List<string> _gitBranches = new List<string>();
 		private Logger _logger = null;
+		private RunLog _runLog = null;
 
 		private WorkAsyncInfo _executionWorker = null;
 		private volatile BackgroundWorker _executionBackgroundWorker = null;
@@ -72,16 +73,15 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		private Solution _currentSolution;
-		private const string ColorError = "<color=#770000>";
-		private const string ColorSolution = "<color=#000077>";
-		private const string ColorFile = "<color=#777700>";
-		private const string ColorIndent = "<color=#DDDDDD>";
-		private const string ColorGreen = "<color=#227700>";
-		private const string ColorOrange = "<color=#CC6600>";
-		private const string ColorConnection = "<color=#337799>";
-		private const string ColorTeeth = "<color=#CCCCCE>";
+		private const string ColorError = RunLog.ColorError;
+		private const string ColorSolution = RunLog.ColorSolution;
+		private const string ColorFile = RunLog.ColorFile;
+		private const string ColorGreen = RunLog.ColorGreen;
+		private const string ColorOrange = RunLog.ColorOrange;
+		private const string ColorConnection = RunLog.ColorConnection;
+		private const string ColorTeeth = RunLog.ColorTeeth;
 
-		private const string ColorEndTag = "</color>";
+		private const string ColorEndTag = RunLog.ColorEndTag;
 
 		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
@@ -158,7 +158,13 @@ namespace Com.AiricLenz.XTB.Plugin
 			_saveDebounceTimer.Tick += (s, e) => { _saveDebounceTimer.Stop(); PersistSettings(); };
 
 			_logger = new Logger(richTextBox_log);
-			_logger.Indent = ColorIndent + "|" + ColorEndTag + "   ";
+
+#if DEBUG
+			bool isDebugEnabled = isDebugMode;
+#else
+			bool isDebugEnabled = false;
+#endif
+			_runLog = new RunLog(AppendLogLine, isDebugEnabled);
 
 			ParentChanged += MyPlugin_ParentChanged;
 
@@ -1227,7 +1233,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void ExecuteOperations()
 		{
 			richTextBox_log.Text = string.Empty;
-			_logger.ResetIndent();
+			_runLog.ResetIndent();
 			_sessionFiles.Clear();
 			_isAbortRequested = false;
 
@@ -1668,7 +1674,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			ConnectionDetail connection)
 		{
 			Log("##### Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			var startTime = DateTime.Now;
 
@@ -1684,7 +1690,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			catch (Exception ex)
 			{
 				LogError(ex.Message);
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return;
 			}
 
@@ -1693,7 +1699,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			Log("Publish All was completed.");
 			Log($"Duration: {duration}");
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			Log();
 		}
 
@@ -1715,7 +1721,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				resetTimer: true);
 
 			Log("##### Updating Version Numbers:");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 
 			for (int i = 0; i < solutions.Count; i++)
@@ -1738,7 +1744,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			Log();
 		}
 
@@ -1756,7 +1762,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			Log("##### Exporting:");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			for (int i = 0; i < solutions.Count; i++)
 			{
@@ -1795,7 +1801,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				RefreshSolutionInListBox(solution);
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			Log();
 		}
 
@@ -1898,7 +1904,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool importManagd = flipSwitch_importManaged.IsOn;
 
 			Log("##### Importing:");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			for (int i = 0; i < solutions.Count; i++)
 			{
@@ -1928,7 +1934,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				if (importResult)
 				{
-					_logger.IncreaseIndent();
+					_runLog.IncreaseIndent();
 					var duration = GetDurationString(startTime);
 					var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
 
@@ -1940,7 +1946,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						Log();
 					}
 
-					_logger.DecreaseIndent();
+					_runLog.DecreaseIndent();
 
 					if (importManagd)
 					{
@@ -1977,7 +1983,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				RefreshSolutionInListBox(solution);
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			Log();
 		}
 
@@ -1990,7 +1996,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			ExecutionSettingsSnapshot settingsSnapshot,
 			BackgroundWorker worker)
 		{
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			if (flipSwitch_exportManaged.IsOn)
 			{
@@ -2026,7 +2032,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			// export completed, so this is not an export error.
 			if (IsAbortRequested(worker))
 			{
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return true;
 			}
 
@@ -2066,7 +2072,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				}
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 
 			return true;
 		}
@@ -2080,14 +2086,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool isManaged)
 		{
 			Log("Exporting as " + (isManaged ? "" : "un") + "managed solution now...");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 
 			if (isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameManaged) ||
 				!isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameUnmanaged))
 			{
 				LogError("No file name for the " + (isManaged ? "" : "un") + "managed solution was given!");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return -1;
 			}
 
@@ -2097,7 +2103,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!FileAndFolderHelper.IsValidSolutionFilePath(filePath))
 			{
 				LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return -1;
 			}
 
@@ -2144,7 +2150,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					isManaged);
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			return durationSeconds;
 
 		}
@@ -2154,7 +2160,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private bool UpdateVersionNumberInSource(
 			Solution solution)
 		{
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			var oldVersionString = solution.Version.ToString();
 
@@ -2165,7 +2171,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!versionUpdateResult)
 			{
 				LogError("The version format is invalid!");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 
@@ -2182,7 +2188,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			Log("Updated the version number: **" + oldVersionString + "** → **" + solution.Version + "**");
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			return true;
 		}
 
@@ -2299,12 +2305,12 @@ namespace Com.AiricLenz.XTB.Plugin
 				resetTimer: true);
 
 			Log("##### Commiting the new files to Git:");
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			if (_sessionFiles.Count == 0)
 			{
 				Log("No files need to be committed.");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				Log();
 				return;
 			}
@@ -2335,7 +2341,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (flipSwitch_pushCommit.IsOff)
 			{
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				Log();
 				return;
 			}
@@ -2349,7 +2355,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				Log("The commit has been pushed to the remote origin.");
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			Log();
 		}
 
@@ -2362,7 +2368,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			BackgroundWorker worker,
 			bool isManaged = true)
 		{
-			_logger.IncreaseIndent();
+			_runLog.IncreaseIndent();
 
 			var targetServiceClient = targetService?.ServiceClient;
 			int maxRetries = settingsSnapshot.RetryCount > 0 ? settingsSnapshot.RetryCount : 3;
@@ -2375,7 +2381,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			if (config == null)
 			{
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 
@@ -2393,14 +2399,14 @@ namespace Com.AiricLenz.XTB.Plugin
 			if (!FileAndFolderHelper.IsValidSolutionFilePath(solutionPath))
 			{
 				LogError("The file path '" + solutionPath + "' is not a valid absolute file path. The file is skipped.");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 
 			if (!File.Exists(solutionPath))
 			{
 				LogError("The file '" + solutionPath + "' does not exist.");
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 
@@ -2475,7 +2481,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				if (!isInstallCompleted)
 				{
-					_logger.DecreaseIndent();
+					_runLog.DecreaseIndent();
 					return false;
 				}
 
@@ -2509,7 +2515,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 					if (!isApplyCompleted)
 					{
-						_logger.DecreaseIndent();
+						_runLog.DecreaseIndent();
 						return false;
 					}
 				}
@@ -2520,11 +2526,11 @@ namespace Com.AiricLenz.XTB.Plugin
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
 						ex.Message,
-						_logger.Indent);
+						RunLog.IndentUnit);
 
 				LogError(errorMessage);
 				Log();
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 			catch (Exception ex)
@@ -2532,15 +2538,15 @@ namespace Com.AiricLenz.XTB.Plugin
 				var errorMessage =
 					Formatter.FormatErrorStringWithXml(
 						ex.Message,
-						_logger.Indent);
+						RunLog.IndentUnit);
 
 				LogError(errorMessage);
 				Log();
-				_logger.DecreaseIndent();
+				_runLog.DecreaseIndent();
 				return false;
 			}
 
-			_logger.DecreaseIndent();
+			_runLog.DecreaseIndent();
 			return true;
 		}
 
@@ -3102,29 +3108,34 @@ namespace Com.AiricLenz.XTB.Plugin
 		/// <param name="message"></param>
 		private void Log(string message = "")
 		{
-			// Captured on the calling thread: the worker changes the indent
-			// level between lines, so reading it later on the UI thread would
-			// give a queued line the wrong indent.
-			var indent = _logger.GetCurrentIndent();
+			_runLog.Log(message);
+		}
 
+
+		// ============================================================================
+		/// <summary>
+		/// Sink of <see cref="_runLog"/>: renders a finished line on the UI thread.
+		/// The line, indent included, is built on the calling thread, because the
+		/// worker changes the indent level between lines.
+		/// </summary>
+		private void AppendLogLine(string line)
+		{
 			// Invoke, not BeginInvoke: keeps the log order in step with the worker
 			if (InvokeRequired)
 			{
-				richTextBox_log.Invoke(new Action(() => AppendLogLine(message, indent)));
+				richTextBox_log.Invoke(new Action(() => RenderLogLine(line)));
 			}
 			else
 			{
-				AppendLogLine(message, indent);
+				RenderLogLine(line);
 			}
 		}
 
 
 		// ============================================================================
-		private void AppendLogLine(
-			string message,
-			string indent)
+		private void RenderLogLine(string line)
 		{
-			_logger.Log(message, indent);
+			_logger.Log(line);
 			richTextBox_log.SelectionStart = richTextBox_log.Text.Length;
 			richTextBox_log.ScrollToCaret();
 		}
@@ -3132,24 +3143,14 @@ namespace Com.AiricLenz.XTB.Plugin
 		// ============================================================================
 		private void LogDebug(string message = "")
 		{
-			// only allow debug messages when compiled as debug
-#if DEBUG
-
-			if (!isDebugMode)
-			{
-				return;
-			}
-
-			Log(message);
-#endif
+			_runLog.LogDebug(message);
 		}
 
 
 		// ============================================================================
 		private void LogError(string message)
 		{
-			message = ColorError + message + ColorEndTag;
-			Log(message);
+			_runLog.LogError(message);
 		}
 
 

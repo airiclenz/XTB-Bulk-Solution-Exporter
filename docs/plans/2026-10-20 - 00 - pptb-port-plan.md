@@ -188,7 +188,19 @@ NOTES (2026-10-23): checked on Linux with .NET SDK 8.0.426. `dotnet build "Bulk 
 **Commit:** `refactor(core): move solution schema and exported versions file to core`
 Depends on items 2, 4.
 
-## 6. Core run log: markup lines with indentation
+## 6. Core run log: markup lines with indentation — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): re-derived from `Bulk Solution Exporter/Helpers/Formatter.cs` (Read first anchor). Item 2 moved `Formatter` to `Bulk Solution Exporter.Core/Formatter.cs`, and the file was not changed here.
+
+NOTES (2026-10-23): `RunLog` (namespace `Com.AiricLenz.BulkSolutionExporter.Core.Run`) takes `(Action<string> sink, bool isDebugEnabled)`. It owns the indent level (`IncreaseIndent`/`DecreaseIndent`/`ResetIndent`/`CurrentIndent`), the public `Color*`/`ColorEndTag` constants, `IndentUnit` (the plugin's former `_logger.Indent` value), `Log`/`LogError`/`LogDebug`, and static markup builders `Heading(level, text)`/`Bold`/`Italic`/`Code`/`Colorize` for the coming RunEngine. The plugin keeps its call sites as they are. Its private `Color*` constants now alias `RunLog`'s, and the unused `ColorIndent` alias was dropped. `FormatErrorStringWithXml` gets `RunLog.IndentUnit`.
+
+NOTES (2026-10-23): the cap is applied per line. `RunLog` splits on `\r\n`/`\n` and keeps the separators. It cuts only a line whose trimmed length is over `MaxLineLength` (10000), using the same colour-end-tag closing and `TruncationMarker` as `MarkdownParser.TruncateLine`. `MarkdownParser` keeps its own constants and truncation. When it re-truncates a line `RunLog` already cut, the result is the same string, so the plugin's log output does not change. The line, indent included, is now built on the logging thread and only the finished string is sent to the UI thread with `Invoke`, so the indent level is still captured on the worker thread.
+
+NOTES (2026-10-23): `Logger` is now only the RichTextBox renderer (`Log(line)` → `MarkdownParser.ParseAndAppend`). The plugin builds `RunLog` with `#if DEBUG isDebugMode #else false`.
+
+NOTES (2026-10-23): consequential edit — .capcom/knowledge/ui-thread-rules.md: made necessary by moving the `Invoke` from `Log` to its `RunLog` sink `AppendLogLine`. `capcom check` passes.
+
+NOTES (2026-10-23): checked on Linux with .NET SDK 8. `dotnet build "Bulk Solution Exporter.sln"` gives 0 errors in both Debug and Release. The only warnings are the NU1902/NU1903 ones that were there before. The acceptance filter passes 11/11 and the full core suite passes 67/67. The live log look in XrmToolBox stays a manual check on Windows (user).
 
 **What:**
 **Goal:** Core has `RunLog`, which produces the log mini-markup strings (headings, bold/italic/code, `<color=#RRGGBB>`, indent, 10000-char cap) and hands each line to an `Action<string>` sink. The plugin renders the same strings through its existing `MarkdownParser`, so log output is unchanged.
