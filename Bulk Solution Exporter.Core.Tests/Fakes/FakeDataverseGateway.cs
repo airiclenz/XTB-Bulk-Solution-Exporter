@@ -102,6 +102,28 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
+		/// The options of every <see cref="ImportSolution"/> call, in order.
+		/// </summary>
+		public List<ImportOptions> ImportedOptions
+		{
+			get;
+		} = new List<ImportOptions>();
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Faults thrown by the next <see cref="ImportSolution"/> calls, one per
+		/// call, as a <see cref="DataverseOperationException"/> with that message;
+		/// an empty queue lets the import succeed.
+		/// </summary>
+		public Queue<string> ImportFaultMessages
+		{
+			get;
+		} = new Queue<string>();
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
 		/// Runs after each export, with the unique name and the managed flag;
 		/// a test requests its abort here.
 		/// </summary>
@@ -171,6 +193,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			ImportOptions options)
 		{
 			Calls.Add("ImportSolution:" + Encoding.UTF8.GetString(solutionFile));
+			ImportedOptions.Add(options);
+
+			if (ImportFaultMessages.Count > 0)
+			{
+				throw new DataverseOperationException(ImportFaultMessages.Dequeue());
+			}
 		}
 
 

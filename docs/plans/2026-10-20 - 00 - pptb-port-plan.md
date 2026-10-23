@@ -243,7 +243,19 @@ Only a thrown gateway call ends the run: a gateway exception from version update
 **Commit:** `feat(core): add RunEngine with publish, version and export phases`
 Depends on items 3, 4, 5, 6.
 
-## 8. RunEngine part 2: git and import phases
+## 8. RunEngine part 2: git and import phases — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): `RunEngine` is now a `partial` class, as item 7's NOTES suggested. The new git phase is in `RunEngine.Git.cs` and the new target/import phase is in `RunEngine.Import.cs`. Neither file is in the plan's Files list. No existing code was moved: `RunEngine.cs` keeps publish, version and export and is about 840 lines. `RunEngine.Import.cs` is about 450 lines, a little over the ~400 guide, because of the house style.
+
+NOTES (2026-10-23): git is injected as a client factory, `Func<string, IGitClient>`, because the engine derives the repository root itself. There are two public `Run` overloads. The 5-argument overload that hosts call uses `root => new GitClient(root)`. A 6-argument overload takes the factory, and the tests pass `FakeGitClient.Create`. Both now return `RunResult` instead of `void`. `RunResult` holds `IsAborted`, `Duration` and `StepOutcomes`. `StepOutcome` is a second type in `RunResult.cs` and has one entry per export file and per import attempt: IsImport, SolutionId, ConnectionName, IsManaged, IsSuccessful, Duration. `Run` now also rejects a null target entry and a null factory.
+
+NOTES (2026-10-23): the repository root comes from the first configured file path among the run's request solutions, managed before unmanaged. `InitializeGitHelper` instead scans every stored configuration in `_settings`, which the engine never sees. The git phase stages exactly the files this run exported (`_sessionFiles`, filled in `ExportToFile`), as the plugin does.
+
+NOTES (2026-10-23): the import keeps these plugin behaviours: managed wins when both import switches are on; RetryCount ≤ 0 → 3 and delay ≤ 0 → 5 s; a `SolutionExists` failure is logged and treated as not installed (it is checked for every import, as in the plugin); a failed commit still pushes; `ImportSolution` logs every exception and returns false. One small difference: a solution with no configuration gets the invalid-path error. The plugin returned false without logging anything. The retry wait sleeps on the cancellation token's wait handle, so an abort ends the wait at once.
+
+NOTES (2026-10-23): `FakeDataverseGateway` gained `ImportedOptions` and `ImportFaultMessages`, which queues one armed fault per import call, for the import tests. `IRunSink.SolutionProcessed`'s doc now names the import, since the engine raises it after each import that does not end the loop, as `RefreshSolutionInListBox` did.
+
+NOTES (2026-10-23): checked on Linux with .NET SDK 8. `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunEngine"` passes 24/24 (10 new) and the full core suite passes 91/91. `dotnet build "Bulk Solution Exporter.sln" -c Debug` gives 0 errors; the only warnings are the NU1902/NU1903 ones that were there before. The retry tests wait the 1 s minimum delay.
 
 **What:**
 **Goal:** `RunEngine` also runs the git phase (add session files, commit, optional push; skipped entirely on abort) and, per target, import with holding-upgrade + `DeleteAndPromote`, optional publish-all, and continue-on-error. Every engine-side rule in `run-and-abort-rules` (git skipped on abort; "Cannot start another [Import]" retried; "_Upgrade already exists" fails without promote; exhausted retries → failure; holding install + promote; continue-on-error) has a fake-gateway test; host-side rules (UI-thread snapshot, settings flush, no auto-disable on abort, "Aborted by user." line) belong to item 9.

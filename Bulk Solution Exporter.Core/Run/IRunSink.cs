@@ -72,7 +72,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		// ============================================================================
 		/// <summary>
 		/// The run finished its work on one solution in the current phase (its
-		/// export). The host may refresh what it shows for the solution, such as
+		/// export, or its import into one target). The host may refresh what it shows for the solution, such as
 		/// the file status read from the export folder's version file. It must
 		/// finish before returning: the engine's next step may write that file.
 		/// </summary>

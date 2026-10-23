@@ -19,24 +19,33 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 	// ============================================================================
 	/// <summary>
 	/// Runs the steps of one Execute for any host: publish all in the source,
-	/// version update, and export to the configured files (plus the export
-	/// folder's version file). Dataverse is reached only through
-	/// <see cref="IDataverseGateway"/>; everything the host shows goes to
-	/// <see cref="IRunSink"/>.
+	/// version update, export to the configured files (plus the export
+	/// folder's version file), the git phase (stage the exported files,
+	/// commit, push), and per target the import and publish all. Dataverse is
+	/// reached only through <see cref="IDataverseGateway"/>, git only through
+	/// <see cref="IGitClient"/>; everything the host shows goes to
+	/// <see cref="IRunSink"/>. The phases live in partial files: this one
+	/// (publish, version, export), RunEngine.Git.cs and RunEngine.Import.cs.
 	/// <para>
 	/// Abort is the cancellation token, checked between steps, never inside
-	/// one: a running Dataverse call finishes and nothing after it starts. The
-	/// first observed abort logs <see cref="AbortRequestedMessage"/> once.
+	/// one: a running Dataverse call finishes and nothing after it starts. A
+	/// holding install plus its apply-upgrade is one step, and an abort skips
+	/// the whole git phase. The first observed abort logs
+	/// <see cref="AbortRequestedMessage"/> once.
 	/// </para>
 	/// <para>
-	/// Errors: a failed source publish all is logged and the run continues. An
-	/// invalid version format, a missing file name or an invalid file path is
-	/// logged, that step is skipped and the run continues. Any other exception,
-	/// such as a failed version update or export, ends the run and is thrown
-	/// out of <see cref="Run"/> unchanged. Nothing is retried.
+	/// Errors: a failed source or target publish all is logged and the run
+	/// continues. An invalid version format, a missing file name or an invalid
+	/// file path is logged, that step is skipped and the run continues. A git
+	/// failure is logged and the git phase goes on (a failed commit still
+	/// pushes). An import is retried by <see cref="RetryRunner"/>; a failed
+	/// import is logged and ends the target's import loop unless the request
+	/// continues on error. Any other exception, such as a failed version update
+	/// or export, ends the run and is thrown out of <see cref="Run(RunRequest, IDataverseGateway, IReadOnlyList{IDataverseGateway}, IRunSink, CancellationToken)"/>
+	/// unchanged; publish, version update and export are never retried.
 	/// </para>
 	/// </summary>
-	public sealed class RunEngine
+	public sealed partial class RunEngine
 	{
 
 		/// <summary>
@@ -49,10 +58,17 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		private readonly RunRequest _request;
 		private readonly IDataverseGateway _source;
+		private readonly IReadOnlyList<IDataverseGateway> _targets;
 		private readonly IRunSink _sink;
+		private readonly Func<string, IGitClient> _createGitClient;
 		private readonly CancellationToken _cancellationToken;
 		private readonly RunLog _runLog;
 		private readonly List<RunSolution> _solutions;
+
+		// The files this run wrote, in order: the git phase stages exactly these.
+		private readonly List<string> _sessionFiles = new List<string>();
+
+		private readonly List<StepOutcome> _stepOutcomes = new List<StepOutcome>();
 		private bool _isAbortLogged = false;
 
 
@@ -60,12 +76,16 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		private RunEngine(
 			RunRequest request,
 			IDataverseGateway source,
+			IReadOnlyList<IDataverseGateway> targets,
 			IRunSink sink,
+			Func<string, IGitClient> createGitClient,
 			CancellationToken cancellationToken)
 		{
 			_request = request;
 			_source = source;
+			_targets = targets;
 			_sink = sink;
+			_createGitClient = createGitClient;
 			_cancellationToken = cancellationToken;
 
 			_runLog =
@@ -90,32 +110,65 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// </summary>
 		/// <param name="request">The run's settings and solutions; not changed by the run.</param>
 		/// <param name="source">The environment the solutions are versioned in and exported from.</param>
-		/// <param name="targets">The environments to import into; the import phase is not part of the engine yet.</param>
+		/// <param name="targets">The environments to import into, in import order; may be empty.</param>
 		/// <param name="sink">Receives the run's log, progress and changes.</param>
 		/// <param name="cancellationToken">Requests an abort between steps.</param>
+		/// <returns>Whether the run was aborted, and the outcome of each export and import step.</returns>
 		/// <exception cref="ArgumentNullException">An argument, or the request's solution list, is null.</exception>
 		/// <exception cref="ArgumentException">A request solution entry or its solution is null.</exception>
-		public static void Run(
+		public static RunResult Run(
 			RunRequest request,
 			IDataverseGateway source,
 			IReadOnlyList<IDataverseGateway> targets,
 			IRunSink sink,
 			CancellationToken cancellationToken)
 		{
+			return
+				Run(
+					request,
+					source,
+					targets,
+					sink,
+					repositoryRootPath => new GitClient(repositoryRootPath),
+					cancellationToken);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Runs the steps the request switches on, like
+		/// <see cref="Run(RunRequest, IDataverseGateway, IReadOnlyList{IDataverseGateway}, IRunSink, CancellationToken)"/>,
+		/// with git reached through the given client factory.
+		/// </summary>
+		/// <param name="createGitClient">Creates the git client for a repository
+		/// root folder; called at most once per run, by the git phase.</param>
+		/// <exception cref="ArgumentNullException">An argument, or the request's solution list, is null.</exception>
+		/// <exception cref="ArgumentException">A request solution entry or its solution is null.</exception>
+		public static RunResult Run(
+			RunRequest request,
+			IDataverseGateway source,
+			IReadOnlyList<IDataverseGateway> targets,
+			IRunSink sink,
+			Func<string, IGitClient> createGitClient,
+			CancellationToken cancellationToken)
+		{
 			ValidateArguments(
 				request,
 				source,
 				targets,
-				sink);
+				sink,
+				createGitClient);
 
 			var engine =
 				new RunEngine(
 					request,
 					source,
+					targets,
 					sink,
+					createGitClient,
 					cancellationToken);
 
-			engine.Execute();
+			return engine.Execute();
 		}
 
 
@@ -124,7 +177,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			RunRequest request,
 			IDataverseGateway source,
 			IReadOnlyList<IDataverseGateway> targets,
-			IRunSink sink)
+			IRunSink sink,
+			Func<string, IGitClient> createGitClient)
 		{
 			if (request == null)
 			{
@@ -144,6 +198,19 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			if (sink == null)
 			{
 				throw new ArgumentNullException(nameof(sink));
+			}
+
+			if (createGitClient == null)
+			{
+				throw new ArgumentNullException(nameof(createGitClient));
+			}
+
+			foreach (var target in targets)
+			{
+				if (target == null)
+				{
+					throw new ArgumentException("A target environment is null.", nameof(targets));
+				}
 			}
 
 			if (request.Solutions == null)
@@ -211,8 +278,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 
 		// ============================================================================
-		private void Execute()
+		private RunResult Execute()
 		{
+			var stopwatch = Stopwatch.StartNew();
+
 			try
 			{
 				if (_request.ShouldPublishSource &&
@@ -236,8 +305,21 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					ExportSolutions();
 				}
 
+				if (!IsAbortRequested())
+				{
+					HandleGit();
+				}
+
+				HandleTargets();
+
 				// Logs an abort requested during the last step.
-				IsAbortRequested();
+				var isAborted = IsAbortRequested();
+
+				return
+					new RunResult(
+						isAborted,
+						stopwatch.Elapsed,
+						_stepOutcomes.AsReadOnly());
 			}
 			catch
 			{
@@ -545,6 +627,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			{
 				_runLog.LogError("No file name for the " + managedPrefix + "managed solution was given!");
 				_runLog.DecreaseIndent();
+				AddSkippedOutcome(solution, _source, isManaged, isImport: false);
 				return -1;
 			}
 
@@ -554,6 +637,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			{
 				_runLog.LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
 				_runLog.DecreaseIndent();
+				AddSkippedOutcome(solution, _source, isManaged, isImport: false);
 				return -1;
 			}
 
@@ -571,7 +655,18 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 				filePath,
 				solutionFile);
 
+			_sessionFiles.Add(filePath);
+
 			var duration = stopwatch.Elapsed;
+
+			_stepOutcomes.Add(
+				new StepOutcome(
+					isImport: false,
+					solution.SolutionId,
+					_source.ConnectionName,
+					isManaged,
+					isSuccessful: true,
+					duration));
 
 			_runLog.Log("Duration: " + FormatDuration(duration));
 
@@ -647,6 +742,27 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			File.WriteAllText(
 				jsonFilePath,
 				JsonConvert.SerializeObject(exportedSolutions, Formatting.Indented));
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Records a step that validation skipped before it reached Dataverse.
+		/// </summary>
+		private void AddSkippedOutcome(
+			SolutionInfo solution,
+			IDataverseGateway gateway,
+			bool isManaged,
+			bool isImport)
+		{
+			_stepOutcomes.Add(
+				new StepOutcome(
+					isImport,
+					solution.SolutionId,
+					gateway.ConnectionName,
+					isManaged,
+					isSuccessful: false,
+					TimeSpan.Zero));
 		}
 
 
