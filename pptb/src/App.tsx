@@ -9,9 +9,15 @@
  * column. It then connects the worker, which reports each solution's export
  * file state (`files/status`) whenever the solutions, their file names or the
  * version-file setting change.
+ *
+ * Above the options sit the settings dialog, the file-location wizard, the
+ * CSV export and the git branch picker; below the grid the run panel. While a
+ * run is active everything but the run panel is inert, and the solutions are
+ * reloaded after it, as the XrmToolBox plugin does.
  */
 
 import {
+	Button,
 	FluentProvider,
 	makeStyles,
 	MessageBar,
@@ -22,9 +28,13 @@ import {
 	webLightTheme,
 	type Theme,
 } from "@fluentui/react-components";
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 
+import { FileWizard } from "./components/FileWizard";
+import { GitBranchPicker } from "./components/GitBranchPicker";
 import { RunOptions } from "./components/RunOptions";
+import { RunPanel } from "./components/RunPanel";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { SolutionGrid } from "./components/SolutionGrid";
 import { createDataverseBridge, DataverseMethod, type SolutionRecord } from "./dataverseBridge";
 import { SettingsStore } from "./settingsStore";
@@ -37,6 +47,16 @@ const SOURCE_SLOT = 0;
 const SOURCE_TARGET = 0;
 const SINGLE_TARGET = 1;
 const NO_SOURCE_MESSAGE = "Connect a source environment to the tool.";
+const CSV_FILE_NAME = "Solution Information.csv";
+const CSV_FILE_FILTER: ToolBoxAPI.FileDialogFilter = { name: "CSV files", extensions: ["csv"] };
+const NO_CONTENT = "";
+const LOCKED_OPACITY = 0.6;
+
+/** The solutions of the source and, when exactly one is connected, of the single target. */
+interface LoadedSolutions {
+	sourceSolutions: SolutionRecord[];
+	targetSolutions: readonly SolutionInfo[] | null;
+}
 
 /** What the view works on once loaded. */
 interface Workspace {
@@ -57,6 +77,21 @@ const useStyles = makeStyles({
 		padding: tokens.spacingHorizontalL,
 		boxSizing: "border-box",
 	},
+	controls: {
+		display: "flex",
+		flexDirection: "column",
+		rowGap: tokens.spacingVerticalL,
+	},
+	locked: {
+		opacity: LOCKED_OPACITY,
+	},
+	toolbar: {
+		display: "flex",
+		flexWrap: "wrap",
+		alignItems: "center",
+		columnGap: tokens.spacingHorizontalM,
+		rowGap: tokens.spacingVerticalS,
+	},
 });
 
 /** The main view; see the module comment. */
@@ -67,7 +102,9 @@ export function App() {
 	const [worker, setWorker] = useState<WorkerClient>();
 	const [fileStatuses, setFileStatuses] = useState<readonly SolutionFileStatus[]>([]);
 	const [errorMessage, setErrorMessage] = useState<string>();
+	const [isRunning, setIsRunning] = useState(false);
 	const [, render] = useReducer((revision: number) => revision + 1, 0);
+	const controlsRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		let isCurrent = true;
@@ -84,7 +121,16 @@ export function App() {
 	useEffect(() => workspace?.store.subscribe(render), [workspace]);
 	useWorker(workspace?.store, setWorker, setErrorMessage);
 
+	useEffect(() => {
+		// React 18 has no `inert` property; the element's own one locks pointer and keyboard alike.
+		if (controlsRef.current !== null) {
+			controlsRef.current.inert = isRunning;
+		}
+	}, [isRunning]);
+
 	const runSolutions = workspace === undefined ? [] : createRunSolutions(workspace);
+	const orderedSolutions = orderForRun(runSolutions);
+	const checkedSolutions = orderedSolutions.filter((runSolution) => runSolution.configuration?.checked === true);
 	const shouldSaveVersionJson = workspace?.store.getSettings().saveVersionJson ?? false;
 	const fileStatusKey = createFileStatusKey(runSolutions, shouldSaveVersionJson);
 
@@ -102,6 +148,31 @@ export function App() {
 		// The key holds everything the answer depends on; the arrays are new on each render.
 	}, [worker, fileStatusKey]);
 
+	const reloadSolutions = (): void => {
+		if (workspace === undefined) {
+			return;
+		}
+
+		retrieveSolutions(workspace.environments)
+			.then(({ sourceSolutions, targetSolutions }) => {
+				workspace.store.setSolutions(sourceSolutions);
+				setWorkspace({ ...workspace, targetSolutions });
+			})
+			.catch((error: unknown) => setErrorMessage(describeError(error)));
+	};
+
+	const handleExportCsv = (): void => {
+		// As the plugin: the checked solutions when any is checked, otherwise all, in the shown order.
+		const listed = checkedSolutions.length > 0 ? checkedSolutions : orderedSolutions;
+
+		if (worker !== undefined) {
+			exportSolutionCsv(
+				worker,
+				listed.map(({ solution }) => solution),
+			).catch((error: unknown) => setErrorMessage(describeError(error)));
+		}
+	};
+
 	return (
 		<FluentProvider theme={theme} className={styles.root}>
 			{errorMessage === undefined ? null : (
@@ -113,16 +184,50 @@ export function App() {
 				errorMessage === undefined && <Spinner label="Loading solutions..." />
 			) : (
 				<>
-					<RunOptions
-						settings={workspace.store.getSettings()}
-						onChange={(changes) => workspace.store.updateSettings(changes)}
-						hasTargets={workspace.environments.targets.length > 0}
-					/>
-					<SolutionGrid
+					<div
+						ref={controlsRef}
+						className={isRunning ? `${styles.controls} ${styles.locked}` : styles.controls}
+						aria-disabled={isRunning}
+					>
+						<div className={styles.toolbar}>
+							<SettingsDialog
+								settings={workspace.store.getSettings()}
+								onChange={(changes) => workspace.store.updateSettings(changes)}
+							/>
+							<FileWizard
+								worker={worker}
+								store={workspace.store}
+								environmentUrl={workspace.environmentUrl}
+								checkedSolutions={checkedSolutions.map(({ solution }) => solution)}
+							/>
+							<Button disabled={worker === undefined} onClick={handleExportCsv}>
+								Export CSV...
+							</Button>
+							<GitBranchPicker
+								worker={worker}
+								filePath={findGitFilePath(workspace)}
+								isDisabled={!workspace.store.getSettings().gitCommit}
+							/>
+						</div>
+						<RunOptions
+							settings={workspace.store.getSettings()}
+							onChange={(changes) => workspace.store.updateSettings(changes)}
+							hasTargets={workspace.environments.targets.length > 0}
+						/>
+						<SolutionGrid
+							store={workspace.store}
+							environmentUrl={workspace.environmentUrl}
+							targetSolutions={workspace.targetSolutions}
+							fileStatuses={fileStatuses}
+						/>
+					</div>
+					<RunPanel
+						worker={worker}
 						store={workspace.store}
-						environmentUrl={workspace.environmentUrl}
-						targetSolutions={workspace.targetSolutions}
-						fileStatuses={fileStatuses}
+						environments={workspace.environments}
+						checkedSolutions={checkedSolutions}
+						onRunningChange={setIsRunning}
+						onRunEnded={reloadSolutions}
 					/>
 				</>
 			)}
@@ -206,23 +311,35 @@ async function loadWorkspace(): Promise<Workspace> {
 		slot === SOURCE_SLOT || connection === null ? [] : [{ name: connection.name, connectionSlot: slot }],
 	);
 	const environments: RunEnvironments = { source: { name: source.name, connectionSlot: SOURCE_SLOT }, targets };
-	const retrieveSolutions = createDataverseBridge([SOURCE_SLOT, ...targets.map((target) => target.connectionSlot)])[
+	const { sourceSolutions, targetSolutions } = await retrieveSolutions(environments);
+
+	store.setSolutions(sourceSolutions);
+
+	return { store, environments, environmentUrl: source.url, targetSolutions };
+}
+
+/**
+ * Retrieves the source's unmanaged solutions, sorted by friendly name, and,
+ * when exactly one target is connected, that target's solutions.
+ */
+async function retrieveSolutions(environments: RunEnvironments): Promise<LoadedSolutions> {
+	const { targets } = environments;
+	const retrieve = createDataverseBridge([SOURCE_SLOT, ...targets.map((target) => target.connectionSlot)])[
 		DataverseMethod.RetrieveSolutions
 	];
 	const [sourceSolutions, targetSolutions] = await Promise.all([
-		retrieveSolutions({ target: SOURCE_TARGET, includeManaged: false }) as Promise<SolutionRecord[]>,
+		retrieve({ target: SOURCE_TARGET, includeManaged: false }) as Promise<SolutionRecord[]>,
 		targets.length === 1
-			? (retrieveSolutions({ target: SINGLE_TARGET, includeManaged: true }) as Promise<SolutionRecord[]>)
+			? (retrieve({ target: SINGLE_TARGET, includeManaged: true }) as Promise<SolutionRecord[]>)
 			: Promise.resolve(null),
 	]);
 
-	store.setSolutions(
-		[...sourceSolutions].sort((first, second) =>
+	return {
+		sourceSolutions: [...sourceSolutions].sort((first, second) =>
 			(first.friendlyName ?? "").localeCompare(second.friendlyName ?? "", undefined, { sensitivity: "base" }),
 		),
-	);
-
-	return { store, environments, environmentUrl: source.url, targetSolutions };
+		targetSolutions,
+	};
 }
 
 /** Each source solution with its configuration, as `files/status` takes them. */
@@ -231,6 +348,44 @@ function createRunSolutions({ store, environmentUrl }: Workspace): RunSolution[]
 		solution,
 		configuration: store.getSolutionConfiguration(environmentUrl, solution.uniqueName ?? "") ?? null,
 	}));
+}
+
+/** The solutions in run order: by sorting index, ties in load order, as the grid shows them. */
+function orderForRun(runSolutions: readonly RunSolution[]): RunSolution[] {
+	return [...runSolutions].sort(
+		(first, second) => (first.configuration?.sortingIndex ?? 0) - (second.configuration?.sortingIndex ?? 0),
+	);
+}
+
+/**
+ * The export file whose repository the branch picker shows: the first
+ * configured file of the source environment, as the plugin's
+ * `InitializeGitHelper` takes it.
+ */
+function findGitFilePath({ store, environmentUrl }: Workspace): string | null {
+	for (const configuration of store.getSolutionConfigurations(environmentUrl)) {
+		// An empty file name counts as none, as the plugin's `HasValue`.
+		const filePath = configuration.fileNameManaged || configuration.fileNameUnmanaged;
+
+		if (filePath) {
+			return filePath;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Asks for the CSV file through the save dialog and lets the worker write it
+ * (`files/exportCsv`). The dialog writes an empty file first; the worker
+ * overwrites it. Nothing happens when the dialog is cancelled.
+ */
+async function exportSolutionCsv(worker: WorkerClient, solutions: readonly SolutionInfo[]): Promise<void> {
+	const filePath = await window.toolboxAPI.fileSystem.saveFile(CSV_FILE_NAME, NO_CONTENT, [CSV_FILE_FILTER]);
+
+	if (filePath !== null) {
+		await worker.exportCsv(filePath, solutions);
+	}
 }
 
 /** A text that changes exactly when the `files/status` answer may change. */
