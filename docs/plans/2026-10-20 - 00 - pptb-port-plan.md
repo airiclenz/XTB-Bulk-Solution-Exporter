@@ -460,7 +460,15 @@ NOTES (2026-10-23): checks ran with the session scratchpad's portable Node 22.23
 **Commit:** `feat(pptb): add run panel, log view, settings, file wizard and branch picker`
 Depends on item 14.
 
-## 16. Packaging scripts and docs
+## 16. Packaging scripts and docs — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): consequential edit — Bulk Solution Exporter.PptbWorker/Bulk Solution Exporter.PptbWorker.csproj: made necessary by check-worker-version.mjs; the worker had no `<Version>` element (SDK default 1.0.0), so an explicit `<Version>1.0.0</Version>` was added (same value, no version change); the check fails when the element is missing.
+
+NOTES (2026-10-23): consequential edit — AGENTS.md: made necessary by `capcom know add pptb-architecture`, which refreshes the Knowledge tree list in the capcom block.
+
+NOTES (2026-10-23): `.gitignore` needed no change: `artifacts/` and `pptb/*.tgz` were already ignored. `package.json` `files` (`dist`, `pptb.config.json`) already covered the icon (`dist/icons/tool.svg`); added scripts `check-worker-version` and `prepack` (version check + build, both to stderr so `npm pack --json` stays parseable). pack-worker.sh runs the version check before `dotnet pack`.
+
+NOTES (2026-10-23): observed: npm always packs the `main` file, so the tarball also carries the Vite source `index.html` at its root next to `dist/index.html` (item 12's `"main": "index.html"`); harmless for the listing check, but worth confirming against how PPTB resolves the tool's entry page.
 
 **What:**
 **Goal:** One script per artifact builds a publishable package: `pptb/scripts/pack-worker.sh` (`dotnet pack` → `artifacts/worker`) and `npm pack` in `pptb/`, with a check that `pptb.config.json`'s `packageVersion` equals the worker .csproj `Version`. `README.md` gains a "Power Platform ToolBox" section (install, the .NET 8 runtime requirement, connection 0 = source, 1..n = targets). The capcom note `versioning-and-release` describes the worker/npm versions and the nuget-then-npm publish order. A new capcom note `pptb-architecture` covers core/worker/UI and the RPC method list.

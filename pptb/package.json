@@ -38,6 +38,8 @@
 	],
 	"scripts": {
 		"build": "tsc && vite build",
+		"check-worker-version": "node scripts/check-worker-version.mjs",
+		"prepack": "npm run check-worker-version --silent 1>&2 && npm run build --silent 1>&2",
 		"test": "vitest run",
 		"validate": "pptb-validate"
 	},

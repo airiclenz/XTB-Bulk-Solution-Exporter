@@ -35,6 +35,32 @@ Bulk Solution Exporter automates the export *and* import of multiple Power Platf
 > The plugin creates one commit per run, using the commit message you enter.
 ---
 
+## 🧰 Power Platform ToolBox
+
+Bulk Solution Exporter also runs in [Power Platform ToolBox](https://www.powerplatformtoolbox.com) (PPTB), with the same features as the XrmToolBox plugin.
+
+1. **Install** the [.NET 8 runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (or newer). The tool's engine is a .NET worker that PPTB downloads from nuget.org on first use and runs with your local `dotnet`; it does not start without it.
+2. **Install** the tool in PPTB from the tool marketplace: **Bulk Solution Exporter** (npm package `@airiclenz/pptb-bulk-solution-exporter`).
+3. **Connect** when you open the tool. PPTB lets you assign up to ten connections:
+   - connection **0** is the **source** environment: its unmanaged solutions are listed, versioned and exported;
+   - connections **1..n** are the **targets**: the exported solutions are imported into them, in that order. With no target the tool only exports.
+4. Pick the solutions, set the options and hit **Execute**, as in XrmToolBox.
+
+Settings and per-solution file locations are stored by PPTB per tool; they are not shared with the XrmToolBox plugin.
+
+### Building the packages
+
+The tool is two packages: the .NET worker (NuGet) and the UI (npm). Each has one command, run with the .NET 8 SDK and Node.js 20+:
+
+```sh
+sh pptb/scripts/pack-worker.sh     # -> artifacts/worker/AiricLenz.BulkSolutionExporter.PptbWorker.<version>.nupkg
+cd pptb && npm ci && npm pack      # -> pptb/airiclenz-pptb-bulk-solution-exporter-<version>.tgz
+```
+
+Both check that `workers.engine.packageVersion` in `pptb/pptb.config.json` equals `<Version>` in the worker `.csproj` (`node pptb/scripts/check-worker-version.mjs`); `npm pack` also builds `dist/` first.
+
+---
+
 ## 🤝 Contributing
 
 PRs and feature requests are welcome!

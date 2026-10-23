@@ -43,6 +43,7 @@ Knowledge tree, top level:
 - `build-and-test`: Build with dotnet build; run the tests on Windows
 - `code-style`: Code style: tabs, Allman, method dividers, no magic numbers
 - `copilot-instructions-stale`: copilot-instructions.md describes a different project
+- `pptb-architecture`: PPTB port: core, .NET worker and React UI, and the RPC method list
 - `repo-docs-layout`: Where plans, handoffs, release notes and open work live
 - `run-and-abort-rules`: Run invariants: checked-solution snapshot, abort between steps, retries
 - `ui-thread-rules`: UI objects only on the UI thread; the worker uses the run request
