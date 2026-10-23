@@ -269,7 +269,21 @@ NOTES (2026-10-23): checked on Linux with .NET SDK 8. `dotnet test "Bulk Solutio
 **Commit:** `feat(core): add git and import phases to RunEngine`
 Depends on item 7.
 
-## 9. XTB plugin runs through RunEngine
+## 9. XTB plugin runs through RunEngine — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): build only for `Bulk Solution Exporter.Tests`: on Linux arm64 with .NET SDK 8.0.426, `dotnet build "Bulk Solution Exporter.sln"` exits 0 with no compiler warnings (only the NU1902/NU1903 warnings that were already there). The net48 tests were not run because there is no Windows/mono here. `dotnet test "Bulk Solution Exporter.Core.Tests"` passes 91/91.
+
+NOTES (2026-10-23): `RunRequestFactory.Create(Switches, Settings, solutions)` takes a nested `RunRequestFactory.Switches` value object. `ExecuteOperations` fills it from the controls on the UI thread (`ReadRunSwitches`), so no file under `Run/` names a control. The factory copies each configuration on the UI thread and passes `Solution.Info` as the request's solution; the engine copies that before it changes anything.
+
+NOTES (2026-10-23): the Work body is now the named method `ExecuteRunOnWorker`, which reads no control, list box or `_settings`. The sink's handlers are `ApplySolutionVersion` (sets the listed `Solution.Info.Version`, then refreshes the list), `RefreshProcessedSolution` and `ApplyRunConfiguration`. `ApplyRunConfiguration` replaces `WriteBackSolutionConfiguration`: it merges all four duration fields of the run's copy into `_settings` and saves. All of them run synchronously through `ControlRunSink` (Invoke). Progress goes through `ReportExtendedProgress` (the worker's ReportProgress).
+
+NOTES (2026-10-23): deleted the old phase methods and members that only the run used: PublishAll, UpdateCheckedVersionNumbers, ExportCheckedSolutions, SaveVersionJson, ImportCheckedSolutions, ExportSolution, ExportToFile, UpdateVersionNumberInSource, HandleGit, ImportSolution, ExecuteWithRetries, DoesSolutionExistInTarget, WriteBackSolutionConfiguration, IsAbortRequested and ExecutionSettingsSnapshot. Also deleted the `_sessionFiles` and `_isAbortRequested` fields, the int overload of GetDurationString, the ColorSolution/ColorConnection/ColorTeeth/dateTimeFormat constants, and the now-unused System.ServiceModel, Microsoft.Crm.Sdk.Messages and Newtonsoft.Json usings. `GetDefaultFileName` and `RefreshSolutionInListBox` stay.
+
+NOTES (2026-10-23): a target connection without a `ServiceClient` is now logged ("has no connection and is skipped") and left out of the run, because the engine's target list cannot hold null. Before, the plugin logged its target heading, imported nothing, and Publish All failed with a logged error. The gateway also throws `InvalidOperationException` when an export response has no file, which honours `IDataverseGateway.ExportSolution`'s "never null" contract.
+
+NOTES (2026-10-23): consequential edit — AGENTS.md: made necessary by the `ui-thread-rules` title change (`capcom agents` refreshed its knowledge block; `capcom check` is clean). `.capcom/issues/worker-reads-ui-controls.md` still names `ExecutionSettingsSnapshot`. Those are the intended grep hits: the ticket is left for the closeout.
+
+NOTES (2026-10-23): core `RetryRunner.IsRunAborted` (and its test in RetryRunnerTests) no longer has a production caller. The plugin now uses `_runResult?.IsAborted ?? _runCancellation.IsCancellationRequested`. It was left in place because it is outside this item's per-phase deletion scope. The pre-existing unused `ColorError`/`ColorFile` constants were also left in place.
 
 **What:** Recast at the regression check (2026-10-20).
 **Goal:** The plugin's Execute path builds a complete `RunRequest` on the UI thread and runs `RunEngine` inside `WorkAsync`, through an `OrganizationServiceGateway` adapter. No worker-thread code reads a UI control. Log output, abort and settings write-back behave as before.

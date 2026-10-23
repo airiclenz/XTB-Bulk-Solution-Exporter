@@ -7,7 +7,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.ServiceModel;
 using System.Windows.Forms;
 using Com.AiricLenz.BulkSolutionExporter.Core;
 using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
@@ -16,13 +15,12 @@ using Com.AiricLenz.BulkSolutionExporter.Core.Run;
 using Com.AiricLenz.BulkSolutionExporter.Core.Schema;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
+using Com.AiricLenz.XTB.Plugin.Run;
 using Com.AiricLenz.XTB.Plugin.Schema;
 using McTools.Xrm.Connection;
-using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
-using Newtonsoft.Json;
 using XrmToolBox.Extensibility;
 using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;
 
@@ -49,7 +47,6 @@ namespace Com.AiricLenz.XTB.Plugin
 		private Guid _currentConnectionGuid;
 		private SolutionConfiguration _currentSolutionConfig;
 
-		private List<string> _sessionFiles = new List<string>();
 		private List<Solution> _solutionsOrigin = new List<Solution>();
 		private List<Solution> _solutionsTarget = new List<Solution>();
 		private ConnectionManager _connectionManager = null;
@@ -60,7 +57,14 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private WorkAsyncInfo _executionWorker = null;
 		private volatile BackgroundWorker _executionBackgroundWorker = null;
-		private volatile bool _isAbortRequested = false;
+
+		// The current run's abort: cancelled by the Abort button, checked by the
+		// run engine between steps. Null while no run is active.
+		private System.Threading.CancellationTokenSource _runCancellation = null;
+
+		// Set by the execution worker when the run ended; null when it threw.
+		private RunResult _runResult = null;
+
 		private bool _isExecuting = false;
 		private Image _executeButtonImage;
 		private string _executeButtonToolTip;
@@ -74,16 +78,11 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		private Solution _currentSolution;
 		private const string ColorError = RunLog.ColorError;
-		private const string ColorSolution = RunLog.ColorSolution;
 		private const string ColorFile = RunLog.ColorFile;
 		private const string ColorGreen = RunLog.ColorGreen;
 		private const string ColorOrange = RunLog.ColorOrange;
-		private const string ColorConnection = RunLog.ColorConnection;
-		private const string ColorTeeth = RunLog.ColorTeeth;
 
 		private const string ColorEndTag = RunLog.ColorEndTag;
-
-		private const string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
 		// Looks of the toolbar's Execute button; see SetExecuteButtonMode.
 		private enum ExecuteButtonMode
@@ -847,6 +846,11 @@ namespace Com.AiricLenz.XTB.Plugin
 					return;
 				}
 
+				// The run engine checks this token between steps. The worker is
+				// cancelled as well: its CancellationPending keeps the running
+				// step's progress from replacing the "Aborting..." message.
+				_runCancellation?.Cancel();
+
 				// Cancel the execution worker directly so the working panel stays open
 				// until the run ends; CancelWorker() would remove it. CancelWorker() is
 				// only the fallback when the worker has not started yet.
@@ -979,7 +983,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			button_browseUnmananged.Enabled = state;
 
 			// The wizard rewrites solution configurations; a run reads them from
-			// its snapshot, so they must not change while it is active.
+			// its request, so they must not change while it is active.
 			button_fileWizzard.Enabled =
 				state &&
 				listBoxSolutions.CheckedItems.Count > 0;
@@ -1230,26 +1234,42 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
+		/// <summary>
+		/// Starts the run of Execute on the execution worker. Everything the run
+		/// reads is taken here, on the UI thread: the checked solutions, the
+		/// on-screen switches and text boxes, the settings and the connections.
+		/// </summary>
 		private void ExecuteOperations()
 		{
 			richTextBox_log.Text = string.Empty;
 			_runLog.ResetIndent();
-			_sessionFiles.Clear();
-			_isAbortRequested = false;
+			_runResult = null;
+
+			_runCancellation?.Dispose();
+			_runCancellation = new System.Threading.CancellationTokenSource();
+			var cancellationToken = _runCancellation.Token;
 
 			// Taken on the UI thread: the list is rebuilt during the run, so the
-			// worker phases must not read listBoxSolutions.CheckedItems live.
+			// run must not read listBoxSolutions.CheckedItems live.
 			var checkedSolutions =
 				listBoxSolutions.CheckedItems
 					.Select(item => item.ItemObject as Solution)
 					.ToList();
 
 			// Taken on the UI thread too: Settings is not thread-safe, so the
-			// worker phases read this snapshot and never touch _settings.
-			var settingsSnapshot =
-				new ExecutionSettingsSnapshot(
+			// run reads this request and never touches _settings or a control.
+			var request =
+				RunRequestFactory.Create(
+					ReadRunSwitches(),
 					_settings,
 					checkedSolutions);
+
+			var sourceGateway =
+				new OrganizationServiceGateway(
+					Service,
+					ConnectionDetail.ConnectionName);
+
+			var targetGateways = CreateTargetGateways();
 
 			var message = string.Join(" / ", GetActionsList()) + " Solutions...";
 
@@ -1260,91 +1280,13 @@ namespace Com.AiricLenz.XTB.Plugin
 				MessageHeight = _workerPanelSize.Height,
 				IsCancelable = true,
 				Work = (worker, args) =>
-				{
-					// Kept for the abort path of button_Export_Click.
-					_executionBackgroundWorker = worker;
-
-					try
-					{
-						if (flipSwitch_publishSource.IsOn &&
-							!IsAbortRequested(worker))
-						{
-							ReportExtendedProgress(
-								worker,
-								$"Publishing all...{Environment.NewLine}[{ConnectionDetail.ConnectionName}]",
-								resetTimer: true);
-
-							PublishAll(ConnectionDetail);
-						}
-
-						if (!IsAbortRequested(worker))
-						{
-							UpdateCheckedVersionNumbers(
-								checkedSolutions,
-								worker);
-						}
-
-						if (!IsAbortRequested(worker))
-						{
-							ExportCheckedSolutions(
-								checkedSolutions,
-								settingsSnapshot,
-								worker);
-						}
-
-						if (!IsAbortRequested(worker))
-						{
-							HandleGit(worker);
-						}
-
-						foreach (var targetConnection in TargetConnections)
-						{
-							if (IsAbortRequested(worker))
-							{
-								break;
-							}
-
-							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-							Log($"##### Handling Target *" + ColorConnection + targetConnection.ConnectionName + ColorEndTag + "*:");
-							Log(ColorTeeth + ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + ColorEndTag);
-
-							Log();
-
-							ImportCheckedSolutions(
-								targetConnection,
-								checkedSolutions,
-								settingsSnapshot,
-								worker);
-
-							if (flipSwitch_publishTarget.IsOn &&
-								!IsAbortRequested(worker))
-							{
-								ReportExtendedProgress(
-									worker,
-									$"Publishing all...{Environment.NewLine}[{targetConnection.ConnectionName}]",
-									resetTimer: true);
-
-								PublishAll(targetConnection);
-							}
-						}
-
-						if (IsAbortRequested(worker))
-						{
-							// Marks the run as cancelled; args.Result must then not be read.
-							args.Cancel = true;
-							return;
-						}
-
-						args.Result = null;
-					}
-					catch
-					{
-						// Records an abort requested while the failing step was running, so
-						// PostWorkCallBack still reports the run as aborted.
-						IsAbortRequested(worker);
-						throw;
-					}
-				},
+					ExecuteRunOnWorker(
+						worker,
+						args,
+						request,
+						sourceGateway,
+						targetGateways,
+						cancellationToken),
 
 				PostWorkCallBack = (args) =>
 				{
@@ -1354,11 +1296,14 @@ namespace Com.AiricLenz.XTB.Plugin
 					_executionBackgroundWorker = null;
 					SetExecuteButtonMode(ExecuteButtonMode.Execute);
 
-					// The flag also covers a step that threw after the abort was
-					// requested, where args.Cancelled is false and args.Error is set.
-					var isAborted = RetryRunner.IsRunAborted(
-						args.Cancelled,
-						_isAbortRequested);
+					// A run that threw has no result; an abort requested before it
+					// threw still reports the run as aborted.
+					var isAborted =
+						_runResult?.IsAborted ??
+						_runCancellation.IsCancellationRequested;
+
+					_runCancellation.Dispose();
+					_runCancellation = null;
 
 					if (args.Error != null)
 					{
@@ -1433,59 +1378,196 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		/// <summary>
-		/// Applies a change to the solution configuration in _settings and saves
-		/// the settings. Callable from the execution worker: the change runs on
-		/// the UI thread (BeginInvoke, so the worker does not block on it), the
-		/// only thread that touches _settings.
+		/// The execution worker's work: runs the request through the shared run
+		/// engine. Reads no control and no settings; everything the run shows
+		/// reaches the UI thread through its <see cref="ControlRunSink"/>.
 		/// </summary>
-		/// <param name="solutionIdentifier">The solution whose configuration changes.</param>
-		/// <param name="applyChange">Applies the change to the configuration in _settings.</param>
-		private void WriteBackSolutionConfiguration(
-			string solutionIdentifier,
-			Action<SolutionConfiguration> applyChange)
+		/// <param name="worker">The execution worker; reports the run's progress.</param>
+		/// <param name="args">Marked cancelled when the run was aborted.</param>
+		/// <param name="request">The run's request, built on the UI thread.</param>
+		/// <param name="source">The source environment.</param>
+		/// <param name="targets">The target environments, in import order.</param>
+		/// <param name="cancellationToken">Cancelled by the Abort button.</param>
+		private void ExecuteRunOnWorker(
+			BackgroundWorker worker,
+			DoWorkEventArgs args,
+			RunRequest request,
+			IDataverseGateway source,
+			IReadOnlyList<IDataverseGateway> targets,
+			System.Threading.CancellationToken cancellationToken)
 		{
-			BeginInvoke((MethodInvoker) (() =>
+			// Kept for the abort path of button_Export_Click.
+			_executionBackgroundWorker = worker;
+
+			var sink =
+				new ControlRunSink(
+					this,
+					RenderLogLine,
+					ApplySolutionVersion,
+					ApplyRunConfiguration,
+					RefreshProcessedSolution,
+					(progressMessage, detail, isNewStep) => ReportExtendedProgress(
+						worker,
+						progressMessage,
+						detail,
+						isNewStep));
+
+			_runResult =
+				RunEngine.Run(
+					request,
+					source,
+					targets,
+					sink,
+					cancellationToken);
+
+			if (_runResult.IsAborted)
 			{
-				var config =
-					_settings.GetSolutionConfiguration(
-						solutionIdentifier,
-						true);
+				// Marks the run as cancelled; args.Result must then not be read.
+				args.Cancel = true;
+				return;
+			}
 
-				if (config == null)
-				{
-					return;
-				}
-
-				applyChange(config);
-
-				_settings.UpdateSolutionConfiguration(config);
-				SaveSettings();
-			}));
+			args.Result = null;
 		}
 
 
 		// ============================================================================
 		/// <summary>
-		/// Returns whether the user requested an abort of the execution worker.
-		/// The first time the request is observed, the abort is remembered for
-		/// the post-work callback and logged once.
+		/// Reads the run options from the on-screen switches and text boxes.
+		/// Call it on the UI thread.
 		/// </summary>
-		/// <param name="worker">The execution worker; null never reports an abort.</param>
-		private bool IsAbortRequested(
-			BackgroundWorker worker)
+		private RunRequestFactory.Switches ReadRunSwitches()
 		{
-			if (worker?.CancellationPending != true)
+			return new RunRequestFactory.Switches
 			{
-				return false;
+				ShouldPublishSource = flipSwitch_publishSource.IsOn,
+				ShouldUpdateVersion = flipSwitch_updateVersion.IsOn,
+				ShouldExportManaged = flipSwitch_exportManaged.IsOn,
+				ShouldExportUnmanaged = flipSwitch_exportUnmanaged.IsOn,
+				ShouldCommitToGit = flipSwitch_gitCommit.IsOn,
+				ShouldPushCommit = flipSwitch_pushCommit.IsOn,
+				ShouldImportManaged = flipSwitch_importManaged.IsOn,
+				ShouldImportUnmanaged = flipSwitch_importUnmanaged.IsOn,
+				ShouldUpgrade = flipSwitch_upgrade.IsOn,
+				ShouldOverwriteCustomizations = flipSwitch_overwrite.IsOn,
+				ShouldEnableAutomation = flipSwitch_enableAutomation.IsOn,
+				ShouldPublishTargets = flipSwitch_publishTarget.IsOn,
+				VersionFormat = textBox_versionFormat.Text,
+				CommitMessage = textBox_commitMessage.Text,
+			};
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The gateways of the target connections, in import order. A target
+		/// without a service client has nothing to import into: it is logged
+		/// and left out.
+		/// </summary>
+		private List<IDataverseGateway> CreateTargetGateways()
+		{
+			var targetGateways = new List<IDataverseGateway>();
+
+			foreach (var targetConnection in TargetConnections)
+			{
+				var serviceClient = targetConnection.ServiceClient;
+
+				if (serviceClient == null)
+				{
+					LogError("The target '" + targetConnection.ConnectionName + "' has no connection and is skipped.");
+					continue;
+				}
+
+				targetGateways.Add(
+					new OrganizationServiceGateway(
+						serviceClient,
+						targetConnection.ConnectionName));
 			}
 
-			if (!_isAbortRequested)
+			return targetGateways;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The listed source solution with this record id; null when none is listed.
+		/// </summary>
+		private Solution FindOriginSolution(
+			Guid solutionId)
+		{
+			return
+				_solutionsOrigin.FirstOrDefault(
+					solution => solution.SolutionId == solutionId);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Handler of the run's version changes: gives the listed solution its
+		/// new version and refreshes the list. Runs on the UI thread.
+		/// </summary>
+		private void ApplySolutionVersion(
+			Guid solutionId,
+			Version version)
+		{
+			var solution = FindOriginSolution(solutionId);
+
+			if (solution == null)
 			{
-				_isAbortRequested = true;
-				Log(ColorOrange + "Abort requested — skipping remaining steps." + ColorEndTag);
+				return;
 			}
 
-			return true;
+			solution.Info.Version = version;
+			RefreshSolutionInListBox(solution);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Handler of the run's processed solutions: refreshes the listed
+		/// solution, whose file status may have changed. Runs on the UI thread.
+		/// </summary>
+		private void RefreshProcessedSolution(
+			Guid solutionId)
+		{
+			var solution = FindOriginSolution(solutionId);
+
+			if (solution != null)
+			{
+				RefreshSolutionInListBox(solution);
+			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Handler of the run's configuration changes: merges the run's last
+		/// export and import durations into the configuration in _settings and
+		/// saves the settings. File names and check state stay as they are in
+		/// _settings, since the user may have changed them during the run.
+		/// Runs on the UI thread, the only thread that touches _settings.
+		/// </summary>
+		/// <param name="runConfiguration">The run's copy of the configuration, after the change.</param>
+		private void ApplyRunConfiguration(
+			SolutionConfiguration runConfiguration)
+		{
+			var config =
+				_settings.GetSolutionConfiguration(
+					runConfiguration.SolutionIndentifier,
+					true);
+
+			if (config == null)
+			{
+				return;
+			}
+
+			config.LastExportDurationManagedInSeconds = runConfiguration.LastExportDurationManagedInSeconds;
+			config.LastExportDurationUnamangedInSeconds = runConfiguration.LastExportDurationUnamangedInSeconds;
+			config.LastImportDurationManagedInSeconds = runConfiguration.LastImportDurationManagedInSeconds;
+			config.LastImportDurationUnmanagedInSeconds = runConfiguration.LastImportDurationUnmanagedInSeconds;
+
+			_settings.UpdateSolutionConfiguration(config);
+			SaveSettings();
 		}
 
 
@@ -1670,530 +1752,6 @@ namespace Com.AiricLenz.XTB.Plugin
 
 
 		// ============================================================================
-		private void PublishAll(
-			ConnectionDetail connection)
-		{
-			Log("##### Publishing All now (" + ColorConnection + connection.ConnectionName + ColorEndTag + ")");
-			_runLog.IncreaseIndent();
-
-			var startTime = DateTime.Now;
-
-			Log("Start Time: " + startTime.ToString(dateTimeFormat));
-
-			PublishAllXmlRequest publishRequest =
-				new PublishAllXmlRequest();
-
-			try
-			{
-				connection.ServiceClient.Execute(publishRequest);
-			}
-			catch (Exception ex)
-			{
-				LogError(ex.Message);
-				_runLog.DecreaseIndent();
-				return;
-			}
-
-			var duration = GetDurationString(startTime);
-
-			Log("Publish All was completed.");
-			Log($"Duration: {duration}");
-
-			_runLog.DecreaseIndent();
-			Log();
-		}
-
-
-		// ============================================================================
-		private void UpdateCheckedVersionNumbers(
-			List<Solution> solutions,
-			BackgroundWorker worker)
-		{
-			if (!flipSwitch_updateVersion.IsOn ||
-				solutions.Count == 0)
-			{
-				return;
-			}
-
-			ReportExtendedProgress(
-				worker,
-				"Updating Version Numbers...",
-				resetTimer: true);
-
-			Log("##### Updating Version Numbers:");
-			_runLog.IncreaseIndent();
-
-
-			for (int i = 0; i < solutions.Count; i++)
-			{
-				if (IsAbortRequested(worker))
-				{
-					break;
-				}
-
-				var solution = solutions[i];
-
-				Log("Updating version number for solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag);
-
-				UpdateVersionNumberInSource(solution);
-				RefreshSolutionInListBox(solution);
-
-				if (i < solutions.Count - 1)
-				{
-					Log();
-				}
-			}
-
-			_runLog.DecreaseIndent();
-			Log();
-		}
-
-
-		// ============================================================================
-		private void ExportCheckedSolutions(
-			List<Solution> solutions,
-			ExecutionSettingsSnapshot settingsSnapshot,
-			BackgroundWorker worker)
-		{
-			if (flipSwitch_exportManaged.IsOff &&
-				flipSwitch_exportUnmanaged.IsOff)
-			{
-				return;
-			}
-
-			Log("##### Exporting:");
-			_runLog.IncreaseIndent();
-
-			for (int i = 0; i < solutions.Count; i++)
-			{
-				if (IsAbortRequested(worker))
-				{
-					break;
-				}
-
-				var solution = solutions[i];
-
-				var solutionConfig =
-					settingsSnapshot.GetSolutionConfiguration(
-						solution.SolutionIdentifier);
-
-				Log("**Exporting solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
-
-				var exportResult =
-					ExportSolution(
-						solution,
-						solutionConfig,
-						settingsSnapshot,
-						worker);
-
-				if (!exportResult)
-				{
-					Log();
-					LogError("**Export aborted due to an error!**");
-					break;
-				}
-
-				if (i < solutions.Count - 1)
-				{
-					Log();
-				}
-
-				RefreshSolutionInListBox(solution);
-			}
-
-			_runLog.DecreaseIndent();
-			Log();
-		}
-
-
-		// ============================================================================
-		private void SaveVersionJson(
-			string exportedFilePath,
-			Solution solution,
-			bool isManaged)
-		{
-			var exportParth =
-				Path.GetDirectoryName(
-					exportedFilePath);
-
-			var jsonFilePath =
-				Path.Combine(
-					exportParth,
-					ExportedSolutionVersions.FileName);
-
-			var exportedSolutions = new ExportedSolutionVersions();
-
-			if (File.Exists(jsonFilePath))
-			{
-				string json = File.ReadAllText(jsonFilePath);
-				exportedSolutions = JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
-			}
-
-			var found = false;
-			var fileName = Path.GetFileName(exportedFilePath);
-
-			if (isManaged)
-			{
-				for (int i = 0; i < exportedSolutions.Managed.Count; i++)
-				{
-					if (exportedSolutions.Managed[i].Matches(solution.UniqueName, fileName))
-					{
-						exportedSolutions.Managed[i].Version = solution.Version.ToString();
-						found = true;
-					}
-				}
-			}
-			else
-			{
-				for (int i = 0; i < exportedSolutions.Unmanaged.Count; i++)
-				{
-					if (exportedSolutions.Unmanaged[i].Matches(solution.UniqueName, fileName))
-					{
-						exportedSolutions.Unmanaged[i].Version = solution.Version.ToString();
-						found = true;
-					}
-				}
-			}
-
-			if (!found)
-			{
-				var newExportSolution = new ExportedSolution
-				{
-					SolutionId = solution.SolutionId.ToString().ToLower(),
-					FileName = fileName,
-					Version = solution.Version.ToString(),
-					LogicalSolutionName = solution.UniqueName
-
-				};
-
-				if (isManaged)
-				{
-					exportedSolutions.Managed.Add(newExportSolution);
-				}
-				else
-				{
-					exportedSolutions.Unmanaged.Add(newExportSolution);
-				}
-			}
-
-			var settings = new JsonSerializerSettings();
-			settings.Formatting = Formatting.Indented;
-			string outputJson = JsonConvert.SerializeObject(exportedSolutions, settings);
-			File.WriteAllText(jsonFilePath, outputJson);
-		}
-
-
-		// ============================================================================
-		private void ImportCheckedSolutions(
-			ConnectionDetail targetService,
-			List<Solution> solutions,
-			ExecutionSettingsSnapshot settingsSnapshot,
-			BackgroundWorker worker)
-		{
-			var targetServiceClient = targetService?.ServiceClient;
-
-			if (targetServiceClient == null ||
-				(
-					flipSwitch_importManaged.IsOff &&
-					flipSwitch_importUnmanaged.IsOff
-				))
-			{
-				return;
-			}
-
-			bool importManagd = flipSwitch_importManaged.IsOn;
-
-			Log("##### Importing:");
-			_runLog.IncreaseIndent();
-
-			for (int i = 0; i < solutions.Count; i++)
-			{
-				if (IsAbortRequested(worker))
-				{
-					break;
-				}
-
-				var solution = solutions[i];
-
-				var solutionConfig =
-					settingsSnapshot.GetSolutionConfiguration(
-						solution.SolutionIdentifier);
-
-				var startTime = DateTime.Now;
-
-				Log("**Importing solution " + ColorSolution + "'" + solution.FriendlyName + "'" + ColorEndTag + ":**");
-
-
-				var importResult =
-					ImportSolution(
-						targetService,
-						solution,
-						settingsSnapshot,
-						worker,
-						importManagd);
-
-				if (importResult)
-				{
-					_runLog.IncreaseIndent();
-					var duration = GetDurationString(startTime);
-					var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
-
-					Log("The import was successful.");
-					Log("Duration: " + duration);
-
-					if (i < solutions.Count - 1)
-					{
-						Log();
-					}
-
-					_runLog.DecreaseIndent();
-
-					if (importManagd)
-					{
-						solutionConfig.LastImportDurationManagedInSeconds = durationSeconds;
-
-						WriteBackSolutionConfiguration(
-							solution.SolutionIdentifier,
-							config => config.LastImportDurationManagedInSeconds = durationSeconds);
-					}
-					else
-					{
-						solutionConfig.LastImportDurationUnmanagedInSeconds = durationSeconds;
-
-						WriteBackSolutionConfiguration(
-							solution.SolutionIdentifier,
-							config => config.LastImportDurationUnmanagedInSeconds = durationSeconds);
-					}
-				}
-
-				// An import ended by the abort is not reported as an import error.
-				if (!importResult &&
-					IsAbortRequested(worker))
-				{
-					break;
-				}
-
-				if (!importResult &&
-					!settingsSnapshot.ContinueOnError)
-				{
-					LogError("The import was not successful and Continue-On-Error is disabled.");
-					break;
-				}
-
-				RefreshSolutionInListBox(solution);
-			}
-
-			_runLog.DecreaseIndent();
-			Log();
-		}
-
-
-
-		// ============================================================================
-		private bool ExportSolution(
-			Solution solution,
-			SolutionConfiguration solutionConfiguration,
-			ExecutionSettingsSnapshot settingsSnapshot,
-			BackgroundWorker worker)
-		{
-			_runLog.IncreaseIndent();
-
-			if (flipSwitch_exportManaged.IsOn)
-			{
-				var lastDurationString =
-					solutionConfiguration.LastExportDurationManagedInSeconds != 0 ?
-					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationManagedInSeconds, noMilliseconds: true)})" :
-					null;
-
-				ReportExtendedProgress(
-					worker,
-					$"Exporting as managed...{Environment.NewLine}'{solution.FriendlyName}'",
-					additionalMessage: lastDurationString,
-					resetTimer: true);
-
-				var durationInSeconds =
-					ExportToFile(
-						solution,
-						solutionConfiguration,
-						settingsSnapshot,
-						true);
-
-				if (durationInSeconds > 0)
-				{
-					solutionConfiguration.LastExportDurationManagedInSeconds = durationInSeconds;
-
-					WriteBackSolutionConfiguration(
-						solutionConfiguration.SolutionIndentifier,
-						config => config.LastExportDurationManagedInSeconds = durationInSeconds);
-				}
-			}
-
-			// Abort between the managed and the unmanaged export: the managed
-			// export completed, so this is not an export error.
-			if (IsAbortRequested(worker))
-			{
-				_runLog.DecreaseIndent();
-				return true;
-			}
-
-			if (flipSwitch_exportManaged.IsOn &&
-				flipSwitch_exportUnmanaged.IsOn)
-			{
-				Log();
-			}
-
-			if (flipSwitch_exportUnmanaged.IsOn)
-			{
-				var lastDurationString =
-					solutionConfiguration.LastExportDurationUnamangedInSeconds != 0 ?
-					$" (Last duration: {GetDurationString(solutionConfiguration.LastExportDurationUnamangedInSeconds, noMilliseconds: true)})" :
-					null;
-
-				ReportExtendedProgress(
-					worker,
-					$"Exporting as unmanaged...{Environment.NewLine}'{solution.FriendlyName}'",
-					additionalMessage: lastDurationString,
-					resetTimer: true);
-
-				var durationInSeconds =
-					ExportToFile(
-						solution,
-						solutionConfiguration,
-						settingsSnapshot,
-						false);
-
-				if (durationInSeconds > 0)
-				{
-					solutionConfiguration.LastExportDurationUnamangedInSeconds = durationInSeconds;
-
-					WriteBackSolutionConfiguration(
-						solutionConfiguration.SolutionIndentifier,
-						config => config.LastExportDurationUnamangedInSeconds = durationInSeconds);
-				}
-			}
-
-			_runLog.DecreaseIndent();
-
-			return true;
-		}
-
-
-		// ============================================================================
-		private int ExportToFile(
-			Solution solution,
-			SolutionConfiguration solutionConfiguration,
-			ExecutionSettingsSnapshot settingsSnapshot,
-			bool isManaged)
-		{
-			Log("Exporting as " + (isManaged ? "" : "un") + "managed solution now...");
-			_runLog.IncreaseIndent();
-
-
-			if (isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameManaged) ||
-				!isManaged && string.IsNullOrWhiteSpace(solutionConfiguration.FileNameUnmanaged))
-			{
-				LogError("No file name for the " + (isManaged ? "" : "un") + "managed solution was given!");
-				_runLog.DecreaseIndent();
-				return -1;
-			}
-
-			var filePath =
-				isManaged ? solutionConfiguration.FileNameManaged : solutionConfiguration.FileNameUnmanaged;
-
-			if (!FileAndFolderHelper.IsValidSolutionFilePath(filePath))
-			{
-				LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
-				_runLog.DecreaseIndent();
-				return -1;
-			}
-
-			var startTime = DateTime.Now;
-
-			Log("Start Time: " + startTime.ToString(dateTimeFormat));
-
-			var exportSolutionRequest = new ExportSolutionRequest
-			{
-				SolutionName = solution.UniqueName,
-				Managed = isManaged
-			};
-
-			var exportSolutionResponse =
-				(ExportSolutionResponse) Service.Execute(
-					exportSolutionRequest);
-
-			string directoryPath = Path.GetDirectoryName(filePath);
-
-			// Check if the directory exists
-			if (!Directory.Exists(directoryPath))
-			{
-				// Create the directory
-				Directory.CreateDirectory(directoryPath);
-			}
-
-			// Save the exported solution to a file
-			File.WriteAllBytes(
-				filePath,
-				exportSolutionResponse.ExportSolutionFile);
-
-			_sessionFiles.Add(filePath);
-
-			var duration = GetDurationString(startTime);
-			var durationSeconds = (int) (DateTime.Now - startTime).TotalSeconds;
-
-			Log("Duration: " + duration);
-
-			if (settingsSnapshot.SaveVersionJson)
-			{
-				SaveVersionJson(
-					filePath,
-					solution,
-					isManaged);
-			}
-
-			_runLog.DecreaseIndent();
-			return durationSeconds;
-
-		}
-
-
-		// ============================================================================
-		private bool UpdateVersionNumberInSource(
-			Solution solution)
-		{
-			_runLog.IncreaseIndent();
-
-			var oldVersionString = solution.Version.ToString();
-
-			var versionUpdateResult =
-				solution.Version.IncreaseVersionNumber(
-					textBox_versionFormat.Text);
-
-			if (!versionUpdateResult)
-			{
-				LogError("The version format is invalid!");
-				_runLog.DecreaseIndent();
-				return false;
-			}
-
-			var solutionToBeUpdated =
-				new Entity(
-					"solution",
-					solution.SolutionId);
-
-			solutionToBeUpdated.Attributes.Add(
-				"version",
-				solution.Version.ToString());
-
-			Service.Update(solutionToBeUpdated);
-
-			Log("Updated the version number: **" + oldVersionString + "** → **" + solution.Version + "**");
-
-			_runLog.DecreaseIndent();
-			return true;
-		}
-
-
-		// ============================================================================
 		private void RefreshSolutionInListBox(
 			Solution solution)
 		{
@@ -2286,348 +1844,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			comboBox_gitBranches.Items.AddRange(_gitBranches.ToArray());
 			comboBox_gitBranches.SelectedIndex = _gitBranches.IndexOf(_gitHelper.GetActiveBranch());
 			CodeUpdate = false;
-		}
-
-
-		// ============================================================================
-		private void HandleGit(
-			BackgroundWorker worker)
-		{
-			if (flipSwitch_gitCommit.IsOff ||
-				_gitHelper == null)
-			{
-				return;
-			}
-
-			ReportExtendedProgress(
-				worker,
-				"Committing files to Git...",
-				resetTimer: true);
-
-			Log("##### Commiting the new files to Git:");
-			_runLog.IncreaseIndent();
-
-			if (_sessionFiles.Count == 0)
-			{
-				Log("No files need to be committed.");
-				_runLog.DecreaseIndent();
-				Log();
-				return;
-			}
-
-
-			string errorMessage;
-
-			foreach (var file in _sessionFiles)
-			{
-				if (!_gitHelper.AddFile(file, out errorMessage))
-				{
-					LogError("Error staging: *" + errorMessage + "*");
-				}
-			}
-
-			var message = textBox_commitMessage.Text;
-
-
-			if (!_gitHelper.Commit(message, out errorMessage))
-			{
-				LogError("Error commiting: *" + errorMessage + "*");
-			}
-			else
-			{
-				Log(_sessionFiles.Count + " File(s) was/weres commited: " + message);
-			}
-
-
-			if (flipSwitch_pushCommit.IsOff)
-			{
-				_runLog.DecreaseIndent();
-				Log();
-				return;
-			}
-
-			if (!_gitHelper.Push(out errorMessage))
-			{
-				LogError("Error pushing: *" + errorMessage + "*");
-			}
-			else
-			{
-				Log("The commit has been pushed to the remote origin.");
-			}
-
-			_runLog.DecreaseIndent();
-			Log();
-		}
-
-
-		// ============================================================================
-		private bool ImportSolution(
-			ConnectionDetail targetService,
-			Solution solution,
-			ExecutionSettingsSnapshot settingsSnapshot,
-			BackgroundWorker worker,
-			bool isManaged = true)
-		{
-			_runLog.IncreaseIndent();
-
-			var targetServiceClient = targetService?.ServiceClient;
-			int maxRetries = settingsSnapshot.RetryCount > 0 ? settingsSnapshot.RetryCount : 3;
-			int retryDelay = settingsSnapshot.RetryDelayInSeconds > 0 ? settingsSnapshot.RetryDelayInSeconds : 5;
-			bool continueOnError = settingsSnapshot.ContinueOnError;
-
-			var config =
-				settingsSnapshot.GetSolutionConfiguration(
-					solution.SolutionIdentifier);
-
-			if (config == null)
-			{
-				_runLog.DecreaseIndent();
-				return false;
-			}
-
-			string solutionPath;
-
-			if (isManaged)
-			{
-				solutionPath = config.FileNameManaged;
-			}
-			else
-			{
-				solutionPath = config.FileNameUnmanaged;
-			}
-
-			if (!FileAndFolderHelper.IsValidSolutionFilePath(solutionPath))
-			{
-				LogError("The file path '" + solutionPath + "' is not a valid absolute file path. The file is skipped.");
-				_runLog.DecreaseIndent();
-				return false;
-			}
-
-			if (!File.Exists(solutionPath))
-			{
-				LogError("The file '" + solutionPath + "' does not exist.");
-				_runLog.DecreaseIndent();
-				return false;
-			}
-
-			var solutionBytes = File.ReadAllBytes(solutionPath);
-
-			bool IsInstalledAlready =
-				DoesSolutionExistInTarget(
-					targetService,
-					solution.UniqueName);
-
-			var isHolding =
-				isManaged &&
-				IsInstalledAlready &&
-				flipSwitch_upgrade.IsOn;
-
-
-			try
-			{
-
-				// Create import request
-				var importRequest = new ImportSolutionRequest()
-				{
-					CustomizationFile = solutionBytes,
-					PublishWorkflows = flipSwitch_enableAutomation.IsOn,
-					OverwriteUnmanagedCustomizations = flipSwitch_overwrite.IsOn,
-					ConvertToManaged = isManaged,
-					HoldingSolution = isHolding,
-				};
-
-				var lastImportDuration =
-					isManaged ?
-					config.LastImportDurationManagedInSeconds :
-					config.LastImportDurationUnmanagedInSeconds;
-
-				var lastImportDurationString =
-					lastImportDuration > 0 ?
-					$" (Last Import: {GetDurationString(lastImportDuration, noMilliseconds: true)})" :
-					null;
-
-				if (isHolding)
-				{
-					Log("Installing the solution upgrade...");
-					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat) + lastImportDurationString);
-
-					ReportExtendedProgress(
-						worker,
-						$"Installing upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						lastImportDurationString,
-						resetTimer: true);
-				}
-				else
-				{
-					Log("Installing the solution update...");
-					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
-
-					ReportExtendedProgress(
-						worker,
-						$"Installing update: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						lastImportDurationString,
-						resetTimer: true);
-				}
-
-				var isInstallCompleted =
-					ExecuteWithRetries(
-						() => targetServiceClient.Execute(importRequest),
-						worker,
-						$"Retry {{0}}/{{1}}: Installing solution: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						maxRetries,
-						retryDelay,
-						$"installing solution '{solution.FriendlyName}'",
-						continueOnError);
-
-				if (!isInstallCompleted)
-				{
-					_runLog.DecreaseIndent();
-					return false;
-				}
-
-
-				if (isHolding)
-				{
-					Log();
-					Log("Applying the solution upgrade...");
-					Log("Start Time: " + DateTime.Now.ToString(dateTimeFormat));
-
-					ReportExtendedProgress(
-						worker,
-						$"Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-						lastImportDurationString,
-						resetTimer: false);
-
-					var applyUpgradeRequest = new DeleteAndPromoteRequest
-					{
-						UniqueName = solution.UniqueName,
-					};
-
-					var isApplyCompleted =
-						ExecuteWithRetries(
-							() => targetServiceClient.Execute(applyUpgradeRequest),
-							worker,
-							$"Retry {{0}}/{{1}}: Applying upgrade: '{solution.FriendlyName}'{Environment.NewLine}[{targetService.ConnectionName}]...",
-							maxRetries,
-							retryDelay,
-							$"applying upgrade '{solution.FriendlyName}'",
-							continueOnError);
-
-					if (!isApplyCompleted)
-					{
-						_runLog.DecreaseIndent();
-						return false;
-					}
-				}
-			}
-
-			catch (FaultException ex)
-			{
-				var errorMessage =
-					Formatter.FormatErrorStringWithXml(
-						ex.Message,
-						RunLog.IndentUnit);
-
-				LogError(errorMessage);
-				Log();
-				_runLog.DecreaseIndent();
-				return false;
-			}
-			catch (Exception ex)
-			{
-				var errorMessage =
-					Formatter.FormatErrorStringWithXml(
-						ex.Message,
-						RunLog.IndentUnit);
-
-				LogError(errorMessage);
-				Log();
-				_runLog.DecreaseIndent();
-				return false;
-			}
-
-			_runLog.DecreaseIndent();
-			return true;
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Runs the action, retrying it after a delay when it fails.
-		/// The first attempt always runs; an abort request ends the retry
-		/// delay early and starts no further retry.
-		/// </summary>
-		/// <returns>True only when the action completed; false on abort or failure.</returns>
-		private bool ExecuteWithRetries(
-		Action action,
-		BackgroundWorker worker,
-		string retryMessageFormat,
-		int maxRetries,
-		int retryDelaySeconds,
-		string operationDescription = null,
-		bool continueOnError = false)
-		{
-			var retryRunner = new RetryRunner(
-				() => IsAbortRequested(worker),
-				message => Log(message),
-				message => LogError(message),
-				(currentRetry, maxRetryCount) => ReportExtendedProgress(
-					worker,
-					string.Format(retryMessageFormat, currentRetry, maxRetryCount),
-					null,
-					resetTimer: false),
-				milliseconds => System.Threading.Thread.Sleep(milliseconds),
-				() => DateTime.UtcNow);
-
-			return retryRunner.Execute(
-				action,
-				maxRetries,
-				retryDelaySeconds,
-				operationDescription,
-				continueOnError);
-		}
-
-
-
-		// ============================================================================
-		/// <summary>
-		/// Checks if a solution already exists in the target environment
-		/// </summary>
-		/// <param name="targetService">The connection to the target environment</param>
-		/// <param name="solutionUniqueName">The unique name of the solution to check</param>
-		/// <returns>True if the solution exists, false otherwise</returns>
-		private bool DoesSolutionExistInTarget(
-			ConnectionDetail targetService,
-			string solutionUniqueName)
-		{
-			if (targetService == null || string.IsNullOrEmpty(solutionUniqueName))
-			{
-				return false;
-			}
-
-			try
-			{
-				var targetServiceClient = targetService.ServiceClient;
-
-				// Query to check if the solution exists
-				var query = new QueryExpression("solution")
-				{
-					ColumnSet = new ColumnSet("uniquename", "version"),
-					Criteria = new FilterExpression(LogicalOperator.And)
-				};
-
-				query.Criteria.AddCondition("uniquename", Microsoft.Xrm.Sdk.Query.ConditionOperator.Equal, solutionUniqueName);
-
-				var result = targetServiceClient.RetrieveMultiple(query);
-
-				// If we found at least one record, the solution exists
-				return result.Entities.Count > 0;
-			}
-			catch (Exception ex)
-			{
-				LogError($"Error checking if solution exists in target: {ex.Message}");
-				return false;
-			}
 		}
 
 
@@ -2934,7 +2150,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			bool immediate = false)
 		{
 			// No worker calls this: the execution worker writes back through
-			// WriteBackSolutionConfiguration on the UI thread. Kept as a guard,
+			// ControlRunSink, which calls ApplyRunConfiguration on the UI thread. Kept as a guard,
 			// since the debounce timer and the list must only be touched on the
 			// UI thread (BeginInvoke, so a caller does not block on the UI thread)
 			if (InvokeRequired)
@@ -3163,15 +2379,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			return GetDurationString(duration, noMilliseconds);
 		}
 
-
-		// ============================================================================
-		static string GetDurationString(
-			int seconds,
-			bool noMilliseconds = false)
-		{
-			var duration = TimeSpan.FromSeconds(seconds);
-			return GetDurationString(duration, noMilliseconds);
-		}
 
 		// ============================================================================
 		static string GetDurationString(
@@ -3683,94 +2890,6 @@ namespace Com.AiricLenz.XTB.Plugin
 					"Unmanaged." + solutionName + ".zip";
 			}
 			// ============================================================================
-		}
-
-
-		// ============================================================================
-		// ============================================================================
-		/// <summary>
-		/// The settings an execution run reads, copied on the UI thread when the
-		/// run starts. Settings is not thread-safe, so the execution worker reads
-		/// this snapshot and never touches _settings.
-		/// </summary>
-		private sealed class ExecutionSettingsSnapshot
-		{
-			private readonly Dictionary<string, SolutionConfiguration> _solutionConfigurations =
-				new Dictionary<string, SolutionConfiguration>(StringComparer.Ordinal);
-
-			public bool SaveVersionJson
-			{
-				get; private set;
-			}
-			public int RetryCount
-			{
-				get; private set;
-			}
-			public int RetryDelayInSeconds
-			{
-				get; private set;
-			}
-			public bool ContinueOnError
-			{
-				get; private set;
-			}
-
-
-			// ============================================================================
-			/// <param name="settings">The settings to copy; read on the UI thread only.</param>
-			/// <param name="solutions">The solutions of the run; their configurations are copied.</param>
-			public ExecutionSettingsSnapshot(
-				Settings settings,
-				IEnumerable<Solution> solutions)
-			{
-				SaveVersionJson = settings.SaveVersionJson;
-				RetryCount = settings.RetryCount;
-				RetryDelayInSeconds = settings.RetryDelayInSeconds;
-				ContinueOnError = settings.ContinueOnError;
-
-				foreach (var solution in solutions)
-				{
-					if (solution == null)
-					{
-						continue;
-					}
-
-					var config =
-						settings.GetSolutionConfiguration(
-							solution.SolutionIdentifier);
-
-					if (config == null)
-					{
-						continue;
-					}
-
-					// A copy: the live object belongs to _settings, which the UI
-					// thread keeps changing during the run
-					_solutionConfigurations[solution.SolutionIdentifier] =
-						SolutionConfiguration.GetConfigFromJson(
-							config.GetJson());
-				}
-			}
-
-
-			// ============================================================================
-			/// <summary>
-			/// Returns the run's copy of the solution configuration.
-			/// </summary>
-			/// <returns>The copy; null when the solution had no configuration at the start of the run.</returns>
-			public SolutionConfiguration GetSolutionConfiguration(
-				string solutionIdentifier)
-			{
-				if (string.IsNullOrWhiteSpace(solutionIdentifier))
-				{
-					return null;
-				}
-
-				return
-					_solutionConfigurations.TryGetValue(solutionIdentifier, out var config) ?
-					config :
-					null;
-			}
 		}
 
 

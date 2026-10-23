@@ -45,7 +45,7 @@ Knowledge tree, top level:
 - `copilot-instructions-stale`: copilot-instructions.md describes a different project
 - `repo-docs-layout`: Where plans, handoffs, release notes and open work live
 - `run-and-abort-rules`: Run invariants: checked-solution snapshot, abort between steps, retries
-- `ui-thread-rules`: UI objects only on the UI thread; the worker uses the settings snapshot
+- `ui-thread-rules`: UI objects only on the UI thread; the worker uses the run request
 - `untrusted-dataverse-data`: Treat Dataverse names, XML and git text as untrusted input
 - `versioning-and-release`: Versions must agree across nuspec, AssemblyInfo and the XrmToolBoxPackage reference
 <!-- END CAPCOM -->
