@@ -43,7 +43,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 		public void InternalType_Reference_ResolvesToPluginAssembly()
 		{
 			// Arrange
-			var internalType = typeof(Formatter);
+			var internalType = typeof(ColorHelper);
 
 			// Act
 			var assemblyName = internalType.Assembly.GetName().Name;

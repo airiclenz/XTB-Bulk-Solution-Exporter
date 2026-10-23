@@ -148,12 +148,16 @@
 		<None Remove="Bulk Solution Exporter.nuget\**" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\Bulk Solution Exporter.Core\Bulk Solution Exporter.Core.csproj" />
+	</ItemGroup>
+
 	<Import Project="..\XTB Components\XTB Components.projitems" Label="Shared" />
 
-	<!-- F5 in VS starts bin\Debug\XrmToolBox.exe (Properties\launchSettings.json), which loads the plugin from
-	     bin\Debug\Plugins. -->
+	<!-- F5 in VS starts bin\Debug\XrmToolBox.exe (Properties\launchSettings.json), which loads the plugin and the
+	     core library it references from bin\Debug\Plugins. -->
 	<Target Name="CopyPluginToDebugPlugins" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-		<Copy SourceFiles="$(TargetPath);$(OutDir)$(TargetName).pdb" DestinationFolder="$(OutDir)Plugins" />
+		<Copy SourceFiles="$(TargetPath);$(OutDir)$(TargetName).pdb;$(OutDir)Com.AiricLenz.BulkSolutionExporter.Core.dll" DestinationFolder="$(OutDir)Plugins" />
 	</Target>
 
 </Project>

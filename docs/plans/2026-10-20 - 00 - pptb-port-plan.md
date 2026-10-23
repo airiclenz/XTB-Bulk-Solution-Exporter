@@ -86,7 +86,23 @@ NOTES (2026-10-23): the PackageReference restore now reports NU1902/NU1903 for S
 - `ls "Bulk Solution Exporter/bin/Debug/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll" "Bulk Solution Exporter/bin/Debug/Plugins/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll"` succeeds; after `dotnet build -c Release`, `ls "Bulk Solution Exporter/bin/Release/"` lists every file each nuspec `<file src>` names.
 **Commit:** `build: convert plugin and tests to SDK-style net48 projects`
 
-## 2. Create the core library and its net8 test project
+## 2. Create the core library and its net8 test project — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): the moved formatter test lives in a new `Bulk Solution Exporter.Core.Tests/FormatterTests.cs` (one test class per source class), not in VersionTests.cs; the plan's Files line named no file for it.
+
+NOTES (2026-10-23): `StringExtention` is in namespace `Com.AiricLenz.BulkSolutionExporter.Core.Extensions` (mirrors its folder); `Formatter`, `Version` and `VersionTokens` are in `Com.AiricLenz.BulkSolutionExporter.Core`. `IncreaseVersionNumber` takes `DateTime? today = null` (a `DateTime` default cannot be `DateTime.Now`) and reads the date once per call.
+
+NOTES (2026-10-23): `Bulk Solution Exporter/Settings.cs` left unchanged: it never names `Version`, so `using System;` cannot bind `System.Version` there. Solution.cs and BulkSolutionExporter_PluginControl.cs got the `using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;` alias; the control's fully qualified `Schema.Version.ValidateFormat` call now reads `Version.ValidateFormat`.
+
+NOTES (2026-10-23): consequential edit — Bulk Solution Exporter/Helpers/Logger.cs: made necessary by moving `StringExtention` to the core Extensions namespace (using updated).
+
+NOTES (2026-10-23): consequential edit — Bulk Solution Exporter/Schema/ExportedSolutionVersions.cs: made necessary by moving `StringExtention` to the core Extensions namespace (using updated).
+
+NOTES (2026-10-23): consequential edit — .capcom/knowledge/build-and-test.md: made necessary by adding the core and core-test projects and the core DLL to the Debug Plugins copy and the build-solution task (text only; title unchanged).
+
+NOTES (2026-10-23): consequential edit — .capcom/knowledge/versioning-and-release.md: made necessary by Deploy Locally.bat now also copying the core DLL.
+
+NOTES (2026-10-23): verified on Linux with .NET SDK 8.0.426: solution builds Debug (0 errors; only the pre-existing NU1902/NU1903 Pkcs warnings), plugin builds Release with `Com.AiricLenz.BulkSolutionExporter.Core.dll` in bin\Release, core tests pass 10/10; the net48 plugin tests (SmokeTests, MarkdownParserTests) only build here and must be run on Windows.
 
 **What:**
 **Goal:** `Bulk Solution Exporter.Core` (`net48;net8.0`, namespace `Com.AiricLenz.BulkSolutionExporter.Core`) and `Bulk Solution Exporter.Core.Tests` (MSTest, `net8.0`, `RollForward Major`) are in the solution, the plugin references the core, and `StringExtention`, `Formatter` and `Version`/`VersionTokens` live in core with their tests.

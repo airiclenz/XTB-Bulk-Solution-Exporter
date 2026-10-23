@@ -51,6 +51,7 @@ Save time, reduce errors, and bring consistency to your ALM process.
     </metadata>
 	<files>
 		<file src="bin\Release\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll" target="lib\net48\Plugins" />
+		<file src="bin\Release\Com.AiricLenz.BulkSolutionExporter.Core.dll" target="lib\net48\Plugins" />
 		<!-- Reads the preserialized .resx resources of the SDK-style build; XrmToolBox is not known to ship it. -->
 		<file src="bin\Release\System.Resources.Extensions.dll" target="lib\net48\Plugins" />
 		<file src="..\Images\bulk solution exporter.80px.png" target="images\icon.png" />

@@ -1,11 +1,11 @@
-﻿using Com.AiricLenz.XTB.Plugin.Schema;
+﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Tests
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 {
 
 	// ============================================================================
@@ -18,6 +18,11 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 	[TestClass]
 	public class VersionTests
 	{
+		// The day the date tokens read in the fixed-date test.
+		private const int FixedYear = 2026;
+		private const int FixedMonth = 3;
+		private const int FixedDay = 5;
+
 
 		// ============================================================================
 		[TestMethod]
@@ -57,6 +62,26 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 			// Assert
 			Assert.IsTrue(isIncreased);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow("2026.03.05.7", "2026.03.05.8")]
+		[DataRow("2025.12.31.7", "2026.03.05.8")]
+		public void IncreaseVersionNumber_DateFormatWithFixedDate_SetsDateAndIncreasesLastPart(
+			string sourceVersion,
+			string expectedVersion)
+		{
+			// Arrange
+			var version = new Version(sourceVersion);
+			var today = new DateTime(FixedYear, FixedMonth, FixedDay);
+
+			// Act
+			version.IncreaseVersionNumber("YYYY.MM.DD.+", today);
+
+			// Assert
+			Assert.AreEqual(expectedVersion, version.ToString());
 		}
 
 	}

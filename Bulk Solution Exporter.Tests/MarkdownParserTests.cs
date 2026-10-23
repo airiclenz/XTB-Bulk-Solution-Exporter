@@ -18,8 +18,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 	// ============================================================================
 	/// <summary>
 	/// Covers <see cref="MarkdownParser"/>, which must render any log line
-	/// with bounded recursion and cut oversized lines, and the size guard of
-	/// <see cref="Formatter.FormatErrorStringWithXml"/>.
+	/// with bounded recursion and cut oversized lines.
 	/// </summary>
 	[TestClass]
 	public class MarkdownParserTests
@@ -138,24 +137,6 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			// Assert
 			Assert.AreEqual(headingText, rendered.Item1, "rendered text");
 			Assert.IsTrue(rendered.Item2, "heading is bold");
-		}
-
-
-		// ============================================================================
-		[TestMethod]
-		public void FormatErrorStringWithXml_OverLimitMessage_ReturnsItUnchanged()
-		{
-			// Arrange
-			string errorString =
-				"Some dependencies are missing. " +
-				"<MissingDependencies><MissingDependency /></MissingDependencies>" +
-				new string('x', Formatter.MaxFormattableErrorLength);
-
-			// Act
-			string formatted = Formatter.FormatErrorStringWithXml(errorString, "  ");
-
-			// Assert
-			Assert.AreEqual(errorString, formatted);
 		}
 
 

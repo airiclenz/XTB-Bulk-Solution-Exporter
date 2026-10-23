@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<!-- Runs on any newer installed .NET runtime when .NET 8 itself is absent. -->
+		<RollForward>Major</RollForward>
+		<RootNamespace>Com.AiricLenz.BulkSolutionExporter.Core.Tests</RootNamespace>
+		<AssemblyName>Com.AiricLenz.BulkSolutionExporter.Core.Tests</AssemblyName>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Bulk Solution Exporter.Core\Bulk Solution Exporter.Core.csproj" />
+	</ItemGroup>
+
+</Project>

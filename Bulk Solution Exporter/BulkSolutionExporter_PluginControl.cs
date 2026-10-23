@@ -9,7 +9,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.ServiceModel;
 using System.Windows.Forms;
-using Com.AiricLenz.Extentions;
+using Com.AiricLenz.BulkSolutionExporter.Core;
+using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
@@ -20,6 +21,7 @@ using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 using Newtonsoft.Json;
 using XrmToolBox.Extensibility;
+using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;
 
 
 // ============================================================================
@@ -2825,7 +2827,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void SetExportButtonState()
 		{
 			var versionIsInvalid =
-				!Com.AiricLenz.XTB.Plugin.Schema.Version.ValidateFormat(
+				!Version.ValidateFormat(
 					textBox_versionFormat.Text);
 
 			var exportEnabled =

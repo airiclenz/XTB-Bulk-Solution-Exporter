@@ -2,6 +2,7 @@
 using System.Drawing;
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
+using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;
 
 
 // ============================================================================

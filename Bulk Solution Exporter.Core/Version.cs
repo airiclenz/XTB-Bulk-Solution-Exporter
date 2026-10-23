@@ -1,22 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Schema
+namespace Com.AiricLenz.BulkSolutionExporter.Core
 {
 
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	internal class Version
+	/// <summary>
+	/// A solution version of two to four numeric parts that can be advanced
+	/// by a format of <see cref="VersionTokens"/>.
+	/// </summary>
+	public class Version
 	{
 		// Marks a version slot that holds no part (absent or unparsed).
 		private const int UnsetPart = -1;
@@ -49,10 +48,19 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ============================================================================
+		/// <summary>
+		/// Advances the version by <paramref name="format"/>: one part per
+		/// format part, each part kept, increased or set from the date.
+		/// </summary>
+		/// <param name="format">Two to four <see cref="VersionTokens"/> joined by dots.</param>
+		/// <param name="today">The date the YYYY, MM and DD tokens read; <see cref="DateTime.Now"/> when null.</param>
+		/// <returns>False, with the version unchanged, when the format is invalid.</returns>
 		public bool IncreaseVersionNumber(
-			string format = "YYYY.MM.DD.+")
+			string format = "YYYY.MM.DD.+",
+			DateTime? today = null)
 		{
 			format = format.ToUpper().Trim();
+			var dateNow = today ?? DateTime.Now;
 
 
 			if (!ValidateFormat(format))
@@ -79,7 +87,6 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				}
 
 				var partString = formatParts[i];
-				var dateNow = DateTime.Now;
 
 				// TOKEN - INTERPRETATION
 
@@ -200,7 +207,10 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	class VersionTokens
+	/// <summary>
+	/// The tokens a version format is built from.
+	/// </summary>
+	public class VersionTokens
 	{
 
 		public static readonly string[] AllowedTokens =

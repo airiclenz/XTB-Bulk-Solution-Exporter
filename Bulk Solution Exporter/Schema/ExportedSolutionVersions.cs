@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Com.AiricLenz.Extentions;
+using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
 using Newtonsoft.Json;
 
 

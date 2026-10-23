@@ -1,5 +1,5 @@
 ﻿using System.Windows.Forms;
-using Com.AiricLenz.Extentions;
+using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
 
 // ============================================================================
 // ============================================================================

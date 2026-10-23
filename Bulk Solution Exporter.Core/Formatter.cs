@@ -7,17 +7,17 @@ using System.Xml.Linq;
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Helpers
+namespace Com.AiricLenz.BulkSolutionExporter.Core
 {
 
 	// ============================================================================
-	internal class Formatter
+	public class Formatter
 	{
 		// Longest error message reformatted; a longer one is returned
 		// unchanged so the regex scan and XML parse stay bounded. Not below
 		// MarkdownParser.MaxLogLineLength, so every line the log can show in
 		// full is still formatted.
-		internal const int MaxFormattableErrorLength = 100000;
+		public const int MaxFormattableErrorLength = 100000;
 
 
 		// ============================================================================
