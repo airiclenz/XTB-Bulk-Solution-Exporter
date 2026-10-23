@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using Com.AiricLenz.XTB.Plugin.Schema;
+using Com.AiricLenz.BulkSolutionExporter.Core.Schema;
 
 
 // ============================================================================

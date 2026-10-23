@@ -4,7 +4,7 @@
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Schema
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Schema
 {
 
 	// ============================================================================
@@ -66,6 +66,16 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		public int LastImportDurationUnmanagedInSeconds
 		{
 			get; set;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Creates an empty configuration, for deserializers that need a
+		/// parameterless constructor.
+		/// </summary>
+		public SolutionConfiguration()
+		{
 		}
 
 

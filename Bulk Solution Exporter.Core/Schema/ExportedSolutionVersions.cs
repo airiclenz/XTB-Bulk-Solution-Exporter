@@ -11,14 +11,24 @@ using Newtonsoft.Json;
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Schema
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Schema
 {
 
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	internal class ExportedSolutionVersions
+	/// <summary>
+	/// The content of the version file that sits next to the exported
+	/// solution files and records which solution version each export file holds.
+	/// </summary>
+	public class ExportedSolutionVersions
 	{
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// The name of the version file inside the export folder.
+		/// </summary>
+		public const string FileName = "exported_versions.json";
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public List<ExportedSolution> Managed
@@ -35,9 +45,18 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ============================================================================
+		/// <summary>
+		/// Looks up the version-file entry for one export file.
+		/// </summary>
+		/// <param name="exportFilePath">The full path of the exported solution file;
+		/// the version file is read from the same folder.</param>
+		/// <param name="uniqueName">The solution's unique name, matched case-insensitively.</param>
+		/// <param name="exportedSolutionResult">The matching entry, or <c>null</c>.</param>
+		/// <returns><c>true</c> when the version file exists, is readable and holds a
+		/// matching entry; otherwise <c>false</c>.</returns>
 		public static bool TryLoadExportedSolution(
 			string exportFilePath,
-			Solution solution,
+			string uniqueName,
 			out ExportedSolution exportedSolutionResult)
 		{
 			if (string.IsNullOrWhiteSpace(exportFilePath))
@@ -57,7 +76,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			var jsonFilePath =
 				Path.Combine(
 					exportParth,
-					BulkSolutionExporter_Plugin.JsonSettingsFileName);
+					FileName);
 
 			if (!File.Exists(jsonFilePath))
 			{
@@ -92,8 +111,8 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			}
 
 			exportedSolutionResult =
-				FindMatch(exportedSolutions.Managed, solution.UniqueName, fileName) ??
-				FindMatch(exportedSolutions.Unmanaged, solution.UniqueName, fileName);
+				FindMatch(exportedSolutions.Managed, uniqueName, fileName) ??
+				FindMatch(exportedSolutions.Unmanaged, uniqueName, fileName);
 
 			return exportedSolutionResult != null;
 		}
@@ -129,7 +148,10 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	class ExportedSolution
+	/// <summary>
+	/// One entry of the version file: the version of one solution in one export file.
+	/// </summary>
+	public class ExportedSolution
 	{
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string LogicalSolutionName

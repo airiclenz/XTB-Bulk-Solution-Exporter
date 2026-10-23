@@ -13,6 +13,7 @@ using Com.AiricLenz.BulkSolutionExporter.Core;
 using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
 using Com.AiricLenz.BulkSolutionExporter.Core.IO;
 using Com.AiricLenz.BulkSolutionExporter.Core.Run;
+using Com.AiricLenz.BulkSolutionExporter.Core.Schema;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;
@@ -1619,7 +1620,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var loadedManaged =
 					ExportedSolutionVersions.TryLoadExportedSolution(
 						_currentSolutionConfig.FileNameManaged,
-						_currentSolution,
+						_currentSolution.UniqueName,
 						out var exportedSolutionManaged);
 
 				if (exportedSolutionManaged != null)
@@ -1642,7 +1643,7 @@ namespace Com.AiricLenz.XTB.Plugin
 				var loadedUnmanaged =
 					ExportedSolutionVersions.TryLoadExportedSolution(
 						_currentSolutionConfig.FileNameUnmanaged,
-						_currentSolution,
+						_currentSolution.UniqueName,
 						out var exportedSolutionUnmanaged);
 
 				if (exportedSolutionUnmanaged != null)
@@ -1812,7 +1813,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			var jsonFilePath =
 				Path.Combine(
 					exportParth,
-					BulkSolutionExporter_Plugin.JsonSettingsFileName);
+					ExportedSolutionVersions.FileName);
 
 			var exportedSolutions = new ExportedSolutionVersions();
 
@@ -3286,7 +3287,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					var loadedManaged =
 						ExportedSolutionVersions.TryLoadExportedSolution(
 							config.FileNameManaged,
-							solution,
+							solution.UniqueName,
 							out var exportedSolutionManaged);
 
 					if (loadedManaged)
@@ -3308,7 +3309,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					var loadedUnmanaged =
 						ExportedSolutionVersions.TryLoadExportedSolution(
 							config.FileNameUnmanaged,
-							solution,
+							solution.UniqueName,
 							out var exportedSolutionUnmanaged);
 
 					if (loadedUnmanaged)

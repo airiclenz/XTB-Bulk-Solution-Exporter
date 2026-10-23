@@ -1,13 +1,12 @@
-﻿using System;
-using System.IO;
-using Com.AiricLenz.XTB.Plugin.Schema;
+﻿using System.IO;
+using Com.AiricLenz.BulkSolutionExporter.Core.Schema;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Tests
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 {
 
 	// ============================================================================
@@ -67,7 +66,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			var isLoaded =
 				ExportedSolutionVersions.TryLoadExportedSolution(
 					ExportFilePath(),
-					CreateSolution(),
+					SolutionUniqueName,
 					out var exportedSolution);
 
 			// Assert
@@ -90,7 +89,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			var isLoaded =
 				ExportedSolutionVersions.TryLoadExportedSolution(
 					ExportFilePath(),
-					CreateSolution(),
+					SolutionUniqueName,
 					out var exportedSolution);
 
 			// Assert
@@ -115,7 +114,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			var isLoaded =
 				ExportedSolutionVersions.TryLoadExportedSolution(
 					ExportFilePath(),
-					CreateSolution(),
+					SolutionUniqueName,
 					out var exportedSolution);
 
 			// Assert
@@ -131,7 +130,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			File.WriteAllText(
 				Path.Combine(
 					_tempDirectory,
-					BulkSolutionExporter_Plugin.JsonSettingsFileName),
+					ExportedSolutionVersions.FileName),
 				json);
 		}
 
@@ -143,16 +142,6 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				Path.Combine(
 					_tempDirectory,
 					ExportFileName);
-		}
-
-
-		// ============================================================================
-		private static Solution CreateSolution()
-		{
-			return new Solution(Guid.Empty)
-			{
-				UniqueName = SolutionUniqueName
-			};
 		}
 
 

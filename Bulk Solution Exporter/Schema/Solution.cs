@@ -2,6 +2,7 @@
 using System.Drawing;
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
+using SolutionInfo = Com.AiricLenz.BulkSolutionExporter.Core.Schema.SolutionInfo;
 using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;
 
 
@@ -14,12 +15,16 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
+	/// <summary>
+	/// One solution row of the plugin's solution list: the host-neutral
+	/// <see cref="SolutionInfo"/> plus the list's UI state (sorting index
+	/// and status images).
+	/// </summary>
 	internal class Solution : IComparable<Solution>
 	{
 
+		private readonly SolutionInfo _info;
 		private Guid _connectionGuid;
-		private string _friendlyName;
-		private Version _version;
 		private int _sortingIndex = 0;
 		private Bitmap _fileStatusImage;
 		private Bitmap _fileVersionState;
@@ -30,7 +35,10 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		[JsonProperty("solution_id")]
 		public Guid SolutionId
 		{
-			get; set;
+			get
+			{
+				return _info.SolutionId;
+			}
 		}
 
 
@@ -38,7 +46,10 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		[JsonProperty("unique_name")]
 		public string UniqueName
 		{
-			get; set;
+			get
+			{
+				return _info.UniqueName;
+			}
 		}
 
 
@@ -48,11 +59,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		{
 			get
 			{
-				return _friendlyName;
-			}
-			set
-			{
-				_friendlyName = value;
+				return _info.FriendlyName;
 			}
 		}
 
@@ -63,11 +70,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 		{
 			get
 			{
-				return _version;
-			}
-			set
-			{
-				_version = value;
+				return _info.Version;
 			}
 		}
 
@@ -79,6 +82,19 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			get
 			{
 				return _connectionGuid.ToString().ToLower() + "." + UniqueName;
+			}
+		}
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// The host-neutral solution data this row wraps.
+		/// </summary>
+		[JsonIgnore]
+		public SolutionInfo Info
+		{
+			get
+			{
+				return _info;
 			}
 		}
 
@@ -142,10 +158,18 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 
 
 		// ============================================================================
+		/// <exception cref="ArgumentNullException"><paramref name="info"/> is null.</exception>
 		public Solution(
-			Guid conectionGuid)
+			Guid conectionGuid,
+			SolutionInfo info)
 		{
+			if (info == null)
+			{
+				throw new ArgumentNullException(nameof(info));
+			}
+
 			_connectionGuid = conectionGuid;
+			_info = info;
 		}
 
 
@@ -163,7 +187,7 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 			return
 				FriendlyName +
 				" - [" +
-				(_version == null ? "" : _version.ToString()) +
+				(Version == null ? "" : Version.ToString()) +
 				"]";
 		}
 
@@ -186,30 +210,35 @@ namespace Com.AiricLenz.XTB.Plugin.Schema
 				return null;
 			}
 
-			var solution = new Solution(connectionGuid);
+			var info = new SolutionInfo();
 
 			if (record.Contains("solutionid"))
 			{
-				solution.SolutionId = (Guid) record.Attributes["solutionid"];
+				info.SolutionId = (Guid) record.Attributes["solutionid"];
 			}
 
 			if (record.Contains("uniquename"))
 			{
-				solution.UniqueName = (string) record.Attributes["uniquename"];
+				info.UniqueName = (string) record.Attributes["uniquename"];
 			}
 
 			if (record.Contains("friendlyname"))
 			{
-				solution.FriendlyName = (string) record.Attributes["friendlyname"];
+				info.FriendlyName = (string) record.Attributes["friendlyname"];
 			}
 
 			if (record.Contains("version"))
 			{
-				solution.Version = new Version((string) record.Attributes["version"]);
+				info.Version = new Version((string) record.Attributes["version"]);
 			}
 
+			// GetAttributeValue maps a missing or null value to the default,
+			// so a record without these columns still converts.
+			info.IsManaged = record.GetAttributeValue<bool>("ismanaged");
+			info.Description = record.GetAttributeValue<string>("description");
 
-			return solution;
+
+			return new Solution(connectionGuid, info);
 
 		}
 

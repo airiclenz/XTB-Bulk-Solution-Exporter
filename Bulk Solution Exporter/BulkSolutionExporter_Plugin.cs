@@ -37,9 +37,6 @@ namespace Com.AiricLenz.XTB.Plugin
 	public class BulkSolutionExporter_Plugin : PluginBase
 	{
 
-		public const string JsonSettingsFileName = "exported_versions.json";
-
-
 		// ============================================================================
 		public override IXrmToolBoxPluginControl GetControl()
 		{

@@ -166,7 +166,15 @@ NOTES (2026-10-23): checked on Linux with .NET SDK 8.0.426. The solution builds 
 **Commit:** `refactor(core): move RetryRunner to core with message-based fault classification`
 Depends on item 2.
 
-## 5. Move solution schema and versions file to core
+## 5. Move solution schema and versions file to core — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): `SolutionConfiguration`, `ExportedSolutionVersions`, `ExportedSolution` (now `public`) and the new `SolutionInfo` live in namespace `Com.AiricLenz.BulkSolutionExporter.Core.Schema`, which matches the folder. `ExportedSolutionVersions.FileName` (`"exported_versions.json"`) replaces `BulkSolutionExporter_Plugin.JsonSettingsFileName`. The JSON property names are unchanged, `SolutionIndentifier` included. `SolutionConfiguration` gained a public parameterless ctor.
+
+NOTES (2026-10-23): `Solution` now takes `(Guid, SolutionInfo)`, exposes the wrapped data as `Info` and keeps getter-only `SolutionId`/`UniqueName`/`FriendlyName`/`Version` that delegate to it. Their `JsonProperty`/`JsonIgnore` attributes stay. The setters are gone because only `ConvertFrom` set them. `Solution.cs` imports `SolutionInfo` through a `using` alias, because `Microsoft.Xrm.Sdk.SolutionInfo` makes the bare name ambiguous. `ConvertFrom` also fills `IsManaged`/`Description` from the `ismanaged`/`description` columns the queries already fetch. It reads them with `GetAttributeValue`, so a missing or null value gives the default.
+
+NOTES (2026-10-23): added `Bulk Solution Exporter.Core.Tests/SolutionConfigurationTests.cs`, which the item's Files does not list, for the required round-trip test. It follows one test class per source class, and the Acceptance filter `FullyQualifiedName~SolutionConfiguration` targets it. It pins a literal JSON in the shape `GetJson` writes today, deserializes it and re-serializes it byte-identically, and has one check that the identifier is read back.
+
+NOTES (2026-10-23): checked on Linux with .NET SDK 8.0.426. `dotnet build "Bulk Solution Exporter.sln" -c Debug` gives 0 errors. The acceptance filter passes 6/6 and the full core suite passes 56/56. The grid sort/display check stays manual on Windows (user).
 
 **What:**
 **Goal:** Core owns `SolutionConfiguration`, `ExportedSolutionVersions` and a UI-free `SolutionInfo` (id, unique/friendly name, version, managed flag, description). The plugin's `Solution` keeps only its UI state and wraps `SolutionInfo`. The `exported_versions.json` file name is a core constant.
