@@ -20,7 +20,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 	/// <summary>
 	/// The JSON-RPC methods the worker answers. Power Platform ToolBox first
 	/// calls <c>platform/initialize</c>; the tool's UI then starts a run with
-	/// <c>run/start</c> and may abort it with <c>run/abort</c>.
+	/// <c>run/start</c> and may abort it with <c>run/abort</c>. The git and
+	/// file methods outside a run live in <see cref="WorkspaceMethods"/>.
 	/// <para>
 	/// Wire format: named parameters, camelCase property names, versions as
 	/// dotted strings (<c>"1.0.0.0"</c>), ids as GUID strings. While a run is
@@ -70,6 +71,22 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 		}
 
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// Whether a run is active (between <c>run/start</c> and its answer).
+		/// </summary>
+		public bool IsRunActive
+		{
+			get
+			{
+				lock (_runLock)
+				{
+					return _runCancellation != null;
+				}
+			}
+		}
+
+
 		// ============================================================================
 		/// <summary>
 		/// Connects a new <see cref="WorkerMethods"/> to a stream pair with the
@@ -100,7 +117,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 					CreateFormatter());
 
 			var rpc = new JsonRpc(handler);
-			rpc.AddLocalRpcTarget(new WorkerMethods(rpc));
+			var workerMethods = new WorkerMethods(rpc);
+			rpc.AddLocalRpcTarget(workerMethods);
+			rpc.AddLocalRpcTarget(new WorkspaceMethods(() => workerMethods.IsRunActive));
 			rpc.StartListening();
 
 			return rpc;

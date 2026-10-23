@@ -22,6 +22,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 using XrmToolBox.Extensibility;
+using SolutionInfo = Com.AiricLenz.BulkSolutionExporter.Core.Schema.SolutionInfo;
 using Version = Com.AiricLenz.BulkSolutionExporter.Core.Version;
 
 
@@ -771,7 +772,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			else
 			{
-				saveFileDialog1.FileName = GetDefaultFileName(selectedSolution, true);
+				saveFileDialog1.FileName = FileAndFolderHelper.GetDefaultSolutionFileName(selectedSolution.UniqueName, true);
 			}
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
@@ -809,7 +810,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 			else
 			{
-				saveFileDialog1.FileName = GetDefaultFileName(selectedSolution, false);
+				saveFileDialog1.FileName = FileAndFolderHelper.GetDefaultSolutionFileName(selectedSolution.UniqueName, false);
 			}
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
@@ -1152,9 +1153,6 @@ namespace Com.AiricLenz.XTB.Plugin
 			}
 
 			var selectedFolder = folderBrowserDialog1.SelectedPath;
-			var folderPrefix =
-				Path.GetFullPath(selectedFolder).TrimEnd('\\', '/') +
-				Path.DirectorySeparatorChar;
 
 			foreach (var selectedSolution in listBoxSolutions.CheckedItems)
 			{
@@ -1177,16 +1175,16 @@ namespace Com.AiricLenz.XTB.Plugin
 				var fileNameManaged =
 					Path.Combine(
 						selectedFolder,
-						GetDefaultFileName(solution, true));
+						FileAndFolderHelper.GetDefaultSolutionFileName(solution.UniqueName, true));
 
 				var fileNameUnmanaged =
 					Path.Combine(
 						selectedFolder,
-						GetDefaultFileName(solution, false));
+						FileAndFolderHelper.GetDefaultSolutionFileName(solution.UniqueName, false));
 
 				// Never store a path that resolves outside the selected folder
-				if (!Path.GetFullPath(fileNameManaged).StartsWith(folderPrefix, StringComparison.OrdinalIgnoreCase) ||
-					!Path.GetFullPath(fileNameUnmanaged).StartsWith(folderPrefix, StringComparison.OrdinalIgnoreCase))
+				if (!FileAndFolderHelper.IsInsideFolder(fileNameManaged, selectedFolder) ||
+					!FileAndFolderHelper.IsInsideFolder(fileNameUnmanaged, selectedFolder))
 				{
 					LogError(
 						"The default file name for the solution '" + solution.UniqueName +
@@ -1696,58 +1694,14 @@ namespace Com.AiricLenz.XTB.Plugin
 				return;
 			}
 
-			var isManagedVersionOutdated = false;
-			var isUnmanagedVersionOutdated = false;
+			var fileStatus =
+				SolutionFileStatus.Evaluate(
+					_currentSolution.Info,
+					_currentSolutionConfig,
+					_settings.SaveVersionJson);
 
-
-			if (_currentSolutionConfig.FileNameManaged.HasValue())
-			{
-				var managedSolutionFileExists =
-					File.Exists(_currentSolutionConfig.FileNameManaged);
-
-				var loadedManaged =
-					ExportedSolutionVersions.TryLoadExportedSolution(
-						_currentSolutionConfig.FileNameManaged,
-						_currentSolution.UniqueName,
-						out var exportedSolutionManaged);
-
-				if (exportedSolutionManaged != null)
-				{
-					isManagedVersionOutdated =
-						exportedSolutionManaged.Version != _currentSolution.Version.ToString() ||
-						managedSolutionFileExists == false;
-				}
-				else
-				{
-					isManagedVersionOutdated = !managedSolutionFileExists;
-				}
-			}
-
-			if (_currentSolutionConfig.FileNameUnmanaged.HasValue())
-			{
-				var unmanagedSolutionFileExists =
-					File.Exists(_currentSolutionConfig.FileNameUnmanaged);
-
-				var loadedUnmanaged =
-					ExportedSolutionVersions.TryLoadExportedSolution(
-						_currentSolutionConfig.FileNameUnmanaged,
-						_currentSolution.UniqueName,
-						out var exportedSolutionUnmanaged);
-
-				if (exportedSolutionUnmanaged != null)
-				{
-					isUnmanagedVersionOutdated =
-						exportedSolutionUnmanaged.Version != _currentSolution.Version.ToString() ||
-						unmanagedSolutionFileExists == false;
-				}
-				else
-				{
-					isUnmanagedVersionOutdated = !unmanagedSolutionFileExists;
-				}
-			}
-
-			pictureBox_warningManaged.Visible = isManagedVersionOutdated;
-			pictureBox_warningUnmanaged.Visible = isUnmanagedVersionOutdated;
+			pictureBox_warningManaged.Visible = fileStatus.Managed.IsOutdated;
+			pictureBox_warningUnmanaged.Visible = fileStatus.Unmanaged.IsOutdated;
 		}
 
 
@@ -2466,76 +2420,15 @@ namespace Com.AiricLenz.XTB.Plugin
 				config = _settings.GetSolutionConfiguration(solution.SolutionIdentifier, true);
 			}
 
-			var hasFileManaged = !string.IsNullOrWhiteSpace(config.FileNameManaged);
-			var hasFileUnmanaged = !string.IsNullOrWhiteSpace(config.FileNameUnmanaged);
+			var fileStatus =
+				SolutionFileStatus.Evaluate(
+					solution.Info,
+					config,
+					_settings.SaveVersionJson);
 
-			var managedSolutionFileExists = false;
-			var unmanagedSolutionFileExists = false;
-
-			var managedUpToDate = true;
-			var unmanagedUpToDate = true;
-
-			if (hasFileManaged)
-			{
-				managedSolutionFileExists =
-					File.Exists(config.FileNameManaged);
-			}
-
-			if (hasFileUnmanaged)
-			{
-				unmanagedSolutionFileExists =
-					File.Exists(config.FileNameUnmanaged);
-			}
-
-
-			if (_settings.SaveVersionJson)
-			{
-				if (hasFileManaged)
-				{
-					var loadedManaged =
-						ExportedSolutionVersions.TryLoadExportedSolution(
-							config.FileNameManaged,
-							solution.UniqueName,
-							out var exportedSolutionManaged);
-
-					if (loadedManaged)
-					{
-						managedUpToDate =
-							exportedSolutionManaged.Version == solution.Version.ToString() &&
-							managedSolutionFileExists;
-					}
-					else
-					{
-						managedUpToDate = managedSolutionFileExists;
-					}
-				}
-
-
-
-				if (hasFileUnmanaged)
-				{
-					var loadedUnmanaged =
-						ExportedSolutionVersions.TryLoadExportedSolution(
-							config.FileNameUnmanaged,
-							solution.UniqueName,
-							out var exportedSolutionUnmanaged);
-
-					if (loadedUnmanaged)
-					{
-						unmanagedUpToDate =
-							exportedSolutionUnmanaged.Version == solution.Version.ToString() &&
-							unmanagedSolutionFileExists;
-					}
-					else
-					{
-						unmanagedUpToDate = unmanagedSolutionFileExists;
-					}
-				}
-			}
-
-			var isVersionOutdated =
-				!managedUpToDate ||
-				!unmanagedUpToDate;
+			var hasFileManaged = fileStatus.Managed.IsConfigured;
+			var hasFileUnmanaged = fileStatus.Unmanaged.IsConfigured;
+			var isVersionOutdated = fileStatus.IsOutdated;
 
 
 			if (hasFileManaged)
@@ -2776,42 +2669,22 @@ namespace Com.AiricLenz.XTB.Plugin
 		private void ExportSolutionCsv(
 			string targetFileName)
 		{
-
-			var separator = ",";
+			// With solutions checked only those are listed, otherwise all.
 			var exportSelectedOnly = listBoxSolutions.CheckedItems.Count > 0;
-
-			var resultCsv =
-				"Unique Name, Solution Guid, Version" + Environment.NewLine;
+			var solutions = new List<SolutionInfo>();
 
 			foreach (var listItem in listBoxSolutions.Items)
 			{
-				var newLine = string.Empty;
-				var solution = listItem.ItemObject as Solution;
-
-				if (exportSelectedOnly)
+				if (exportSelectedOnly &&
+					!listItem.IsChecked)
 				{
-					if (listItem.IsChecked)
-					{
-						newLine =
-							solution.UniqueName + separator +
-							solution.SolutionId + separator +
-							solution.Version.ToString() + Environment.NewLine;
-
-						resultCsv += newLine;
-					}
+					continue;
 				}
-				else
-				{
-					newLine =
-						solution.UniqueName + separator +
-						solution.SolutionId + separator +
-						solution.Version.ToString() + Environment.NewLine;
 
-					resultCsv += newLine;
-				}
+				solutions.Add((listItem.ItemObject as Solution).Info);
 			}
 
-			File.WriteAllText(targetFileName, resultCsv);
+			SolutionCsv.Write(targetFileName, solutions);
 		}
 
 
@@ -2857,39 +2730,6 @@ namespace Com.AiricLenz.XTB.Plugin
 					serviceClient.OrganizationServiceProxy.Timeout = TimeSpan.FromMinutes(timoutInMinutes);
 				}
 			}
-		}
-
-
-		// ============================================================================
-		private string GetDefaultFileName(
-			Solution solution,
-			bool isManaged = true)
-		{
-			var solutionName = solution.UniqueName;
-			solutionName = solutionName.Replace("#", "");
-
-			while (solutionName.Contains("  "))
-			{
-				solutionName = solutionName.Replace("  ", " ");
-			}
-
-			solutionName = solutionName.Trim();
-
-			// The unique name comes from the server: never let it carry a
-			// path separator, a drive prefix or a ".." out of the folder.
-			solutionName = FileAndFolderHelper.ToSafeFileNamePart(solutionName);
-
-			if (isManaged)
-			{
-				return
-					"Managed." + solutionName + ".zip";
-			}
-			else
-			{
-				return
-					"Unmanaged." + solutionName + ".zip";
-			}
-			// ============================================================================
 		}
 
 

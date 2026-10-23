@@ -23,6 +23,16 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		private const char InvalidCharReplacement = '_';
 		private const string ParentDirectoryToken = "..";
 
+		// The wizard's default export file names: "<prefix><name>.zip".
+		private const string ManagedFileNamePrefix = "Managed.";
+		private const string UnmanagedFileNamePrefix = "Unmanaged.";
+		private const string SolutionFileExtension = ".zip";
+
+		// Removed from a unique name before it becomes a default file name.
+		private const string RemovedNameCharacter = "#";
+		private const string DoubleSpace = "  ";
+		private const string SingleSpace = " ";
+
 		// Characters Windows refuses in a file name. They are stripped on
 		// every platform, so a name sanitized on macOS or Linux is still safe
 		// on Windows and never carries a drive separator or a backslash.
@@ -111,7 +121,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 
 
 		// ============================================================================
-		internal static bool IsValidPath(
+		/// <summary>
+		/// Checks that a path is non-empty, rooted and free of invalid path
+		/// characters. Never throws.
+		/// </summary>
+		public static bool IsValidPath(
 			string path)
 		{
 			try
@@ -200,6 +214,77 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 			catch
 			{
 				return false; // Catch any exceptions for invalid paths
+			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The file name the file-location wizard proposes for a solution's
+		/// export: <c>Managed.&lt;name&gt;.zip</c> or <c>Unmanaged.&lt;name&gt;.zip</c>.
+		/// The unique name comes from the server, so "#" is removed, repeated
+		/// spaces are collapsed and the rest goes through
+		/// <see cref="ToSafeFileNamePart"/>: the result never carries a path
+		/// separator, a drive prefix or a "..".
+		/// </summary>
+		/// <param name="uniqueName">The solution's unique name; may be <c>null</c>.</param>
+		/// <param name="isManaged">Whether the name is for the managed export.</param>
+		public static string GetDefaultSolutionFileName(
+			string uniqueName,
+			bool isManaged)
+		{
+			var solutionName = (uniqueName ?? string.Empty).Replace(RemovedNameCharacter, string.Empty);
+
+			while (solutionName.Contains(DoubleSpace))
+			{
+				solutionName = solutionName.Replace(DoubleSpace, SingleSpace);
+			}
+
+			solutionName = ToSafeFileNamePart(solutionName.Trim());
+
+			return
+				(isManaged ? ManagedFileNamePrefix : UnmanagedFileNamePrefix) +
+				solutionName +
+				SolutionFileExtension;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Checks that a path resolves to a location inside a folder (in it or
+		/// below it), compared case-insensitively. Never throws: a path or
+		/// folder the framework rejects is reported as outside.
+		/// </summary>
+		/// <param name="path">The path to check; relative paths resolve against the working directory.</param>
+		/// <param name="folderPath">The folder the path must stay in.</param>
+		public static bool IsInsideFolder(
+			string path,
+			string folderPath)
+		{
+			if (string.IsNullOrWhiteSpace(path) ||
+				string.IsNullOrWhiteSpace(folderPath))
+			{
+				return false;
+			}
+
+			try
+			{
+				var folderPrefix =
+					Path.GetFullPath(folderPath).TrimEnd('\\', '/') +
+					Path.DirectorySeparatorChar;
+
+				return
+					Path.GetFullPath(path).StartsWith(
+						folderPrefix,
+						StringComparison.OrdinalIgnoreCase);
+			}
+			catch (Exception exception) when (
+				exception is ArgumentException ||
+				exception is NotSupportedException ||
+				exception is PathTooLongException ||
+				exception is System.Security.SecurityException)
+			{
+				return false;
 			}
 		}
 
