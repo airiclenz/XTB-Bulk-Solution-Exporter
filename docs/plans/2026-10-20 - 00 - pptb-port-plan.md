@@ -354,7 +354,23 @@ NOTES (2026-10-23): checked on Linux arm64, .NET SDK 8.0.426. `dotnet test "Bulk
 **Commit:** `feat(pptb): add git, file status and CSV methods to the worker`
 Depends on item 10.
 
-## 12. PPTB tool scaffold, manifest and Dataverse bridge
+## 12. PPTB tool scaffold, manifest and Dataverse bridge — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): `package.json` `version` and the `pptb.config.json` worker `packageVersion` are both `1.0.0`. That is what the worker packs as today, since its .csproj sets no `<Version>`. Item 16 owns aligning the versions and the check that enforces it. The worker declaration ID is `engine`.
+
+NOTES (2026-10-23): the bridge API is `createDataverseBridge(connectionSlots)`. It returns the `requests` record for `toolboxAPI.workers.connect`, keyed by the seven `dataverse/*` method names. `connectionSlots[target]` is the zero-based PPTB connection slot for each worker target, so items 13–15 pass `[sourceSlot, ...targetSlotsInRunStartOrder]`. A target outside that list rejects without calling Dataverse. The bridge reads `window.dataverseAPI` at call time.
+
+NOTES (2026-10-23): `ImportSolution` sends `ConvertToManaged = isManaged` (the same as `OrganizationServiceGateway`), `HoldingSolution = isHolding`, and a fresh `ImportJobId` (`crypto.randomUUID()`), which the Web API documents as required. `SolutionExists` builds its OData literal with doubled quotes and URL-encoding, because PPTB's `queryData` appends the query without encoding it.
+
+NOTES (2026-10-23): a rejected `dataverseAPI` call keeps its `Error` untouched. A non-Error rejection becomes `new Error(String(reason))`, so its text survives. PPTB's vscode-jsonrpc layer adds the prefix "Request <method> failed with message: " to a handler's error before it reaches the worker. RetryRunner matches with `IndexOf`, so its classification is unaffected.
+
+NOTES (2026-10-23): `retrieveSolutions` reads only the first `queryData` page, which is the Web API's default of up to 5000 rows, and does not follow `@odata.nextLink`.
+
+NOTES (2026-10-23): additions beyond the item text: `configurations.website` (the repo URL, which clears the validator's only warning), `files: ["dist", "pptb.config.json"]` (as in the PPTB html sample), `repository` and `engines`. Dependencies are pinned exactly. Vitest is 4.1.12, because 3.2.7 fails `npm audit` with critical tinypool/@vitest/mocker advisories. npm 10.9.9 crashes ("Cannot read properties of null (reading 'edgesOut')") when it builds a fresh tree for vitest 4's optional browser peers, so `package-lock.json` was generated with npm 11.21.1. `npm ci` with npm 10.9.9 then installs from that lock cleanly.
+
+NOTES (2026-10-23): `tool.svg` is a monochrome copy of `Images/bulk solution exporter.svg`. The root sets `fill="currentColor"`, and each former gradient or white fill became a fill-opacity level. The bridge file keeps the plan's camelCase name (`dataverseBridge.ts`) rather than the TS standard's kebab-case. No Prettier config is in scope, so the TS is written in Prettier style with tabs, the repo's indentation.
+
+NOTES (2026-10-23): this machine has no Node.js, so checks ran with a portable Node 22.23.4 in the session scratchpad. `npm ci && npm run build && npm test && npm run validate` all exit 0 (16 tests; validate passes with no warnings, network reached). `dist/index.html` has no `type="module"`, and `dist/icons/tool.svg` is bundled.
 
 **What:**
 **Goal:** `pptb/` is a buildable PPTB tool with a valid manifest (`npm run validate` = `pptb-validate` passes). Its TS Dataverse bridge answers every reverse call from item 10 using `dataverseAPI` against the right connection index.

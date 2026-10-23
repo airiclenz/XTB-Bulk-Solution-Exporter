@@ -1,0 +1,58 @@
+{
+	"name": "@airiclenz/pptb-bulk-solution-exporter",
+	"version": "1.0.0",
+	"displayName": "Bulk Solution Exporter",
+	"description": "Export, version, commit and import many Dataverse solutions in one run, across several target environments.",
+	"main": "index.html",
+	"license": "GPL-3.0",
+	"icon": "icons/tool.svg",
+	"contributors": [
+		{
+			"name": "Airic Lenz",
+			"url": "https://github.com/airiclenz"
+		}
+	],
+	"configurations": {
+		"repository": "https://github.com/airiclenz/XTB-Bulk-Solution-Exporter",
+		"website": "https://github.com/airiclenz/XTB-Bulk-Solution-Exporter",
+		"readmeUrl": "https://raw.githubusercontent.com/airiclenz/XTB-Bulk-Solution-Exporter/master/README.md"
+	},
+	"features": {
+		"connections": {
+			"min": 1,
+			"max": 10
+		},
+		"minAPI": "1.2.7"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/airiclenz/XTB-Bulk-Solution-Exporter.git",
+		"directory": "pptb"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"files": [
+		"dist",
+		"pptb.config.json"
+	],
+	"scripts": {
+		"build": "tsc && vite build",
+		"test": "vitest run",
+		"validate": "pptb-validate"
+	},
+	"dependencies": {
+		"@fluentui/react-components": "9.74.9",
+		"react": "18.3.1",
+		"react-dom": "18.3.1"
+	},
+	"devDependencies": {
+		"@pptb/types": "1.2.7",
+		"@types/react": "18.3.31",
+		"@types/react-dom": "18.3.7",
+		"@vitejs/plugin-react": "5.2.0",
+		"typescript": "5.9.3",
+		"vite": "7.3.7",
+		"vitest": "4.1.12"
+	}
+}

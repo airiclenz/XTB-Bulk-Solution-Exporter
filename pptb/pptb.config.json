@@ -1,0 +1,18 @@
+{
+	"workers": {
+		"engine": {
+			"kind": "dotnet-tool",
+			"packageId": "AiricLenz.BulkSolutionExporter.PptbWorker",
+			"packageVersion": "1.0.0",
+			"command": "bse-pptb-worker",
+			"dotnet": {
+				"targetFramework": "net8.0",
+				"minimumRuntimeVersion": "8.0.0",
+				"rollForward": "Major"
+			},
+			"platforms": [
+				"all"
+			]
+		}
+	}
+}

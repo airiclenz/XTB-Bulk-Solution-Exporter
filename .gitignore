@@ -373,3 +373,7 @@ Images/.DS_Store
 # Claude Code local settings
 .claude/settings.local.json
 CLAUDE.md
+
+# Power Platform ToolBox tool build output and packed tarballs
+pptb/dist/
+pptb/*.tgz
