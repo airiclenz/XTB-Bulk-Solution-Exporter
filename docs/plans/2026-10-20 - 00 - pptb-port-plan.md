@@ -54,7 +54,23 @@
 - 9 (re-check): recast (writer decision: run toggles from the controls); yields to `.capcom/issues/worker-reads-ui-controls.md:14`
 - 10 (re-check): guard extended (`run/solutionProcessed` notification per writer decision on 7)
 
-## 1. Convert the plugin and test projects to SDK-style net48
+## 1. Convert the plugin and test projects to SDK-style net48 — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): build only — verified on Linux arm64 with .NET SDK 8.0.426 (`dotnet build` Debug and Release exit 0, no compiler warnings); `dotnet test` was not run (no Windows/mono here) and must be run on Windows.
+
+NOTES (2026-10-23): System.Resources.Extensions ships (nuspec `lib\net48\Plugins`, Deploy Locally.bat, build-solution task): could not confirm XrmToolBox provides it. Pinned to 8.0.0, not 10.0.12, because 10.x pulls System.Formats.Nrbf, System.Reflection.Metadata, System.Collections.Immutable and Microsoft.Bcl.HashCode into the plugin folder; 8.0.0 needs only System.Memory, which XrmToolBox already loads. NuGet Pack.ps1 now also requires that DLL in the package.
+
+NOTES (2026-10-23): manifest resource names and assembly references of the new DLL match the shipped 2026.10.8.29 DLL exactly (compared with System.Reflection.Metadata).
+
+NOTES (2026-10-23): added `CopyLocalLockFileAssemblies true` (SDK net48 libraries do not copy package DLLs by default) so bin\Debug still holds the runnable XrmToolBox debug host; the former `Private=False` references (Microsoft.Web.Xdt, System.Security.Cryptography.Algorithms/Cng/Encoding/Primitives/X509Certificates) use `ExcludeAssets="runtime"` to stay out of the output as before.
+
+NOTES (2026-10-23): Release keeps `DEBUG` defined (`$(DefineConstants);DEBUG`), as the old Release config did, so `LogDebug` still works in shipped builds behind the debug-mode setting.
+
+NOTES (2026-10-23): .vscode/launch.json needed no change (still runs bin\Debug\XrmToolBox.exe after build-debug); tasks.json build tasks now call `dotnet build` and a new `test` task runs `dotnet test`.
+
+NOTES (2026-10-23): consequential edit — AGENTS.md: made necessary by the build-and-test and versioning-and-release title changes (capcom refreshed its knowledge block; the refresh also added the `capcom next` line from the installed capcom version).
+
+NOTES (2026-10-23): the PackageReference restore now reports NU1902/NU1903 for System.Security.Cryptography.Pkcs 9.0.5 (same version packages.config pinned; pre-existing). The open issue `remove-unused-ai-packages` still names `packages.config` in its body.
 
 **What:**
 **Goal:** `dotnet build "Bulk Solution Exporter.sln"` succeeds on macOS and Windows; plugin assembly name, root namespace and embedded resources are unchanged.

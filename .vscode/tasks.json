@@ -8,7 +8,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /restore /p:RestorePackagesConfig=true /p:Configuration=Debug; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; try { Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll' \"$env:APPDATA\\MscrmTools\\XrmToolBox\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll\" -Force -ErrorAction Stop } catch { Write-Error ('Deploy copy failed: ' + $_); exit 1 }; exit 0"
+        "& dotnet build 'Bulk Solution Exporter.sln' -c Debug; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $plugins = \"$env:APPDATA\\MscrmTools\\XrmToolBox\\Plugins\"; try { Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\Plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll' \"$plugins\\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll\" -Force -ErrorAction Stop; Copy-Item 'Bulk Solution Exporter\\bin\\Debug\\System.Resources.Extensions.dll' \"$plugins\\System.Resources.Extensions.dll\" -Force -ErrorAction Stop } catch { Write-Error ('Deploy copy failed: ' + $_); exit 1 }; exit 0"
       ],
       "group": "build",
       "problemMatcher": "$msCompile",
@@ -19,16 +19,33 @@
     {
       "label": "build-debug",
       "type": "process",
-      "command": "powershell.exe",
+      "command": "dotnet",
       "args": [
-        "-NoProfile",
-        "-Command",
-        "$msbuild = & 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1; if (!$msbuild) { Write-Error 'MSBuild not found'; exit 1 }; & $msbuild 'Bulk Solution Exporter.sln' /restore /p:RestorePackagesConfig=true /p:Configuration=Debug /v:minimal; exit $LASTEXITCODE"
+        "build",
+        "Bulk Solution Exporter.sln",
+        "-c",
+        "Debug",
+        "-v",
+        "minimal"
       ],
       "group": "build",
       "problemMatcher": "$msCompile",
       "presentation": {
         "reveal": "silent"
+      }
+    },
+    {
+      "label": "test",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "Bulk Solution Exporter.Tests"
+      ],
+      "group": "test",
+      "problemMatcher": "$msCompile",
+      "presentation": {
+        "reveal": "always"
       }
     }
   ]

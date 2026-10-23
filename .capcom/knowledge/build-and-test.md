@@ -1,23 +1,29 @@
 ---
-title: Build with VS MSBuild and test with vstest, not dotnet
+title: Build with dotnet build; run the tests on Windows
 labels: [build]
-refs: [Bulk Solution Exporter.sln, .vscode/tasks.json#build-debug, Bulk Solution Exporter.Tests/Bulk Solution Exporter.Tests.csproj]
+refs: [Bulk Solution Exporter.sln, .vscode/tasks.json#build-debug, Bulk Solution Exporter.Tests/Bulk Solution Exporter.Tests.csproj, Bulk Solution Exporter/Bulk Solution Exporter.csproj, Bulk Solution Exporter/Properties/launchSettings.json]
 ---
 
-The main project is a pre-SDK-style .NET Framework 4.8 `.csproj`. The .NET SDK (`dotnet build`) cannot compile it (MSB3822/MSB3823 at resource generation). Use Visual Studio's MSBuild, found via `vswhere`:
 
-```powershell
-$m = & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
-& $m 'Bulk Solution Exporter.sln' /restore /p:RestorePackagesConfig=true /p:Configuration=Debug /v:minimal
+Both projects are SDK-style .NET Framework 4.8 (`net48`) projects. `Microsoft.NETFramework.ReferenceAssemblies` supplies the framework reference assemblies, so the .NET SDK builds them on Windows, macOS and Linux:
+
+```sh
+dotnet build "Bulk Solution Exporter.sln" -c Debug
 ```
 
-Tests are an SDK-style net48 MSTest project (`Bulk Solution Exporter.Tests`), built by the same MSBuild call and run with `vstest.console.exe`:
+Outputs stay in `Bulk Solution Exporter/bin/Debug/` and `bin/Release/` (no `net48` subfolder). A Debug build also copies the plugin DLL and pdb to `bin/Debug/Plugins`, and `bin/Debug` holds the XrmToolBox debug host (`XrmToolBox.exe /overridepath:.`, started by `Properties/launchSettings.json` in VS and `.vscode/launch.json` in VS Code).
 
-```powershell
-$t = & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -latest -find '**\vstest.console.exe' | Select-Object -First 1
-& $t 'Bulk Solution Exporter.Tests\bin\Debug\net48\Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.Tests.dll' '/TestCaseFilter:<filter>'
+The `.resx` resources are embedded preserialized (`GenerateResourceUsePreserializedResources`), so `System.Resources.Extensions.dll` must sit next to the plugin DLL at run time (nuspec, `Deploy Locally.bat` and the `build-solution` task ship it).
+
+Tests are an MSTest net48 project (`Bulk Solution Exporter.Tests`), run on Windows:
+
+```sh
+dotnet test "Bulk Solution Exporter.Tests"
+dotnet test "Bulk Solution Exporter.Tests" --filter "<filter>"
 ```
 
-VS Code tasks: `build-debug` (build only) and `build-solution` (build + copy the Debug DLL into `%APPDATA%\MscrmTools\XrmToolBox\Plugins`; fails if XrmToolBox has the DLL locked).
+On macOS/Linux the tests only build: the GitHelper, FileAndFolderHelper and RichTextBox tests need Windows.
+
+VS Code tasks: `build-debug` (build only), `build-solution` (build + copy the Debug plugin DLL and `System.Resources.Extensions.dll` into `%APPDATA%\MscrmTools\XrmToolBox\Plugins`; Windows only, fails if XrmToolBox has the DLL locked) and `test`.
 
 Live behaviour (export/import against Dataverse, abort, git, settings persistence) can only be checked manually in XrmToolBox.

@@ -7,6 +7,7 @@ markdown files under `.capcom/`, versioned with the code; track work there and n
 
 Without a `capcom` binary, install it from https://github.com/airiclenz/capcom#install.
 
+- `capcom next`: the most urgent ready issue, in full
 - `capcom ready`: the issues ready to work on, most urgent first
 - `capcom show <id>`: one issue in full, with what blocks it
 - `capcom update <id> --status active`: claim it before you start
@@ -39,12 +40,12 @@ before editing it.
 
 Knowledge tree, top level:
 
-- `build-and-test`: Build with VS MSBuild and test with vstest, not dotnet
+- `build-and-test`: Build with dotnet build; run the tests on Windows
 - `code-style`: Code style: tabs, Allman, method dividers, no magic numbers
 - `copilot-instructions-stale`: copilot-instructions.md describes a different project
 - `repo-docs-layout`: Where plans, handoffs, release notes and open work live
 - `run-and-abort-rules`: Run invariants: checked-solution snapshot, abort between steps, retries
 - `ui-thread-rules`: UI objects only on the UI thread; the worker uses the settings snapshot
 - `untrusted-dataverse-data`: Treat Dataverse names, XML and git text as untrusted input
-- `versioning-and-release`: Versions must agree across nuspec, AssemblyInfo and packages.config
+- `versioning-and-release`: Versions must agree across nuspec, AssemblyInfo and the XrmToolBoxPackage reference
 <!-- END CAPCOM -->

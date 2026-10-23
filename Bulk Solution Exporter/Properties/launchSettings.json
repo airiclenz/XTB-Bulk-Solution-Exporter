@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Debug in XrmToolBox": {
+      "commandName": "Executable",
+      "executablePath": "$(MSBuildProjectDirectory)\\bin\\Debug\\XrmToolBox.exe",
+      "commandLineArgs": "/overridepath:.",
+      "workingDirectory": "$(MSBuildProjectDirectory)\\bin\\Debug\\"
+    }
+  }
+}

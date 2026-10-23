@@ -5,9 +5,12 @@
     Checks before packing:
       - nuspec <version> == AssemblyVersion == AssemblyFileVersion
       - the package for that version does not exist yet
-      - the nuspec XrmToolBox dependency == the XrmToolBoxPackage version the plugin is built against
+      - the nuspec XrmToolBox dependency == the XrmToolBoxPackage PackageReference version in the .csproj
     Checks after packing:
-      - the package contains only the plugin DLL under lib\net48\Plugins and the icon
+      - the package contains only DLLs under lib\net48\Plugins (the plugin DLL and
+        System.Resources.Extensions.dll) and the icon
+
+    Needs the .NET SDK (dotnet) on the PATH; nuget.exe is found or downloaded for packing.
 
     The package is written to the "Bulk Solution Exporter.nuget" folder.
 #>
@@ -18,7 +21,7 @@ $projectDir   = Split-Path -Parent $PSScriptRoot
 $solutionFile = Join-Path (Split-Path -Parent $projectDir) 'Bulk Solution Exporter.sln'
 $nuspecFile   = Join-Path $projectDir 'BulkSolutionExporter.nuspec'
 $assemblyInfo = Join-Path $projectDir 'Properties\AssemblyInfo.cs'
-$packagesFile = Join-Path $projectDir 'packages.config'
+$projectFile  = Join-Path $projectDir 'Bulk Solution Exporter.csproj'
 $outputDir    = Join-Path $projectDir 'Bulk Solution Exporter.nuget'
 
 function Fail([string] $message)
@@ -57,8 +60,8 @@ if (Test-Path -LiteralPath $packageFile)
     Fail "$packageFile already exists. Bump the version in the nuspec and AssemblyInfo.cs first."
 }
 
-[xml] $packages = Get-Content -LiteralPath $packagesFile -Raw
-$builtAgainst = ($packages.packages.package | Where-Object { $_.id -eq 'XrmToolBoxPackage' }).version
+[xml] $project = Get-Content -LiteralPath $projectFile -Raw
+$builtAgainst = ($project.SelectNodes('//PackageReference') | Where-Object { $_.Include -eq 'XrmToolBoxPackage' }).Version
 $declared     = ($nuspec.package.metadata.dependencies.SelectNodes('.//*[local-name()="dependency"]') | Where-Object { $_.id -eq 'XrmToolBox' }).version
 
 if (-not $declared)
@@ -68,7 +71,7 @@ if (-not $declared)
 
 if ($declared -ne $builtAgainst)
 {
-    Fail "The nuspec declares XrmToolBox $declared but the plugin is built against XrmToolBoxPackage $builtAgainst (packages.config)."
+    Fail "The nuspec declares XrmToolBox $declared but the plugin is built against XrmToolBoxPackage $builtAgainst (Bulk Solution Exporter.csproj)."
 }
 
 Write-Host "Packing $packageId $packageVersion (XrmToolBox $declared)" -ForegroundColor Cyan
@@ -90,16 +93,10 @@ if (-not $nuget)
     }
 }
 
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-if (-not (Test-Path -LiteralPath $vswhere))
+$dotnet = (Get-Command 'dotnet' -ErrorAction SilentlyContinue).Source
+if (-not $dotnet)
 {
-    Fail 'vswhere.exe not found - is Visual Studio / Build Tools installed?'
-}
-
-$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
-if (-not $msbuild)
-{
-    Fail 'MSBuild not found.'
+    Fail 'dotnet not found - is the .NET SDK installed?'
 }
 
 
@@ -107,10 +104,7 @@ if (-not $msbuild)
 # Build
 # ---------------------------------------------------------------------------
 
-& $nuget restore $solutionFile -NonInteractive
-if ($LASTEXITCODE -ne 0) { Fail 'NuGet restore failed.' }
-
-& $msbuild $solutionFile /t:Rebuild /p:Configuration=Release /v:minimal /nologo
+& $dotnet build $solutionFile -c Release --no-incremental -v minimal -nologo
 if ($LASTEXITCODE -ne 0) { Fail 'Release build failed.' }
 
 
@@ -154,10 +148,13 @@ if ($unexpected)
     Fail ("The package contains files outside lib\net48\Plugins (package deleted):`n  " + ($unexpected -join "`n  "))
 }
 
-if (-not ($entries -contains "lib/net48/Plugins/$packageId.dll"))
+foreach ($requiredDll in @("$packageId.dll", 'System.Resources.Extensions.dll'))
 {
-    Remove-Item -LiteralPath $packageFile
-    Fail "The package does not contain lib\net48\Plugins\$packageId.dll (package deleted)."
+    if (-not ($entries -contains "lib/net48/Plugins/$requiredDll"))
+    {
+        Remove-Item -LiteralPath $packageFile
+        Fail "The package does not contain lib\net48\Plugins\$requiredDll (package deleted)."
+    }
 }
 
 Write-Host ''
