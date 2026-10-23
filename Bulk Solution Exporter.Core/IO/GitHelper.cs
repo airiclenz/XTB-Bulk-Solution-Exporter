@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Helpers
+namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 {
 
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	internal class GitHelper
+	public class GitHelper
 	{
 		// Executable started for every git command; resolved through PATH.
 		private const string GitExecutable = "git";
@@ -41,6 +41,9 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// Separates options and revisions from paths on a git command line.
 		private const string EndOfOptions = "--";
 
+		// Separates the quoted arguments of a .NET Framework command line.
+		private const string ArgumentSeparator = " ";
+
 		// Commit messages travel on stdin: git stores them byte for byte, so
 		// they must be UTF-8 and must not start with a byte order mark.
 		private static readonly Encoding StandardInputEncoding = new UTF8Encoding(false);
@@ -65,6 +68,9 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// Git never prompts for credentials: a command that would need them
 		/// fails instead of hanging the caller.
 		/// </summary>
+		/// <param name="arguments">
+		/// One entry per git argument, passed to git unchanged.
+		/// </param>
 		/// <param name="standardInput">
 		/// Text handed to git on standard input; <c>null</c> for none.
 		/// </param>
@@ -74,7 +80,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// </param>
 		/// <returns><c>true</c> when git exited with code 0.</returns>
 		private bool ExecuteCommand(
-			string arguments,
+			IReadOnlyList<string> arguments,
 			string standardInput,
 			out string output,
 			out string errorMessage)
@@ -110,6 +116,10 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// read while the process runs, so a process that writes more than the
 		/// pipe buffer holds cannot block on a full pipe.
 		/// </summary>
+		/// <param name="arguments">
+		/// One entry per argument; each reaches the process unchanged, with no
+		/// shell or caller-side quoting involved.
+		/// </param>
 		/// <param name="environmentVariables">
 		/// Variables added to the inherited environment; may be <c>null</c>.
 		/// </param>
@@ -119,21 +129,29 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// standard input untouched.
 		/// </param>
 		/// <returns>The process exit code.</returns>
-		internal static int RunProcess(
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="arguments"/> or one of its entries is <c>null</c>.
+		/// </exception>
+		public static int RunProcess(
 			string fileName,
-			string arguments,
+			IReadOnlyList<string> arguments,
 			string workingDirectory,
 			IDictionary<string, string> environmentVariables,
 			string standardInput,
 			out string standardOutput,
 			out string standardError)
 		{
+			if (arguments == null ||
+				arguments.Contains(null))
+			{
+				throw new ArgumentNullException(nameof(arguments));
+			}
+
 			bool hasStandardInput = standardInput != null;
 
 			ProcessStartInfo processStartInfo = new ProcessStartInfo()
 			{
 				FileName = fileName,
-				Arguments = arguments,
 				RedirectStandardInput = hasStandardInput,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
@@ -141,6 +159,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				CreateNoWindow = true,
 				WorkingDirectory = workingDirectory
 			};
+
+			SetArguments(processStartInfo, arguments);
 
 			if (environmentVariables != null)
 			{
@@ -173,7 +193,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		public List<string> GetAllBranches()
 		{
-			if (ExecuteCommand("branch", null, out string output, out _))
+			if (ExecuteCommand(new[] { "branch" }, null, out string output, out _))
 			{
 				return ParseBranchList(output);
 			}
@@ -185,7 +205,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		public string GetActiveBranch()
 		{
-			if (ExecuteCommand("branch", null, out string output, out _))
+			if (ExecuteCommand(new[] { "branch" }, null, out string output, out _))
 			{
 				foreach (string line in SplitLines(output))
 				{
@@ -204,8 +224,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 		// ============================================================================
 		/// <summary>
-		/// Checks out a branch. The name is quoted and followed by "--", so git
-		/// reads it as a branch and never as a path; a name that git would read
+		/// Checks out a branch. The name is passed as its own argument and
+		/// followed by "--", so git reads it as a branch and never as a path; a name that git would read
 		/// as an option is refused without running git.
 		/// </summary>
 		/// <returns><c>true</c> when git switched to the branch.</returns>
@@ -221,15 +241,15 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				return false;
 			}
 
-			string arguments = "checkout " + QuoteArgument(branchName) + " " + EndOfOptions;
+			var arguments = new[] { "checkout", branchName, EndOfOptions };
 			return ExecuteCommand(arguments, null, out _, out errorMessage);
 		}
 
 
 		// ============================================================================
 		/// <summary>
-		/// Stages one file. The path is quoted and placed after "--", so it is
-		/// never read as an option or a revision.
+		/// Stages one file. The path is passed as its own argument after "--",
+		/// so it is never read as an option or a revision.
 		/// </summary>
 		/// <param name="absolutePath">The full path of a file inside the repository.</param>
 		/// <returns><c>true</c> when git staged the file.</returns>
@@ -243,7 +263,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				throw new ArgumentNullException(nameof(absolutePath));
 			}
 
-			string arguments = "add " + EndOfOptions + " " + QuoteArgument(absolutePath);
+			var arguments = new[] { "add", EndOfOptions, absolutePath };
 			return ExecuteCommand(arguments, null, out _, out errorMessage);
 		}
 
@@ -264,7 +284,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				throw new ArgumentNullException(nameof(message));
 			}
 
-			return ExecuteCommand("commit -F -", message, out _, out errorMessage);
+			return ExecuteCommand(new[] { "commit", "-F", "-" }, message, out _, out errorMessage);
 		}
 
 
@@ -276,7 +296,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		public bool Push(
 			out string errorMessage)
 		{
-			return ExecuteCommand("push", null, out _, out errorMessage);
+			return ExecuteCommand(new[] { "push" }, null, out _, out errorMessage);
 		}
 
 
@@ -284,11 +304,12 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// <summary>
 		/// Quotes one argument so that the Windows command-line parser
 		/// (CommandLineToArgvW rules) hands it to the process unchanged.
+		/// <see cref="RunProcess"/> builds its .NET Framework command line with it.
 		/// </summary>
 		/// <returns>The argument wrapped in double quotes, with every embedded
 		/// quote and every backslash run preceding a quote escaped.</returns>
 		/// <exception cref="ArgumentNullException"><paramref name="argument"/> is <c>null</c>.</exception>
-		internal static string QuoteArgument(
+		public static string QuoteArgument(
 			string argument)
 		{
 			if (argument == null)
@@ -337,13 +358,39 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// Extracts the branch names from the output of "git branch", without
 		/// their marker column and without detached-HEAD entries.
 		/// </summary>
-		internal static List<string> ParseBranchList(
+		public static List<string> ParseBranchList(
 			string output)
 		{
 			return SplitLines(output)
 				.Select(line => ParseBranchLine(line, out _))
 				.Where(branchName => branchName != null)
 				.ToList();
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Hands every argument to the process unchanged. .NET 5 and later
+		/// fill <see cref="ProcessStartInfo"/>.ArgumentList, which quotes for
+		/// the current platform; .NET Framework has only the single
+		/// command-line string, so each argument is quoted for the Windows
+		/// parser and joined with spaces.
+		/// </summary>
+		private static void SetArguments(
+			ProcessStartInfo processStartInfo,
+			IReadOnlyList<string> arguments)
+		{
+#if NET
+			foreach (string argument in arguments)
+			{
+				processStartInfo.ArgumentList.Add(argument);
+			}
+#else
+			processStartInfo.Arguments =
+				string.Join(
+					ArgumentSeparator,
+					arguments.Select(QuoteArgument));
+#endif
 		}
 
 

@@ -116,7 +116,21 @@ NOTES (2026-10-23): verified on Linux with .NET SDK 8.0.426: solution builds Deb
 **Commit:** `refactor(core): add shared core library with version and formatting helpers`
 Depends on item 1.
 
-## 3. Move file and git helpers to core, cross-platform
+## 3. Move file and git helpers to core, cross-platform — ✅ DONE (2026-10-23)
+
+NOTES (2026-10-23): `FileAndFolderHelper` and `GitHelper` are in namespace `Com.AiricLenz.BulkSolutionExporter.Core.IO` (mirrors the folder, as item 2 did for `Extensions`); the plugin control gained `using Com.AiricLenz.BulkSolutionExporter.Core.IO;`. The moved tests use the flat `Com.AiricLenz.BulkSolutionExporter.Core.Tests` namespace like the other core tests.
+
+NOTES (2026-10-23): `FindRepositoryRootPath` now stops when the current folder is empty (a start path with no directory part), where it used to resolve `..\` against the process working directory and walk up from there; a repo root found above the start folder is now returned without the trailing backslash `Path.GetFullPath(..\)` left on it (only used as git's working directory and in a debug log line). `IsValidPath` stays `internal` (no caller outside the class).
+
+NOTES (2026-10-23): on .NET Framework, `RunProcess` quotes EVERY argument with `QuoteArgument` (including plain ones such as `branch`, `-F`, `--`), so git receives the same argv as before; `RunProcess` throws `ArgumentNullException` for a null list or a null entry.
+
+NOTES (2026-10-23): the large-output test off Windows runs `sh -c "head -c 200000 /dev/zero | tr '\000' e >&2; ..."`; `FindRepositoryRootPath_NoRepository_ReturnsEmpty` reports Inconclusive when the temp folder itself lies inside a git repository (e.g. a dotfiles repo in the user profile).
+
+NOTES (2026-10-23): consequential edit — .capcom/knowledge/build-and-test.md: made necessary by moving the GitHelper and FileAndFolderHelper tests to the net8 core tests (they now run on macOS/Linux).
+
+NOTES (2026-10-23): `.capcom/issues/git-stdin-ioexception.md` still names `Helpers/GitHelper.cs` in its body; it now lives at `Bulk Solution Exporter.Core/IO/GitHelper.cs` (issue left untouched, as implementers never edit tickets).
+
+NOTES (2026-10-23): verified on Linux with .NET SDK 8.0.426: solution builds (0 errors; only the pre-existing NU1902/NU1903 Pkcs warnings), core tests pass 35/35 including the temp-repo commit tests; `capcom know verify` and `capcom check` are clean.
 
 **What:**
 **Goal:** `FileAndFolderHelper` and `GitHelper` live in core, behave identically on net48, and on net8 run correctly on macOS/Linux: the repo-root walk terminates and git arguments are passed without hand-quoting.

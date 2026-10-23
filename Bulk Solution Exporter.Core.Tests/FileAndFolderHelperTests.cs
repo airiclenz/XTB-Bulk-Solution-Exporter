@@ -1,12 +1,13 @@
-﻿using System.IO;
-using Com.AiricLenz.XTB.Plugin.Helpers;
+﻿using System;
+using System.IO;
+using Com.AiricLenz.BulkSolutionExporter.Core.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Tests
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 {
 
 	// ============================================================================
@@ -15,11 +16,16 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 	/// <summary>
 	/// Covers <see cref="FileAndFolderHelper.ToSafeFileNamePart"/> and
 	/// <see cref="FileAndFolderHelper.IsValidSolutionFilePath"/>, which keep
-	/// server-controlled solution names from escaping the export folder.
+	/// server-controlled solution names from escaping the export folder, and
+	/// the repository-root walk of
+	/// <see cref="FileAndFolderHelper.FindRepositoryRootPath"/>.
 	/// </summary>
 	[TestClass]
 	public class FileAndFolderHelperTests
 	{
+		private const string GitFolderName = ".git";
+
+		private const string SolutionFileName = "Managed.Contoso.zip";
 
 		// ============================================================================
 		[TestMethod]
@@ -106,10 +112,107 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			// Act
 			var isValid =
 				FileAndFolderHelper.IsValidSolutionFilePath(
-					@"C:\exports\Managed.Contoso.zip");
+					Path.Combine(Path.GetTempPath(), SolutionFileName));
 
 			// Assert
 			Assert.IsTrue(isValid);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void FindRepositoryRootPath_GitFolderTwoLevelsUp_ReturnsThatFolder()
+		{
+			string rootPath = CreateTemporaryDirectory();
+
+			try
+			{
+				// Arrange
+				Directory.CreateDirectory(Path.Combine(rootPath, GitFolderName));
+				string solutionFolderPath = Path.Combine(rootPath, "solutions", "managed");
+				Directory.CreateDirectory(solutionFolderPath);
+				string filePath = Path.Combine(solutionFolderPath, SolutionFileName);
+
+				// Act
+				string repositoryRootPath =
+					FileAndFolderHelper.FindRepositoryRootPath(
+						filePath,
+						out _);
+
+				// Assert
+				Assert.AreEqual(rootPath, repositoryRootPath);
+			}
+			finally
+			{
+				Directory.Delete(rootPath, true);
+			}
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void FindRepositoryRootPath_NoRepository_ReturnsEmpty()
+		{
+			string rootPath = CreateTemporaryDirectory();
+
+			try
+			{
+				// Arrange
+				if (HasGitFolderAbove(rootPath))
+				{
+					Assert.Inconclusive("The temporary folder lies inside a git repository.");
+				}
+
+				string filePath = Path.Combine(rootPath, SolutionFileName);
+
+				// Act
+				string repositoryRootPath =
+					FileAndFolderHelper.FindRepositoryRootPath(
+						filePath,
+						out _);
+
+				// Assert
+				Assert.AreEqual(string.Empty, repositoryRootPath);
+			}
+			finally
+			{
+				Directory.Delete(rootPath, true);
+			}
+		}
+
+
+		// ============================================================================
+		private static string CreateTemporaryDirectory()
+		{
+			string directoryPath = Path.Combine(
+				Path.GetTempPath(),
+				"FileAndFolderHelperTests " + Guid.NewGuid().ToString("N"));
+
+			Directory.CreateDirectory(directoryPath);
+			return directoryPath;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Tells whether the folder or one of its ancestors holds a .git
+		/// folder, which would make a "no repository" expectation untrue on
+		/// this machine.
+		/// </summary>
+		private static bool HasGitFolderAbove(
+			string directoryPath)
+		{
+			for (var directory = new DirectoryInfo(directoryPath);
+				directory != null;
+				directory = directory.Parent)
+			{
+				if (Directory.Exists(Path.Combine(directory.FullName, GitFolderName)))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 	}

@@ -9,23 +9,35 @@ using System.Threading.Tasks;
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Helpers
+namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 {
 
 	// ============================================================================
 	// ============================================================================
 	// ============================================================================
-	internal class FileAndFolderHelper
+	public class FileAndFolderHelper
 	{
 		// Name used when sanitizing leaves nothing of the original text.
-		internal const string FallbackFileNamePart = "Solution";
+		public const string FallbackFileNamePart = "Solution";
 
 		private const char InvalidCharReplacement = '_';
 		private const string ParentDirectoryToken = "..";
 
+		// Characters Windows refuses in a file name. They are stripped on
+		// every platform, so a name sanitized on macOS or Linux is still safe
+		// on Windows and never carries a drive separator or a backslash.
+		private const string WindowsInvalidFileNameChars = "\"<>|:*?\\/";
+
+		// Every character below the space is a control character, which
+		// Windows also refuses in a file name.
+		private const char FirstNonControlChar = ' ';
+
+		// The platform's invalid file-name characters plus the Windows set.
+		private static readonly char[] InvalidFileNameChars = BuildInvalidFileNameChars();
+
 
 		// ============================================================================
-		internal static string FindRepositoryRootPath(
+		public static string FindRepositoryRootPath(
 			string startPath,
 			out string message)
 		{
@@ -75,20 +87,22 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 				message += "moving one level up if possible..." + Environment.NewLine;
 
-				// move one folder up
-				var oneLevelUp =
-					Path.GetFullPath(
-						Path.Combine(
-							currentRootPath, @"..\"));
-
-				if (oneLevelUp != currentRootPath)
-				{
-					currentRootPath = oneLevelUp;
-				}
-				else
+				// An empty path has no parent; GetParent would throw on it.
+				if (string.IsNullOrEmpty(currentRootPath))
 				{
 					break;
 				}
+
+				// GetParent understands the separators of every platform and
+				// returns null above the root, so the walk always ends.
+				var parentDirectory = Directory.GetParent(currentRootPath);
+
+				if (parentDirectory == null)
+				{
+					break;
+				}
+
+				currentRootPath = parentDirectory.FullName;
 			}
 
 			message += "no git root was found!";
@@ -117,7 +131,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		// ============================================================================
 		/// <summary>
 		/// Turns untrusted text (e.g. a Dataverse solution unique name) into a
-		/// single file-name segment: invalid file-name characters become '_',
+		/// single file-name segment: invalid file-name characters (those of the
+		/// current platform plus every character Windows refuses) become '_',
 		/// every ".." is removed, and leading dots plus trailing dots/spaces are
 		/// trimmed. The result never contains a path separator, a drive prefix
 		/// or a parent-directory reference.
@@ -126,7 +141,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// The sanitized segment, or <see cref="FallbackFileNamePart"/> when
 		/// nothing usable remains.
 		/// </returns>
-		internal static string ToSafeFileNamePart(
+		public static string ToSafeFileNamePart(
 			string text)
 		{
 			if (string.IsNullOrWhiteSpace(text))
@@ -134,13 +149,12 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				return FallbackFileNamePart;
 			}
 
-			var invalidChars = Path.GetInvalidFileNameChars();
 			var builder = new StringBuilder(text.Length);
 
 			foreach (var character in text)
 			{
 				builder.Append(
-					Array.IndexOf(invalidChars, character) >= 0 ?
+					Array.IndexOf(InvalidFileNameChars, character) >= 0 ?
 					InvalidCharReplacement :
 					character);
 			}
@@ -167,7 +181,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// valid file name. Never throws: any path the framework rejects is
 		/// reported as invalid.
 		/// </summary>
-		internal static bool IsValidSolutionFilePath(
+		public static bool IsValidSolutionFilePath(
 			string path)
 		{
 			try
@@ -187,6 +201,27 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			{
 				return false; // Catch any exceptions for invalid paths
 			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Joins the current platform's invalid file-name characters with the
+		/// Windows set and the control characters, without duplicates.
+		/// </summary>
+		private static char[] BuildInvalidFileNameChars()
+		{
+			var controlChars =
+				Enumerable
+					.Range(0, FirstNonControlChar)
+					.Select(code => (char)code);
+
+			return
+				Path.GetInvalidFileNameChars()
+					.Concat(WindowsInvalidFileNameChars)
+					.Concat(controlChars)
+					.Distinct()
+					.ToArray();
 		}
 	}
 }

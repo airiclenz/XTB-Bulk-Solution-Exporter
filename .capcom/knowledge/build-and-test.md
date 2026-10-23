@@ -22,7 +22,7 @@ dotnet test "Bulk Solution Exporter.Tests"
 dotnet test "Bulk Solution Exporter.Tests" --filter "<filter>"
 ```
 
-On macOS/Linux the tests only build: the GitHelper, FileAndFolderHelper and RichTextBox tests need Windows.
+On macOS/Linux the tests only build: the RichTextBox tests need Windows.
 
 The core tests (MSTest, `net8.0`, `RollForward Major`) run on every platform:
 

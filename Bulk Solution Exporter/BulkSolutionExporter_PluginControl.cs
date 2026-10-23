@@ -11,6 +11,7 @@ using System.ServiceModel;
 using System.Windows.Forms;
 using Com.AiricLenz.BulkSolutionExporter.Core;
 using Com.AiricLenz.BulkSolutionExporter.Core.Extensions;
+using Com.AiricLenz.BulkSolutionExporter.Core.IO;
 using Com.AiricLenz.XTB.Components;
 using Com.AiricLenz.XTB.Plugin.Helpers;
 using Com.AiricLenz.XTB.Plugin.Schema;

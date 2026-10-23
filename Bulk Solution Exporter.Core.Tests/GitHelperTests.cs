@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Com.AiricLenz.XTB.Plugin.Helpers;
+using Com.AiricLenz.BulkSolutionExporter.Core.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 // ============================================================================
 // ============================================================================
 // ============================================================================
-namespace Com.AiricLenz.XTB.Plugin.Tests
+namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 {
 
 	// ============================================================================
@@ -31,6 +31,8 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 		private const string PowerShellExecutable = "powershell.exe";
 
+		private const string ShellExecutable = "sh";
+
 		private const string GitExecutable = "git";
 
 		// Name of the file committed by the temporary-repository tests; the
@@ -44,14 +46,34 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 		public void RunProcess_LargeOutputOnBothStreams_Completes()
 		{
 			// Arrange
-			string arguments =
-				"-NoProfile -Command \"" +
-				"[Console]::Error.Write('e'*" + StreamLength + "); " +
-				"[Console]::Out.Write('o'*" + StreamLength + ")\"";
+			string fileName;
+			string[] arguments;
+
+			if (OperatingSystem.IsWindows())
+			{
+				fileName = PowerShellExecutable;
+				arguments = new[]
+				{
+					"-NoProfile",
+					"-Command",
+					"[Console]::Error.Write('e'*" + StreamLength + "); " +
+					"[Console]::Out.Write('o'*" + StreamLength + ")"
+				};
+			}
+			else
+			{
+				fileName = ShellExecutable;
+				arguments = new[]
+				{
+					"-c",
+					"head -c " + StreamLength + " /dev/zero | tr '\\000' e >&2; " +
+					"head -c " + StreamLength + " /dev/zero | tr '\\000' o"
+				};
+			}
 
 			// Act
 			GitHelper.RunProcess(
-				PowerShellExecutable,
+				fileName,
 				arguments,
 				null,
 				null,
@@ -141,7 +163,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				Assert.IsTrue(isAdded, addError);
 				Assert.IsTrue(isCommitted, commitError);
 
-				string storedMessage = RunGit(repositoryPath, "log -1 --format=%B");
+				string storedMessage = RunGit(repositoryPath, "log", "-1", "--format=%B");
 				Assert.AreEqual(message, storedMessage.TrimEnd('\r', '\n'));
 			}
 			finally
@@ -165,9 +187,9 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 			Directory.CreateDirectory(repositoryPath);
 
 			RunGit(repositoryPath, "init");
-			RunGit(repositoryPath, "config user.name \"GitHelper Tests\"");
-			RunGit(repositoryPath, "config user.email githelper.tests@example.invalid");
-			RunGit(repositoryPath, "config commit.gpgsign false");
+			RunGit(repositoryPath, "config", "user.name", "GitHelper Tests");
+			RunGit(repositoryPath, "config", "user.email", "githelper.tests@example.invalid");
+			RunGit(repositoryPath, "config", "commit.gpgsign", "false");
 
 			return repositoryPath;
 		}
@@ -176,7 +198,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 		// ============================================================================
 		private static string RunGit(
 			string repositoryPath,
-			string arguments)
+			params string[] arguments)
 		{
 			int exitCode = GitHelper.RunProcess(
 				GitExecutable,
@@ -187,7 +209,7 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 				out string standardOutput,
 				out string standardError);
 
-			Assert.AreEqual(0, exitCode, "git " + arguments + ": " + standardError);
+			Assert.AreEqual(0, exitCode, "git " + string.Join(" ", arguments) + ": " + standardError);
 			return standardOutput;
 		}
 
