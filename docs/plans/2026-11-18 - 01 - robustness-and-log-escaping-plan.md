@@ -73,7 +73,10 @@ NOTES (2026-11-18): the new warning concatenates the version file's full path in
 **Closes:** version-json-writer-crash
 **Commit:** `fix(core): start a fresh version record when exported_versions.json is unreadable`
 
-## 3. Git stdin write failure yields a failed result
+## 3. Git stdin write failure yields a failed result — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): GitHelper.StandardInputFailedExitCode (-1) is public so callers and tests can name the failure code; the stderr line reads "Could not write the standard input of <fileName>: <IOException message>".
+NOTES (2026-11-18): the existing GitHelperTests.Commit_MessageWithQuotesOrNonAscii_IsStoredVerbatim("Lösung ä") fails on this host, and the cause is outside this item. git stores and prints the message as correct UTF-8 (checked with od). RunProcess sets no StandardOutputEncoding, so the test's RunGit read of "git log" decodes stdout as code page 437 ("L├╢sung ├ñ"). Neither this item nor item 1 touches stdout decoding.
 
 **What:** Fix: `GitHelper.WriteStandardInput` lets an `IOException` (broken pipe) escape when git exits before reading its stdin (ticket `git-stdin-ioexception`).
 **Goal:** `GitHelper.RunProcess` never throws `IOException` from writing standard input; when the write fails it returns a non-zero exit code (the process's own when non-zero, else a named failure constant) and `standardError` carries a line saying the input could not be written.

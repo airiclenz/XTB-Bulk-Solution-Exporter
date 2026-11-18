@@ -48,6 +48,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		// they must be UTF-8 and must not start with a byte order mark.
 		private static readonly Encoding StandardInputEncoding = new UTF8Encoding(false);
 
+		// Exit code reported when the standard input could not be written but
+		// the process itself exited with 0; no process exit code is negative.
+		public const int StandardInputFailedExitCode = -1;
+
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		public string GitRootDirectory
@@ -128,9 +132,18 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		/// order mark, after which the input is closed; <c>null</c> closes it
 		/// at once. The input is always redirected, so the process reads end of
 		/// input and never the caller's own standard input (the PPTB worker
-		/// speaks JSON-RPC on it).
+		/// speaks JSON-RPC on it). A process that exits before reading all of
+		/// it fails the run: see the return value.
 		/// </param>
-		/// <returns>The process exit code.</returns>
+		/// <param name="standardError">
+		/// Everything the process wrote to standard error, followed by a line
+		/// saying the input could not be written when that write failed.
+		/// </param>
+		/// <returns>
+		/// The process exit code; when the standard input could not be written,
+		/// that exit code if it is non-zero, else
+		/// <see cref="StandardInputFailedExitCode"/>.
+		/// </returns>
 		/// <exception cref="ArgumentNullException">
 		/// <paramref name="arguments"/> or one of its entries is <c>null</c>.
 		/// </exception>
@@ -177,9 +190,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 				Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
 				Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
+				bool isInputWritten = true;
+				string inputFailureReason = null;
+
 				if (standardInput != null)
 				{
-					WriteStandardInput(process, standardInput);
+					isInputWritten = WriteStandardInput(process, standardInput, out inputFailureReason);
 				}
 				else
 				{
@@ -192,7 +208,19 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 
 				standardOutput = outputTask.GetAwaiter().GetResult();
 				standardError = errorTask.GetAwaiter().GetResult();
-				return process.ExitCode;
+
+				if (isInputWritten)
+				{
+					return process.ExitCode;
+				}
+
+				standardError = AppendLine(
+					standardError,
+					"Could not write the standard input of " + fileName + ": " + inputFailureReason);
+
+				return process.ExitCode != 0
+					? process.ExitCode
+					: StandardInputFailedExitCode;
 			}
 		}
 
@@ -406,12 +434,23 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		/// raw stream is used because the <see cref="Process.StandardInput"/>
 		/// writer encodes with the console input encoding, which is not UTF-8
 		/// inside XrmToolBox and adds a byte order mark under a UTF-8 console.
+		/// The input is closed even when the write fails.
 		/// </summary>
-		private static void WriteStandardInput(
+		/// <param name="failureReason">
+		/// Why the text could not be written; <c>null</c> when it was.
+		/// </param>
+		/// <returns>
+		/// <c>true</c> when the whole text reached the process; <c>false</c>
+		/// when the write, flush or close failed, typically because the process
+		/// exited before reading all of it (a broken pipe).
+		/// </returns>
+		private static bool WriteStandardInput(
 			Process process,
-			string text)
+			string text,
+			out string failureReason)
 		{
 			Stream inputStream = process.StandardInput.BaseStream;
+			failureReason = null;
 
 			try
 			{
@@ -419,12 +458,45 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 				inputStream.Write(bytes, 0, bytes.Length);
 				inputStream.Flush();
 			}
+			catch (IOException exception)
+			{
+				failureReason = exception.Message;
+			}
 			finally
 			{
 				// Closing signals end of input; the process may still be
-				// waiting for it.
-				process.StandardInput.Close();
+				// waiting for it. Closing flushes again, so it fails the same
+				// way when the process is gone.
+				try
+				{
+					process.StandardInput.Close();
+				}
+				catch (IOException exception)
+				{
+					failureReason = failureReason ?? exception.Message;
+				}
 			}
+
+			return failureReason == null;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Appends a line to process output, starting a new line first unless
+		/// the output is empty or already ends with one.
+		/// </summary>
+		private static string AppendLine(
+			string output,
+			string line)
+		{
+			if (output.Length == 0 ||
+				output.EndsWith("\n", StringComparison.Ordinal))
+			{
+				return output + line;
+			}
+
+			return output + Environment.NewLine + line;
 		}
 
 

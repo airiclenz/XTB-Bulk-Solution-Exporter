@@ -43,6 +43,14 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		// --stdin" prints when its standard input is at end of input.
 		private const string EmptyBlobHash = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391";
 
+		// Characters handed to a process that never reads its standard input:
+		// several MB, larger than any OS pipe buffer.
+		private const int UnreadStandardInputLength = 8 * 1024 * 1024;
+
+		// Part of the standard error line RunProcess adds when the input could
+		// not be written.
+		private const string StandardInputFailureText = "Could not write the standard input";
+
 
 		// ============================================================================
 		[TestMethod]
@@ -202,6 +210,35 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			// Assert
 			Assert.AreEqual(0, exitCode, standardError);
 			Assert.AreEqual(EmptyBlobHash, standardOutput.Trim());
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// "git --version" exits without reading its standard input, so writing
+		/// more than any pipe buffer holds fails with a broken pipe. The run
+		/// must report that as a failed result, never throw.
+		/// </summary>
+		[TestMethod]
+		[Timeout(RunTimeoutInMilliseconds)]
+		public void RunProcess_ProcessExitsBeforeReadingInput_ReturnsFailure()
+		{
+			// Arrange
+			string standardInput = new string('x', UnreadStandardInputLength);
+
+			// Act
+			int exitCode = GitHelper.RunProcess(
+				GitExecutable,
+				new[] { "--version" },
+				Path.GetTempPath(),
+				null,
+				standardInput,
+				out _,
+				out string standardError);
+
+			// Assert
+			Assert.AreNotEqual(0, exitCode);
+			StringAssert.Contains(standardError, StandardInputFailureText);
 		}
 
 
