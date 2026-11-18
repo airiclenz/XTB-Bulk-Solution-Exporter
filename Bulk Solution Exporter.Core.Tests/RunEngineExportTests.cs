@@ -39,6 +39,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private const string MissingFileNameError = "No file name for the managed solution was given!";
 		private const string InvalidPathError = "is not a valid absolute file path";
 		private const string InvalidFormatError = "The version format is invalid!";
+		private const string TruncatedVersionJson = "{ \"Managed\": [ { \"LogicalSolutionName\": \"My";
+		private const string NullVersionJson = "null";
+		private const string NullListVersionJson = "{ \"Managed\": null }";
+		private const string NullEntryVersionJson = "{ \"Managed\": [ null ] }";
+		private const string OtherSolution = "OtherSolution";
+		private const string OtherFileName = "OtherSolution_managed.zip";
 		private const int RetryCount = 3;
 
 		private string _tempDirectory;
@@ -135,6 +141,69 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			Assert.AreEqual(1, versions.Managed.Count);
 			Assert.AreEqual(StartVersion, versions.Managed[0].Version);
 			Assert.AreEqual(ManagedFileName(SolutionA), versions.Managed[0].FileName);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow(TruncatedVersionJson)]
+		[DataRow(NullVersionJson)]
+		[DataRow(NullListVersionJson)]
+		[DataRow(NullEntryVersionJson)]
+		public void Run_SaveVersionJsonOnUnreadableVersionFile_WritesTheExportedVersion(
+			string existingJson)
+		{
+			var request = CreateExportRequest(SolutionA);
+			request.ShouldSaveVersionJson = true;
+			WriteVersionFile(existingJson);
+
+			RunEngine.Run(request, _gateway, NoTargets(), _sink, CancellationToken.None);
+
+			var versions = ReadVersionFile();
+			Assert.AreEqual(1, versions.Managed.Count);
+			Assert.AreEqual(ManagedFileName(SolutionA), versions.Managed[0].FileName);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow(TruncatedVersionJson)]
+		[DataRow(NullVersionJson)]
+		[DataRow(NullListVersionJson)]
+		[DataRow(NullEntryVersionJson)]
+		public void Run_SaveVersionJsonOnUnreadableVersionFile_LogsOneWarningNamingTheFile(
+			string existingJson)
+		{
+			var request = CreateExportRequest(SolutionA);
+			request.ShouldSaveVersionJson = true;
+			WriteVersionFile(existingJson);
+
+			RunEngine.Run(request, _gateway, NoTargets(), _sink, CancellationToken.None);
+
+			var warningCount =
+				_sink.Lines.Count(
+					line =>
+						line.Contains(RunLog.ColorOrange) &&
+						line.Contains(ExportedSolutionVersions.FileName));
+
+			Assert.AreEqual(1, warningCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_SaveVersionJsonOnVersionFileWithNullEntry_KeepsTheReadableEntries()
+		{
+			var request = CreateExportRequest(SolutionA);
+			request.ShouldSaveVersionJson = true;
+			WriteVersionFile(
+				"{ \"Managed\": [ null, { \"LogicalSolutionName\": \"" + OtherSolution +
+				"\", \"FileName\": \"" + OtherFileName + "\" } ], \"Unmanaged\": null }");
+
+			RunEngine.Run(request, _gateway, NoTargets(), _sink, CancellationToken.None);
+
+			var fileNames = ReadVersionFile().Managed.Select(entry => entry.FileName).ToArray();
+			CollectionAssert.AreEqual(new[] { OtherFileName, ManagedFileName(SolutionA) }, fileNames);
 		}
 
 
@@ -342,6 +411,31 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			string uniqueName)
 		{
 			return "Managed." + uniqueName + ".zip";
+		}
+
+
+		// ============================================================================
+		private void WriteVersionFile(
+			string json)
+		{
+			File.WriteAllText(
+				Path.Combine(
+					_tempDirectory,
+					ExportedSolutionVersions.FileName),
+				json);
+		}
+
+
+		// ============================================================================
+		private ExportedSolutionVersions ReadVersionFile()
+		{
+			var json =
+				File.ReadAllText(
+					Path.Combine(
+						_tempDirectory,
+						ExportedSolutionVersions.FileName));
+
+			return JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
 		}
 
 

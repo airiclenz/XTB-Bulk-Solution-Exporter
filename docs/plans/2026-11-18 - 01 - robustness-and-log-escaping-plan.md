@@ -52,7 +52,12 @@
 **Closes:** version-over-four-parts
 **Commit:** `fix(core): ignore version parts beyond the fourth instead of throwing`
 
-## 2. Version-file writer survives a malformed exported_versions.json
+## 2. Version-file writer survives a malformed exported_versions.json — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): folded in the interrupted attempt's uncommitted `ExportedSolutionVersions.TryParse(json, out record, out isRepaired)` as the one shared parse path (kept as written); the reader uses it after its own IO catch.
+NOTES (2026-11-18): the writer's read and warning live in a new private instance method `RunEngine.LoadVersionRecord`; `SaveVersionJson` became an instance method calling it. IO/access errors on the read still propagate, as the regression guard requires.
+NOTES (2026-11-18): removed `FindMatch`'s null-list and null-entry guards, unreachable now that `TryParse` normalizes both.
+NOTES (2026-11-18): the new warning concatenates the version file's full path into the log line unescaped; item 9 (escape untrusted text in RunEngine.cs log lines) should cover it.
 
 **What:** Fix: the run engine's version-file writer throws on a malformed `exported_versions.json` and faults the export step (ticket `version-json-writer-crash`).
 **Regression guard.** The shared parse method takes the JSON text, not a path. In `SaveVersionJson` only JSON-level failures (`JsonException`, a `null` root) start a fresh record; IO and access errors on the read keep today's behaviour there (a fresh record would let `WriteAllText` wipe every other solution's entries), and `TryLoadExportedSolution` keeps its own IO catch. The parse method also drops `null` elements from both lists.

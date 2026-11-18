@@ -732,7 +732,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// Records the exported file's solution version in the version file
 		/// next to it, adding an entry when the file has none yet.
 		/// </summary>
-		private static void SaveVersionJson(
+		private void SaveVersionJson(
 			string exportedFilePath,
 			SolutionInfo solution,
 			bool isManaged)
@@ -742,16 +742,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					Path.GetDirectoryName(exportedFilePath),
 					ExportedSolutionVersions.FileName);
 
-			var exportedSolutions = new ExportedSolutionVersions();
-
-			if (File.Exists(jsonFilePath))
-			{
-				var json = File.ReadAllText(jsonFilePath);
-
-				exportedSolutions =
-					JsonConvert.DeserializeObject<ExportedSolutionVersions>(json) ??
-					new ExportedSolutionVersions();
-			}
+			var exportedSolutions = LoadVersionRecord(jsonFilePath);
 
 			var entries =
 				isManaged ?
@@ -786,6 +777,52 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			File.WriteAllText(
 				jsonFilePath,
 				JsonConvert.SerializeObject(exportedSolutions, Formatting.Indented));
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Reads the version file the export is recorded in. A missing file
+		/// yields an empty record; content that is no readable version file
+		/// yields a fresh record, and <c>null</c> lists or entries are dropped -
+		/// either case logs one warning naming the file.
+		/// </summary>
+		/// <remarks>
+		/// IO and access errors on the read propagate: a fresh record would make
+		/// the following write wipe every other solution's entries.
+		/// </remarks>
+		private ExportedSolutionVersions LoadVersionRecord(
+			string jsonFilePath)
+		{
+			if (!File.Exists(jsonFilePath))
+			{
+				return new ExportedSolutionVersions();
+			}
+
+			var json = File.ReadAllText(jsonFilePath);
+
+			var isParsed =
+				ExportedSolutionVersions.TryParse(
+					json,
+					out var exportedSolutions,
+					out var isRepaired);
+
+			if (!isParsed)
+			{
+				_runLog.Log(
+					RunLog.Colorize(
+						RunLog.ColorOrange,
+						"The version file '" + jsonFilePath + "' is no readable version file; a fresh version record is written."));
+			}
+			else if (isRepaired)
+			{
+				_runLog.Log(
+					RunLog.Colorize(
+						RunLog.ColorOrange,
+						"The version file '" + jsonFilePath + "' held empty lists or entries; they are dropped and the readable entries are kept."));
+			}
+
+			return exportedSolutions;
 		}
 
 

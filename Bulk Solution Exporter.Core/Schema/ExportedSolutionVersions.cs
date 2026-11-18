@@ -84,27 +84,24 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Schema
 				return false;
 			}
 
-			ExportedSolutionVersions exportedSolutions;
+			string json;
 
 			try
 			{
-				string json = File.ReadAllText(jsonFilePath);
-				exportedSolutions =
-					JsonConvert.DeserializeObject<ExportedSolutionVersions>(json);
+				json = File.ReadAllText(jsonFilePath);
 			}
 			catch (Exception ex) when (
 				ex is IOException ||
-				ex is UnauthorizedAccessException ||
-				ex is JsonException)
+				ex is UnauthorizedAccessException)
 			{
-				// An unreadable or malformed version file is reported as
-				// "no exported version known" - the caller treats the
-				// solution as outdated instead of failing the UI.
+				// An unreadable version file is reported as "no exported
+				// version known" - the caller treats the solution as
+				// outdated instead of failing the UI.
 				exportedSolutionResult = null;
 				return false;
 			}
 
-			if (exportedSolutions == null)
+			if (!TryParse(json, out var exportedSolutions, out _))
 			{
 				exportedSolutionResult = null;
 				return false;
@@ -119,20 +116,93 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Schema
 
 
 		// ============================================================================
+		/// <summary>
+		/// Parses the text of a version file - the one deserialization path shared
+		/// by the version-file reader and writer.
+		/// </summary>
+		/// <param name="json">The content of the version file.</param>
+		/// <param name="exportedSolutions">The parsed record with <c>null</c> lists
+		/// replaced by empty ones and <c>null</c> entries dropped; a fresh, empty
+		/// record when the text is no readable version file.</param>
+		/// <param name="isRepaired"><c>true</c> when the text parsed but held a
+		/// <c>null</c> list or a <c>null</c> entry that was replaced or dropped.</param>
+		/// <returns><c>false</c> when the text is malformed JSON, the literal
+		/// <c>null</c>, empty, or of the wrong shape; otherwise <c>true</c>.</returns>
+		public static bool TryParse(
+			string json,
+			out ExportedSolutionVersions exportedSolutions,
+			out bool isRepaired)
+		{
+			isRepaired = false;
+			ExportedSolutionVersions parsedSolutions;
+
+			try
+			{
+				parsedSolutions =
+					JsonConvert.DeserializeObject<ExportedSolutionVersions>(json ?? string.Empty);
+			}
+			catch (JsonException)
+			{
+				// Malformed text is reported through the return value; the
+				// caller decides whether that warrants a warning.
+				parsedSolutions = null;
+			}
+
+			if (parsedSolutions == null)
+			{
+				exportedSolutions = new ExportedSolutionVersions();
+				return false;
+			}
+
+			parsedSolutions.Managed =
+				NormalizeEntries(
+					parsedSolutions.Managed,
+					ref isRepaired);
+
+			parsedSolutions.Unmanaged =
+				NormalizeEntries(
+					parsedSolutions.Unmanaged,
+					ref isRepaired);
+
+			exportedSolutions = parsedSolutions;
+			return true;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns the list without <c>null</c> entries, or an empty list for a
+		/// <c>null</c> list; sets <paramref name="isRepaired"/> when anything changed.
+		/// </summary>
+		private static List<ExportedSolution> NormalizeEntries(
+			List<ExportedSolution> entries,
+			ref bool isRepaired)
+		{
+			if (entries == null)
+			{
+				isRepaired = true;
+				return new List<ExportedSolution>();
+			}
+
+			if (entries.RemoveAll(entry => entry == null) > 0)
+			{
+				isRepaired = true;
+			}
+
+			return entries;
+		}
+
+
+		// ============================================================================
 		private static ExportedSolution FindMatch(
 			List<ExportedSolution> exportedSolutions,
 			string logicalSolutionName,
 			string fileName)
 		{
-			if (exportedSolutions == null)
-			{
-				return null;
-			}
-
+			// TryParse guarantees a non-null list without null entries.
 			foreach (var exportedSolution in exportedSolutions)
 			{
-				if (exportedSolution != null &&
-					exportedSolution.Matches(logicalSolutionName, fileName))
+				if (exportedSolution.Matches(logicalSolutionName, fileName))
 				{
 					return exportedSolution;
 				}
