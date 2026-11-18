@@ -1,11 +1,13 @@
 ---
 title: A pending _Upgrade holding solution fails the import
-status: open
+status: done
 type: bug
 priority: 2
 labels: [import]
 deps: [import-async-upgrade]
 created: 2026-11-18T15:07:25Z
+closed: 2026-11-18T16:31:36Z
+reason: "Resolved by the async-solution-import plan item 6 (archived in a6703aa): a pending _Upgrade is applied with a warning before this run's file is installed; run-and-abort-rules Note updated."
 ---
 
 When the target already holds a pending `<name>_Upgrade` holding solution (left over from an earlier failed run, or from a concurrent one), the import fails with "_Upgrade already exists". `RetryRunner.Execute` (`Bulk Solution Exporter.Core/Run/RetryRunner.cs`) logs an error and returns `false` for that solution. The target stays half-upgraded until someone applies the upgrade by hand, and every later run fails the same way.

@@ -1,10 +1,12 @@
 ---
 title: Managed upgrades can stay unapplied as holding solutions
-status: open
+status: done
 type: bug
 priority: 1
 labels: [import, pptb]
 created: 2026-11-18T15:07:25Z
+closed: 2026-11-18T16:31:36Z
+reason: "Resolved by the async-solution-import plan (archived in a6703aa): imports run as one StageAndUpgradeAsync/ImportSolutionAsync operation polled to completion on both hosts."
 ---
 
 A managed upgrade is two client calls in `RunEngine.InstallSolution` (`Bulk Solution Exporter.Core/Run/RunEngine.Import.cs`): a synchronous `ImportSolution` with `HoldingSolution = true`, then `DeleteAndPromote`. The second call runs only when the first returns successfully to the client, so the target can be left with an unapplied `<name>_Upgrade` holding solution:
