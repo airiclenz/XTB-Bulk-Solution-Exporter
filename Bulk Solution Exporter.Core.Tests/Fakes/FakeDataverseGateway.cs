@@ -102,7 +102,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// The options of every <see cref="ImportSolution"/> call, in order.
+		/// The options of every <see cref="ImportSolution"/> and
+		/// <see cref="StartImport"/> call, in order.
 		/// </summary>
 		public List<ImportOptions> ImportedOptions
 		{
@@ -112,14 +113,26 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// Faults thrown by the next <see cref="ImportSolution"/> calls, one per
-		/// call, as a <see cref="DataverseOperationException"/> with that message;
-		/// an empty queue lets the import succeed.
+		/// Faults thrown by the next <see cref="ImportSolution"/> or
+		/// <see cref="StartImport"/> calls, one per call, as a
+		/// <see cref="DataverseOperationException"/> with that message; an empty
+		/// queue lets the import succeed.
 		/// </summary>
 		public Queue<string> ImportFaultMessages
 		{
 			get;
 		} = new Queue<string>();
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// The answers of the next <see cref="GetImportOperationState"/> calls,
+		/// one per call; an empty queue answers <see cref="ImportOperationStatus.Succeeded"/>.
+		/// </summary>
+		public Queue<ImportOperationState> OperationStates
+		{
+			get;
+		} = new Queue<ImportOperationState>();
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -199,6 +212,42 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			{
 				throw new DataverseOperationException(ImportFaultMessages.Dequeue());
 			}
+		}
+
+
+		// ============================================================================
+		public Guid StartImport(
+			byte[] solutionFile,
+			ImportOptions options)
+		{
+			Calls.Add("StartImport:" + Encoding.UTF8.GetString(solutionFile));
+			ImportedOptions.Add(options);
+
+			if (ImportFaultMessages.Count > 0)
+			{
+				throw new DataverseOperationException(ImportFaultMessages.Dequeue());
+			}
+
+			return Guid.NewGuid();
+		}
+
+
+		// ============================================================================
+		public ImportOperationState GetImportOperationState(
+			Guid asyncOperationId)
+		{
+			Calls.Add("GetImportOperationState");
+
+			if (OperationStates.Count > 0)
+			{
+				return OperationStates.Dequeue();
+			}
+
+			return
+				new ImportOperationState
+				{
+					Status = ImportOperationStatus.Succeeded
+				};
 		}
 
 

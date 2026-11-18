@@ -201,6 +201,23 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 
 			// ============================================================================
+			public Guid StartImport(
+				byte[] solutionFile,
+				ImportOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+
+			// ============================================================================
+			public ImportOperationState GetImportOperationState(
+				Guid asyncOperationId)
+			{
+				throw new NotSupportedException();
+			}
+
+
+			// ============================================================================
 			public void DeleteAndPromote(
 				string uniqueName)
 			{

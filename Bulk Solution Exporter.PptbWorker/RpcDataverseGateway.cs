@@ -33,9 +33,13 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 		private const string ExportSolutionMethod = "dataverse/exportSolution";
 		private const string SolutionExistsMethod = "dataverse/solutionExists";
 		private const string ImportSolutionMethod = "dataverse/importSolution";
+		private const string StartImportMethod = "dataverse/startImport";
+		private const string GetImportOperationStateMethod = "dataverse/getImportOperationState";
 		private const string DeleteAndPromoteMethod = "dataverse/deleteAndPromote";
 		private const string RetrieveSolutionsMethod = "dataverse/retrieveSolutions";
 		private const string NoExportFileMessage = "The export returned no solution file.";
+		private const string NoOperationIdMessage = "The import start returned no operation id.";
+		private const string NoOperationStateMessage = "The import operation state read returned no answer.";
 
 		private readonly JsonRpc _rpc;
 		private readonly int _target;
@@ -185,6 +189,78 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 					shouldPublishWorkflows = options.ShouldPublishWorkflows,
 					shouldOverwriteUnmanagedCustomizations = options.ShouldOverwriteUnmanagedCustomizations
 				});
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Calls <c>dataverse/startImport</c> (<c>target</c>, <c>solutionFile</c>
+		/// as base64, <c>isManaged</c>, <c>isUpgrade</c>, <c>shouldPublishWorkflows</c>,
+		/// <c>shouldOverwriteUnmanagedCustomizations</c>), which answers the async
+		/// operation id as a string.
+		/// </summary>
+		/// <exception cref="ArgumentNullException">An argument is null.</exception>
+		/// <exception cref="InvalidOperationException">The answer holds no operation id.</exception>
+		/// <exception cref="FormatException">The answer is not a GUID.</exception>
+		public Guid StartImport(
+			byte[] solutionFile,
+			ImportOptions options)
+		{
+			if (solutionFile == null)
+			{
+				throw new ArgumentNullException(nameof(solutionFile));
+			}
+
+			if (options == null)
+			{
+				throw new ArgumentNullException(nameof(options));
+			}
+
+			var asyncOperationId =
+				Invoke<string>(
+					StartImportMethod,
+					new
+					{
+						target = _target,
+						solutionFile = Convert.ToBase64String(solutionFile),
+						isManaged = options.IsManaged,
+						isUpgrade = options.IsUpgrade,
+						shouldPublishWorkflows = options.ShouldPublishWorkflows,
+						shouldOverwriteUnmanagedCustomizations = options.ShouldOverwriteUnmanagedCustomizations
+					});
+
+			if (string.IsNullOrEmpty(asyncOperationId))
+			{
+				throw new InvalidOperationException(NoOperationIdMessage);
+			}
+
+			return Guid.Parse(asyncOperationId);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Calls <c>dataverse/getImportOperationState</c> (<c>target</c>,
+		/// <c>asyncOperationId</c> as a string), which answers
+		/// <c>{ status, message }</c> with <c>status</c> as the name of an
+		/// <see cref="ImportOperationStatus"/> member.
+		/// </summary>
+		/// <exception cref="InvalidOperationException">The answer is <c>null</c>.</exception>
+		public ImportOperationState GetImportOperationState(
+			Guid asyncOperationId)
+		{
+			var operationState =
+				Invoke<ImportOperationState>(
+					GetImportOperationStateMethod,
+					new
+					{
+						target = _target,
+						asyncOperationId = asyncOperationId.ToString()
+					});
+
+			return
+				operationState ??
+				throw new InvalidOperationException(NoOperationStateMessage);
 		}
 
 

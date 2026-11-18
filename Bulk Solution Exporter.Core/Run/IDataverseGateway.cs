@@ -85,6 +85,33 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
+		/// Starts a solution import as one server-side async operation and
+		/// returns as soon as the server accepted it: an upgrade
+		/// (<see cref="ImportOptions.IsUpgrade"/>) as <c>StageAndUpgradeAsync</c>,
+		/// any other import as <c>ImportSolutionAsync</c>. The caller follows the
+		/// operation with <see cref="GetImportOperationState"/> until it ends.
+		/// </summary>
+		/// <param name="solutionFile">The content of the solution zip file.</param>
+		/// <param name="options">How the file is imported.</param>
+		/// <returns>The id of the server's async operation.</returns>
+		Guid StartImport(
+			byte[] solutionFile,
+			ImportOptions options);
+
+
+		// ============================================================================
+		/// <summary>
+		/// Reads where an import operation that <see cref="StartImport"/> began
+		/// stands. A failed or canceled import is answered as that state, not
+		/// thrown; only a failed read throws.
+		/// </summary>
+		/// <param name="asyncOperationId">The id <see cref="StartImport"/> returned.</param>
+		ImportOperationState GetImportOperationState(
+			Guid asyncOperationId);
+
+
+		// ============================================================================
+		/// <summary>
 		/// Applies a pending upgrade: deletes the original solution and promotes
 		/// its holding solution (the solution's "_Upgrade" twin) in its place.
 		/// </summary>
@@ -108,7 +135,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 	// ============================================================================
 	// ============================================================================
 	/// <summary>
-	/// How <see cref="IDataverseGateway.ImportSolution"/> imports a solution file.
+	/// How <see cref="IDataverseGateway.ImportSolution"/> and
+	/// <see cref="IDataverseGateway.StartImport"/> import a solution file.
 	/// </summary>
 	public sealed class ImportOptions
 	{
@@ -130,6 +158,18 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// upgrade that <see cref="IDataverseGateway.DeleteAndPromote"/> completes.
 		/// </summary>
 		public bool IsHolding
+		{
+			get; set;
+		}
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// For <see cref="IDataverseGateway.StartImport"/>: true to upgrade the
+		/// installed solution in one operation (<c>StageAndUpgradeAsync</c>),
+		/// false for a plain import (<c>ImportSolutionAsync</c>).
+		/// </summary>
+		public bool IsUpgrade
 		{
 			get; set;
 		}

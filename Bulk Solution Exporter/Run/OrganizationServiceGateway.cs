@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ServiceModel;
 using Com.AiricLenz.BulkSolutionExporter.Core.Run;
 using Com.AiricLenz.XTB.Plugin.Schema;
@@ -37,6 +38,24 @@ namespace Com.AiricLenz.XTB.Plugin.Run
 		private const string IsVisibleAttributeName = "isvisible";
 		private const string DescriptionAttributeName = "description";
 		private const string MissingExportFileMessage = "The export returned no solution file.";
+		private const string StageAndUpgradeAsyncRequestName = "StageAndUpgradeAsync";
+		private const string ImportSolutionAsyncRequestName = "ImportSolutionAsync";
+		private const string CustomizationFileParameterName = "CustomizationFile";
+		private const string PublishWorkflowsParameterName = "PublishWorkflows";
+		private const string OverwriteUnmanagedCustomizationsParameterName = "OverwriteUnmanagedCustomizations";
+		private const string ConvertToManagedParameterName = "ConvertToManaged";
+		private const string ImportJobIdParameterName = "ImportJobId";
+		private const string AsyncOperationIdResultName = "AsyncOperationId";
+		private const string MissingAsyncOperationIdMessage = "The import start returned no operation id.";
+		private const string AsyncOperationEntityName = "asyncoperation";
+		private const string StateCodeAttributeName = "statecode";
+		private const string StatusCodeAttributeName = "statuscode";
+		private const string MessageAttributeName = "message";
+		private const string FriendlyMessageAttributeName = "friendlymessage";
+		private const int CompletedStateCode = 3;
+		private const int SucceededStatusCode = 30;
+		private const int FailedStatusCode = 31;
+		private const int CanceledStatusCode = 32;
 
 		private readonly IOrganizationService _service;
 
@@ -176,6 +195,86 @@ namespace Com.AiricLenz.XTB.Plugin.Run
 
 		// ============================================================================
 		/// <summary>
+		/// Starts the import as one async operation: <c>StageAndUpgradeAsync</c>
+		/// for an upgrade, <c>ImportSolutionAsync</c> otherwise. Both are sent
+		/// by name because the referenced SDK has no typed request classes for them.
+		/// </summary>
+		/// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+		/// <exception cref="InvalidOperationException">The response carries no operation id.</exception>
+		public Guid StartImport(
+			byte[] solutionFile,
+			ImportOptions options)
+		{
+			if (options == null)
+			{
+				throw new ArgumentNullException(nameof(options));
+			}
+
+			var requestName =
+				options.IsUpgrade ?
+				StageAndUpgradeAsyncRequestName :
+				ImportSolutionAsyncRequestName;
+
+			var importRequest = new OrganizationRequest(requestName);
+			importRequest[CustomizationFileParameterName] = solutionFile;
+			importRequest[PublishWorkflowsParameterName] = options.ShouldPublishWorkflows;
+			importRequest[OverwriteUnmanagedCustomizationsParameterName] = options.ShouldOverwriteUnmanagedCustomizations;
+			importRequest[ConvertToManagedParameterName] = options.IsManaged;
+			importRequest[ImportJobIdParameterName] = Guid.NewGuid();
+
+			var importResponse = Execute(importRequest);
+
+			if (!importResponse.Results.TryGetValue(AsyncOperationIdResultName, out var asyncOperationId) ||
+				!(asyncOperationId is Guid operationId))
+			{
+				throw new InvalidOperationException(MissingAsyncOperationIdMessage);
+			}
+
+			return operationId;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Reads the async operation record: state Completed with status
+		/// Succeeded, Failed or Canceled is that final state, anything else is
+		/// <see cref="ImportOperationStatus.Running"/>.
+		/// </summary>
+		public ImportOperationState GetImportOperationState(
+			Guid asyncOperationId)
+		{
+			var columns =
+				new ColumnSet(
+					StateCodeAttributeName,
+					StatusCodeAttributeName,
+					MessageAttributeName,
+					FriendlyMessageAttributeName);
+
+			Entity operation = null;
+			Translate(
+				() => operation =
+					_service.Retrieve(
+						AsyncOperationEntityName,
+						asyncOperationId,
+						columns));
+
+			var stateCode = operation.GetAttributeValue<OptionSetValue>(StateCodeAttributeName)?.Value;
+			var statusCode = operation.GetAttributeValue<OptionSetValue>(StatusCodeAttributeName)?.Value;
+
+			return
+				new ImportOperationState
+				{
+					Status = ToImportOperationStatus(stateCode, statusCode),
+					Message =
+						JoinNonEmptyLines(
+							operation.GetAttributeValue<string>(FriendlyMessageAttributeName),
+							operation.GetAttributeValue<string>(MessageAttributeName))
+				};
+		}
+
+
+		// ============================================================================
+		/// <summary>
 		/// Applies the pending upgrade (<see cref="DeleteAndPromoteRequest"/>).
 		/// </summary>
 		public void DeleteAndPromote(
@@ -239,6 +338,50 @@ namespace Com.AiricLenz.XTB.Plugin.Run
 			}
 
 			return solutions;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Maps an async operation's state and status codes to its import status.
+		/// </summary>
+		private static ImportOperationStatus ToImportOperationStatus(
+			int? stateCode,
+			int? statusCode)
+		{
+			if (stateCode != CompletedStateCode)
+			{
+				return ImportOperationStatus.Running;
+			}
+
+			switch (statusCode)
+			{
+				case SucceededStatusCode:
+					return ImportOperationStatus.Succeeded;
+
+				case FailedStatusCode:
+					return ImportOperationStatus.Failed;
+
+				case CanceledStatusCode:
+					return ImportOperationStatus.Canceled;
+
+				default:
+					return ImportOperationStatus.Running;
+			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Joins the texts with a newline, skipping the empty ones.
+		/// </summary>
+		private static string JoinNonEmptyLines(
+			params string[] texts)
+		{
+			return
+				string.Join(
+					"\n",
+					texts.Where(text => !string.IsNullOrEmpty(text)));
 		}
 
 

@@ -34,7 +34,11 @@
 - 5: guard folded (decision: `FakeToolHost.ImportFaultMessage` stays; quoted, widened grep; `startImport` rejection case and `tsc`; holding-comment rule); supersedes the `RunEngine.cs:31-32` class doc
 - 6: guard folded (`FailDeleteAndPromoteFor` fault switch; Note rule covers every `_Upgrade`/apply-upgrade line)
 
-## 1. Add the async-import members to the gateway contract and both host gateways
+## 1. Add the async-import members to the gateway contract and both host gateways — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): `ImportOperationStatus` lives in `ImportOperationState.cs` beside the state class (the plan lists no separate file for it), as `ImportOptions` shares `IDataverseGateway.cs`.
+NOTES (2026-11-18): untrusted answers fail fast: `OrganizationServiceGateway.StartImport` throws `InvalidOperationException` when the response has no Guid `AsyncOperationId`; `RpcDataverseGateway.StartImport` throws `InvalidOperationException` on a null/empty id (then `Guid.Parse`, `FormatException` on a non-GUID); `RpcDataverseGateway.GetImportOperationState` throws `InvalidOperationException` on a null answer.
+NOTES (2026-11-18): the new reverse calls `dataverse/startImport` and `dataverse/getImportOperationState` are worker-side only here; the bridge handlers and the `FakeToolHost` side are item 2's scope.
 
 **What:**
 **Goal:** `IDataverseGateway` has `Guid StartImport(byte[] solutionFile, ImportOptions options)` and `ImportOperationState GetImportOperationState(Guid asyncOperationId)`; `ImportOptions` has `IsUpgrade`; the XrmToolBox gateway and the worker's RPC gateway implement both members; every gateway fake compiles.
