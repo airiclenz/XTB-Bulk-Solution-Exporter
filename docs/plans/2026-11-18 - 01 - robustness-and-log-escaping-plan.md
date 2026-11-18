@@ -38,7 +38,7 @@
 - 10: recast; depends on item 9 (decision: never re-escapes FormatSolutionName output, owns the RetryRunner/ImportOperationWaiter lambdas); guard folded (over-limit FormatterTests case rewritten; supersedes the Formatter.cs and FormatterTests summaries' "returned unchanged" / size-guard wording)
 - 11: guard folded
 
-## 1. Ignore version parts beyond the fourth
+## 1. Ignore version parts beyond the fourth — ✅ DONE (2026-11-18)
 
 **What:** Fix: `Version(string)` throws `IndexOutOfRangeException` on a source version with more than four parts (ticket `version-over-four-parts`).
 **Goal:** `new Version("1.2.3.4.5")` does not throw; it holds parts 1, 2, 3, 4, `ToString()` returns the source string until the version is increased, and `IncreaseVersionNumber` works on it as on `"1.2.3.4"`.

@@ -49,6 +49,40 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 		// ============================================================================
 		[TestMethod]
+		[DataRow("1.2.3.4.5")]
+		[DataRow("1.2.3.4.5.6")]
+		public void Constructor_MoreThanFourParts_KeepsTheSourceString(
+			string sourceVersion)
+		{
+			// Arrange & Act
+			var version = new Version(sourceVersion);
+
+			// Assert
+			Assert.AreEqual(sourceVersion, version.ToString());
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow("1.2.3.4.5")]
+		[DataRow("1.2.3.4.5.6")]
+		public void IncreaseVersionNumber_MoreThanFourParts_IgnoresPartsBeyondTheFourth(
+			string sourceVersion)
+		{
+			// Arrange
+			var version = new Version(sourceVersion);
+
+			// Act
+			var isIncreased = version.IncreaseVersionNumber("#.#.#.+");
+
+			// Assert
+			Assert.IsTrue(isIncreased);
+			Assert.AreEqual("1.2.3.5", version.ToString());
+		}
+
+
+		// ============================================================================
+		[TestMethod]
 		[DataRow("#.#.+")]
 		[DataRow("#.+")]
 		public void IncreaseVersionNumber_ShortFormat_ReturnsTrue(

@@ -27,6 +27,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core
 
 
 		// ============================================================================
+		/// <summary>
+		/// Reads <paramref name="version"/> part by part; parts beyond the
+		/// slots this version holds are ignored, and <see cref="ToString"/>
+		/// returns the source string until the version is increased.
+		/// </summary>
 		public Version(
 			string version)
 		{
@@ -34,7 +39,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core
 
 			var parts = version.Split('.');
 
-			for (int i = 0; i < parts.Length; i++)
+			// A source with more parts than slots (e.g. "1.2.3.4.5") keeps
+			// only the leading ones instead of overrunning the slots.
+			var readPartCount =
+				Math.Min(parts.Length, _version.Length);
+
+			for (int i = 0; i < readPartCount; i++)
 			{
 				if (int.TryParse(parts[i], out int number))
 				{
