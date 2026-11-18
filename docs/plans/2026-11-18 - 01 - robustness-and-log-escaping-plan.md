@@ -91,7 +91,7 @@ NOTES (2026-11-18): the existing GitHelperTests.Commit_MessageWithQuotesOrNonAsc
 **Closes:** git-stdin-ioexception
 **Commit:** `fix(core): report a git stdin write failure as a failed result`
 
-## 4. Remove the dead RetryRunner.IsRunAborted
+## 4. Remove the dead RetryRunner.IsRunAborted — ✅ DONE (2026-11-18)
 
 **What:** Delete `RetryRunner.IsRunAborted` (`Bulk Solution Exporter.Core/Run/RetryRunner.cs`), its test `IsRunAborted_CancelledOrLatchSet_ReportsAbort` and the `<see cref>` to it in the `RetryRunnerTests` class summary (reword that sentence so it stays true).
 **Goal:** No symbol `IsRunAborted` exists in the repo's C# sources; the solution builds and the core tests pass.

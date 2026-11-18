@@ -14,8 +14,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 	// ============================================================================
 	/// <summary>
 	/// Covers the retry loop of <see cref="RetryRunner"/> and the abort
-	/// handshake between the retry wait, the action and the post-work
-	/// decision <see cref="RetryRunner.IsRunAborted"/>.
+	/// handshake between the retry wait and the action.
 	/// The clock and the sleep are fakes, so no test waits on real time.
 	/// </summary>
 	[TestClass]
@@ -345,27 +344,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			Assert.IsFalse(isCompleted);
 			Assert.AreEqual(MaxRetries + 1, actionCallCount);
 			Assert.AreEqual(1, environment.ErrorLogCount);
-		}
-
-
-		// ============================================================================
-		[TestMethod]
-		[DataRow(false, false, false)]
-		[DataRow(true, false, true)]
-		[DataRow(false, true, true)]
-		[DataRow(true, true, true)]
-		public void IsRunAborted_CancelledOrLatchSet_ReportsAbort(
-			bool isCancelled,
-			bool isAbortRequested,
-			bool expectedIsAborted)
-		{
-			// Act
-			var isAborted = RetryRunner.IsRunAborted(
-				isCancelled,
-				isAbortRequested);
-
-			// Assert
-			Assert.AreEqual(expectedIsAborted, isAborted);
 		}
 
 

@@ -183,21 +183,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Decides whether a finished execution run counts as aborted by the user.
-		/// </summary>
-		/// <param name="isCancelled">The worker marked the run cancelled (args.Cancelled).</param>
-		/// <param name="isAbortRequested">The abort latch was set during the run; this also
-		/// covers a step that threw after the abort request, where the run is not marked cancelled.</param>
-		public static bool IsRunAborted(
-			bool isCancelled,
-			bool isAbortRequested)
-		{
-			return isCancelled || isAbortRequested;
-		}
-
-
-		// ============================================================================
-		/// <summary>
 		/// Tells whether the exception or any of its inner exceptions carries the
 		/// fault text in its message; a host may wrap the Dataverse fault.
 		/// </summary>
