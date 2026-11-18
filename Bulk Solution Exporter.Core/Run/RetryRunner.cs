@@ -29,6 +29,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		// Fault text of a target that already holds this solution's upgrade: never retried.
 		public const string UpgradeAlreadyExistsFaultText = "_Upgrade already exists";
 
+		// Fault text of an import operation whose state could no longer be read: never
+		// retried, since the import may still run on the server and must not be submitted twice.
+		public const string ImportTrackingLostFaultText = "The run lost track of import operation";
+
 		private readonly Func<bool> _isAbortRequested;
 		private readonly Action<string> _log;
 		private readonly Action<string> _logError;
@@ -80,9 +84,10 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// A "Cannot start another [Import]" fault is retried either way.</param>
 		/// <returns>True only when the action completed; false when the abort was requested
 		/// before a retry could run, when the target already holds the solution's upgrade,
-		/// or when every attempt failed.</returns>
+		/// when the run lost track of an import operation, or when every attempt failed.</returns>
 		/// <exception cref="Exception">continueOnError is false and the action raised an error
-		/// other than "Cannot start another [Import]" or "_Upgrade already exists".</exception>
+		/// other than "Cannot start another [Import]", "_Upgrade already exists" or
+		/// "The run lost track of import operation".</exception>
 		public bool Execute(
 			Action action,
 			int maxRetries,
@@ -129,6 +134,14 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					{
 						_log($"Succeeded on retry {currentRetry}.");
 					}
+				}
+				// ------------------------------------------
+				catch (Exception ex) when (
+					IsMessageInChain(ex, ImportTrackingLostFaultText))
+				{
+					// Checked first: a re-submitted import could run twice, whatever the inner fault says
+					_logError($"Error with {operationDescription}: {ex.Message}");
+					return false;
 				}
 				// ------------------------------------------
 				catch (Exception ex) when (

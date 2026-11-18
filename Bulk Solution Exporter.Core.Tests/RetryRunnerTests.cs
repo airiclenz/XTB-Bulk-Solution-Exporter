@@ -32,6 +32,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private const string UpgradeAlreadyExistsMessage =
 			"The solution MySolution_Upgrade already exists";
 		private const string HostWrapperMessage = "The host request failed.";
+		private const string ImportTrackingLostMessage =
+			"The run lost track of import operation 00000000-0000-0000-0000-000000000001.";
 
 
 		// ============================================================================
@@ -242,6 +244,40 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 				{
 					actionCallCount++;
 					throw new DataverseOperationException(UpgradeAlreadyExistsMessage);
+				},
+				MaxRetries,
+				RetryDelaySeconds,
+				OperationDescription,
+				continueOnError);
+
+			// Assert
+			Assert.IsFalse(isCompleted);
+			Assert.AreEqual(1, actionCallCount);
+			Assert.AreEqual(0, environment.RetryCallCount);
+			Assert.AreEqual(1, environment.ErrorLogCount);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		[DataRow(false)]
+		[DataRow(true)]
+		public void Execute_ImportTrackingLost_ReturnsFalseWithoutRetry(
+			bool continueOnError)
+		{
+			// Arrange
+			var environment = new FakeRetryEnvironment();
+			var runner = environment.CreateRunner();
+			var actionCallCount = 0;
+
+			// Act
+			var isCompleted = runner.Execute(
+				() =>
+				{
+					actionCallCount++;
+					throw new DataverseOperationException(
+						ImportTrackingLostMessage,
+						new DataverseOperationException(ImportAlreadyRunningMessage));
 				},
 				MaxRetries,
 				RetryDelaySeconds,

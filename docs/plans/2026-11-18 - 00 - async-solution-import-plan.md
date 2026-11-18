@@ -79,7 +79,11 @@ Bulk Solution Exporter.PptbWorker.Tests/Fakes/FakeToolHost.cs — ImportSolution
 - `grep -c 'JsonRpcMethod("dataverse/\(startImport\|getImportOperationState\)")' "Bulk Solution Exporter.PptbWorker.Tests/Fakes/FakeToolHost.cs"` prints 2.
 **Commit:** `feat(pptb): answer async import start and operation state reverse calls`
 
-## 3. Add the import-operation waiter to core
+## 3. Add the import-operation waiter to core — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): the ImportTrackingLostFaultText catch in RetryRunner.Execute sits first, ahead of the "Cannot start another [Import]" catch rather than beside the "_Upgrade already exists" one, so a poll fault carried as the inner exception can never make the lost operation retried (the RetryRunner test wraps exactly that case).
+NOTES (2026-11-18): a Failed state with an empty server message throws the new ImportOperationWaiter.ImportFailedFaultText ("The import operation failed on the server."); with a message it throws the message unchanged. onPoll reports the elapsed wait before every read of the state, failed reads included.
+NOTES (2026-11-18): the waiter tests use a private PollingGateway fake (states and poll faults from one queue) because FakeDataverseGateway has no poll-fault switch yet (item 4 adds it); the .capcom/knowledge/run-and-abort-rules.md "Import faults" line does not yet name the tracking-lost fault (left for item 4, which rewrites that Note).
 
 Depends on item 1.
 
