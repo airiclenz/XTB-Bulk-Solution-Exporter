@@ -254,15 +254,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 
 			// ============================================================================
-			public void ImportSolution(
-				byte[] solutionFile,
-				ImportOptions options)
-			{
-				throw new NotSupportedException();
-			}
-
-
-			// ============================================================================
 			public Guid StartImport(
 				byte[] solutionFile,
 				ImportOptions options)

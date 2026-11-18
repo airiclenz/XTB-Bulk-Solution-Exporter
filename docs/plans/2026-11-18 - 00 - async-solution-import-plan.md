@@ -120,7 +120,12 @@ Bulk Solution Exporter.PptbWorker.Tests/Fakes/FakeToolHost.cs — ImportFaultMes
 - The upgrade test asserts that a run whose target has no "<name>_Upgrade" records no DeleteAndPromote call, so the check stays true after item 6 adds the pending-upgrade apply to the same file.
 **Commit:** `fix(core): import solutions as one async operation polled to completion`
 
-## 5. Remove the synchronous import path from every host
+## 5. Remove the synchronous import path from every host — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): consequential edit — Bulk Solution Exporter.Core.Tests/ImportOperationWaiterTests.cs: made necessary by removing IDataverseGateway.ImportSolution (its stub gateway implemented the member; the plan's enumeration missed it)
+NOTES (2026-11-18): consequential edit — .capcom/knowledge/run-and-abort-rules.md: made necessary by removing the holding import (line 11 still said "a holding install plus its apply-upgrade is one step"; now says an import is one async operation followed to its end, abort after it)
+NOTES (2026-11-18): the bridge's startImport "execute rejects / surfaces the original message text unchanged" case already existed (item 2), so only the importSolution describe block was deleted; IMPORT_ALREADY_RUNNING_TEXT stays in use and tsc passes
+NOTES (2026-11-18): `capcom check` reports only a pre-existing "AGENTS.md:1: the capcom block is out of date"; nothing in .capcom/knowledge/
 
 Depends on item 4.
 

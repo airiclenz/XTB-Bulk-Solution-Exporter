@@ -102,8 +102,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// The options of every <see cref="ImportSolution"/> and
-		/// <see cref="StartImport"/> call, in order.
+		/// The options of every <see cref="StartImport"/> call, in order.
 		/// </summary>
 		public List<ImportOptions> ImportedOptions
 		{
@@ -113,8 +112,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// Faults thrown by the next <see cref="ImportSolution"/> or
-		/// <see cref="StartImport"/> calls, one per call, as a
+		/// Faults thrown by the next <see cref="StartImport"/> calls, one per call, as a
 		/// <see cref="DataverseOperationException"/> with that message; an empty
 		/// queue lets the import succeed.
 		/// </summary>
@@ -210,21 +208,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			Calls.Add("SolutionExists:" + uniqueName);
 
 			return Solutions.Exists(solution => solution.UniqueName == uniqueName);
-		}
-
-
-		// ============================================================================
-		public void ImportSolution(
-			byte[] solutionFile,
-			ImportOptions options)
-		{
-			Calls.Add("ImportSolution:" + Encoding.UTF8.GetString(solutionFile));
-			ImportedOptions.Add(options);
-
-			if (ImportFaultMessages.Count > 0)
-			{
-				throw new DataverseOperationException(ImportFaultMessages.Dequeue());
-			}
 		}
 
 

@@ -168,33 +168,6 @@ namespace Com.AiricLenz.XTB.Plugin.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Imports the solution file (<see cref="ImportSolutionRequest"/>).
-		/// </summary>
-		/// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
-		public void ImportSolution(
-			byte[] solutionFile,
-			ImportOptions options)
-		{
-			if (options == null)
-			{
-				throw new ArgumentNullException(nameof(options));
-			}
-
-			var importRequest = new ImportSolutionRequest()
-			{
-				CustomizationFile = solutionFile,
-				PublishWorkflows = options.ShouldPublishWorkflows,
-				OverwriteUnmanagedCustomizations = options.ShouldOverwriteUnmanagedCustomizations,
-				ConvertToManaged = options.IsManaged,
-				HoldingSolution = options.IsHolding,
-			};
-
-			Execute(importRequest);
-		}
-
-
-		// ============================================================================
-		/// <summary>
 		/// Starts the import as one async operation: <c>StageAndUpgradeAsync</c>
 		/// for an upgrade, <c>ImportSolutionAsync</c> otherwise. Both are sent
 		/// by name because the referenced SDK has no typed request classes for them.

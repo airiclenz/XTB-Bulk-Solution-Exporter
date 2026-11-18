@@ -56,8 +56,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// When set, every import (<c>dataverse/startImport</c> and
-		/// <c>dataverse/importSolution</c>) fails with this message.
+		/// When set, every import start (<c>dataverse/startImport</c>) fails
+		/// with this message.
 		/// </summary>
 		public string ImportFaultMessage
 		{
@@ -200,25 +200,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker.Tests.Fakes
 		{
 			Calls.Enqueue("solutionExists:" + target);
 			return false;
-		}
-
-
-		// ============================================================================
-		[JsonRpcMethod("dataverse/importSolution")]
-		public void ImportSolution(
-			int target,
-			string solutionFile,
-			bool isManaged,
-			bool isHolding,
-			bool shouldPublishWorkflows,
-			bool shouldOverwriteUnmanagedCustomizations)
-		{
-			Calls.Enqueue("importSolution:" + target);
-
-			if (ImportFaultMessage != null)
-			{
-				throw new InvalidOperationException(ImportFaultMessage);
-			}
 		}
 
 

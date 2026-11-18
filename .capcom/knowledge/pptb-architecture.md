@@ -26,6 +26,6 @@ Worker -> UI notifications (during `run/start`):
 - `run/log`: one markup log line. `run/progress`: the progress state. `run/solutionVersionChanged`: a solution's new version. `run/configurationChanged`: a solution configuration to persist. `run/solutionProcessed`: one solution finished its export or one import, so the UI may refresh its file status.
 
 Worker -> UI reverse calls (each carries `target`, the gateway index):
-- `dataverse/publishAll`, `dataverse/updateSolutionVersion`, `dataverse/exportSolution`, `dataverse/solutionExists`, `dataverse/importSolution` (holding upgrade, managed, publish workflows, overwrite flags), `dataverse/deleteAndPromote`, `dataverse/retrieveSolutions`.
+- `dataverse/publishAll`, `dataverse/updateSolutionVersion`, `dataverse/exportSolution`, `dataverse/solutionExists`, `dataverse/startImport` (upgrade or plain import, managed, publish workflows, overwrite flags; answers the async operation id), `dataverse/getImportOperationState` (the operation's status and message), `dataverse/deleteAndPromote`, `dataverse/retrieveSolutions`.
 
 File paths from the UI are validated in the worker (absolute, no `..`), and everything from Dataverse or git is untrusted (see `untrusted-dataverse-data`). Packaging and the version rules are in `versioning-and-release`.

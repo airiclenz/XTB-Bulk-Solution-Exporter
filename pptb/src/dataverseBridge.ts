@@ -21,7 +21,6 @@ export const DataverseMethod = {
 	UpdateSolutionVersion: "dataverse/updateSolutionVersion",
 	ExportSolution: "dataverse/exportSolution",
 	SolutionExists: "dataverse/solutionExists",
-	ImportSolution: "dataverse/importSolution",
 	StartImport: "dataverse/startImport",
 	GetImportOperationState: "dataverse/getImportOperationState",
 	DeleteAndPromote: "dataverse/deleteAndPromote",
@@ -78,7 +77,6 @@ const EXPORT_FILE_PROPERTY = "ExportSolutionFile";
 const ACTION_OPERATION = "action";
 const PUBLISH_ALL_OPERATION = "PublishAllXml";
 const EXPORT_SOLUTION_OPERATION = "ExportSolution";
-const IMPORT_SOLUTION_OPERATION = "ImportSolution";
 const STAGE_AND_UPGRADE_ASYNC_OPERATION = "StageAndUpgradeAsync";
 const IMPORT_SOLUTION_ASYNC_OPERATION = "ImportSolutionAsync";
 const ASYNC_OPERATION_ID_PROPERTY = "AsyncOperationId";
@@ -143,23 +141,6 @@ export function createDataverseBridge(connectionSlots: readonly number[]): Recor
 			const slot = readSlot(parameters);
 			const result = await callDataverse(() => window.dataverseAPI.queryData(query, slot));
 			return result.value.length > 0;
-		},
-
-		[DataverseMethod.ImportSolution]: async (params) => {
-			const parameters = readParameters(params);
-			await executeAction(
-				IMPORT_SOLUTION_OPERATION,
-				{
-					CustomizationFile: readString(parameters, "solutionFile"),
-					PublishWorkflows: readBoolean(parameters, "shouldPublishWorkflows"),
-					OverwriteUnmanagedCustomizations: readBoolean(parameters, "shouldOverwriteUnmanagedCustomizations"),
-					ConvertToManaged: readBoolean(parameters, "isManaged"),
-					HoldingSolution: readBoolean(parameters, "isHolding"),
-					ImportJobId: crypto.randomUUID(),
-				},
-				readSlot(parameters),
-			);
-			return null;
 		},
 
 		[DataverseMethod.StartImport]: async (params) => {

@@ -74,17 +74,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Imports a solution file.
-		/// </summary>
-		/// <param name="solutionFile">The content of the solution zip file.</param>
-		/// <param name="options">How the file is imported.</param>
-		void ImportSolution(
-			byte[] solutionFile,
-			ImportOptions options);
-
-
-		// ============================================================================
-		/// <summary>
 		/// Starts a solution import as one server-side async operation and
 		/// returns as soon as the server accepted it: an upgrade
 		/// (<see cref="ImportOptions.IsUpgrade"/>) as <c>StageAndUpgradeAsync</c>,
@@ -135,8 +124,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 	// ============================================================================
 	// ============================================================================
 	/// <summary>
-	/// How <see cref="IDataverseGateway.ImportSolution"/> and
-	/// <see cref="IDataverseGateway.StartImport"/> import a solution file.
+	/// How <see cref="IDataverseGateway.StartImport"/> imports a solution file.
 	/// </summary>
 	public sealed class ImportOptions
 	{
@@ -147,17 +135,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// components of the same name to managed).
 		/// </summary>
 		public bool IsManaged
-		{
-			get; set;
-		}
-
-
-		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-		/// <summary>
-		/// True to import the file as a holding solution, the first half of an
-		/// upgrade that <see cref="IDataverseGateway.DeleteAndPromote"/> completes.
-		/// </summary>
-		public bool IsHolding
 		{
 			get; set;
 		}

@@ -122,65 +122,6 @@ describe("createDataverseBridge", () => {
 		});
 	});
 
-	describe("importSolution", () => {
-		it("importSolution / holding import / runs ImportSolution with HoldingSolution true", async () => {
-			await call(DataverseMethod.ImportSolution, {
-				target: 1,
-				solutionFile: SOLUTION_FILE_BASE64,
-				isManaged: true,
-				isHolding: true,
-				shouldPublishWorkflows: true,
-				shouldOverwriteUnmanagedCustomizations: false,
-			});
-
-			expect(dataverse.execute).toHaveBeenCalledWith(
-				{
-					operationName: "ImportSolution",
-					operationType: "action",
-					parameters: {
-						CustomizationFile: SOLUTION_FILE_BASE64,
-						PublishWorkflows: true,
-						OverwriteUnmanagedCustomizations: false,
-						ConvertToManaged: true,
-						HoldingSolution: true,
-						ImportJobId: expect.any(String),
-					},
-				},
-				FIRST_TARGET_SLOT,
-			);
-		});
-
-		it("importSolution / plain import / sends HoldingSolution false", async () => {
-			await call(DataverseMethod.ImportSolution, {
-				target: 2,
-				solutionFile: SOLUTION_FILE_BASE64,
-				isManaged: false,
-				isHolding: false,
-				shouldPublishWorkflows: false,
-				shouldOverwriteUnmanagedCustomizations: true,
-			});
-
-			const [request, slot] = dataverse.execute.mock.calls[0] ?? [];
-			expect(request?.parameters?.HoldingSolution).toBe(false);
-			expect(slot).toBe(SECOND_TARGET_SLOT);
-		});
-
-		it("importSolution / execute rejects / surfaces the original message text unchanged", async () => {
-			dataverse.execute.mockRejectedValue(new Error(IMPORT_ALREADY_RUNNING_TEXT));
-
-			await expect(
-				call(DataverseMethod.ImportSolution, {
-					target: 1,
-					solutionFile: SOLUTION_FILE_BASE64,
-					isManaged: true,
-					isHolding: false,
-					shouldPublishWorkflows: true,
-					shouldOverwriteUnmanagedCustomizations: false,
-				}),
-			).rejects.toThrow(new Error(IMPORT_ALREADY_RUNNING_TEXT));
-		});
-	});
-
 	describe("startImport", () => {
 		/** The parameters of one `dataverse/startImport` call on the first target. */
 		function startImportParameters(isUpgrade: boolean): Record<string, unknown> {

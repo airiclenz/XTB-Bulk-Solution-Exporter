@@ -103,7 +103,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
 		/// Import a managed solution that already exists in the target as an
-		/// upgrade (holding solution plus apply-upgrade).
+		/// upgrade (one <c>StageAndUpgradeAsync</c> operation).
 		/// </summary>
 		public bool ShouldUpgrade
 		{

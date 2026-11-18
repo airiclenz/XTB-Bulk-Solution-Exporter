@@ -28,9 +28,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 	/// (publish, version, export), RunEngine.Git.cs and RunEngine.Import.cs.
 	/// <para>
 	/// Abort is the cancellation token, checked between steps, never inside
-	/// one: a running Dataverse call finishes and nothing after it starts. A
-	/// holding install plus its apply-upgrade is one step, and an abort skips
-	/// the whole git phase. The first observed abort logs
+	/// one: a running Dataverse call finishes and nothing after it starts. An
+	/// import is one server-side async operation followed to its end, so an
+	/// abort takes effect only after it, and an abort skips the whole git phase. The first observed abort logs
 	/// <see cref="AbortRequestedMessage"/> once.
 	/// </para>
 	/// <para>

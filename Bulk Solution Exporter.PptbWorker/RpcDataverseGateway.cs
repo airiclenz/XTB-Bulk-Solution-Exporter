@@ -32,7 +32,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 		private const string UpdateSolutionVersionMethod = "dataverse/updateSolutionVersion";
 		private const string ExportSolutionMethod = "dataverse/exportSolution";
 		private const string SolutionExistsMethod = "dataverse/solutionExists";
-		private const string ImportSolutionMethod = "dataverse/importSolution";
 		private const string StartImportMethod = "dataverse/startImport";
 		private const string GetImportOperationStateMethod = "dataverse/getImportOperationState";
 		private const string DeleteAndPromoteMethod = "dataverse/deleteAndPromote";
@@ -154,41 +153,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker
 						target = _target,
 						uniqueName
 					});
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Calls <c>dataverse/importSolution</c> (<c>target</c>, <c>solutionFile</c>
-		/// as base64, <c>isManaged</c>, <c>isHolding</c>, <c>shouldPublishWorkflows</c>,
-		/// <c>shouldOverwriteUnmanagedCustomizations</c>).
-		/// </summary>
-		/// <exception cref="ArgumentNullException">An argument is null.</exception>
-		public void ImportSolution(
-			byte[] solutionFile,
-			ImportOptions options)
-		{
-			if (solutionFile == null)
-			{
-				throw new ArgumentNullException(nameof(solutionFile));
-			}
-
-			if (options == null)
-			{
-				throw new ArgumentNullException(nameof(options));
-			}
-
-			Invoke<object>(
-				ImportSolutionMethod,
-				new
-				{
-					target = _target,
-					solutionFile = Convert.ToBase64String(solutionFile),
-					isManaged = options.IsManaged,
-					isHolding = options.IsHolding,
-					shouldPublishWorkflows = options.ShouldPublishWorkflows,
-					shouldOverwriteUnmanagedCustomizations = options.ShouldOverwriteUnmanagedCustomizations
-				});
 		}
 
 

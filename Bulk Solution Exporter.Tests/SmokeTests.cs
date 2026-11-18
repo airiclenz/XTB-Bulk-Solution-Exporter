@@ -192,15 +192,6 @@ namespace Com.AiricLenz.XTB.Plugin.Tests
 
 
 			// ============================================================================
-			public void ImportSolution(
-				byte[] solutionFile,
-				ImportOptions options)
-			{
-				throw new NotSupportedException();
-			}
-
-
-			// ============================================================================
 			public Guid StartImport(
 				byte[] solutionFile,
 				ImportOptions options)
