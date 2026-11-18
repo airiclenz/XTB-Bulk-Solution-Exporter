@@ -32,6 +32,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private const string StartVersion = "1.0.0.1";
 		private const string GitFolderName = ".git";
 		private const string CommitMessage = "Export solutions";
+		private const string UpgradeSuffix = "_Upgrade";
+		private const string ServerFailureMessage = "Fake server-side import failure";
+		private const string PollFailureMessage = "Fake poll failure";
 
 		// Retries in these tests wait the shortest delay the engine accepts.
 		private const int RetryCount = 1;
@@ -75,7 +78,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 		// ============================================================================
 		[TestMethod]
-		public void Run_ManagedUpgradeOfInstalledSolution_InstallsHoldingAndPromotes()
+		public void Run_ManagedUpgradeOfInstalledSolution_UpgradesInOneOperation()
 		{
 			var request = CreateImportRequest(SolutionA);
 			request.ShouldUpgrade = true;
@@ -83,15 +86,17 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 			var result = Run(request, _target);
 
-			Assert.IsTrue(_target.ImportedOptions.Single().IsHolding);
-			Assert.AreEqual("DeleteAndPromote:" + SolutionA, _target.Calls.Last());
+			Assert.IsTrue(_target.ImportedOptions.Single().IsUpgrade);
+			Assert.IsFalse(_target.Solutions.Exists(solution => solution.UniqueName == SolutionA + UpgradeSuffix));
+			Assert.IsFalse(_target.Calls.Any(call => call.StartsWith("DeleteAndPromote")));
+			Assert.AreEqual("GetImportOperationState", _target.Calls.Last());
 			Assert.IsTrue(result.StepOutcomes.Single().IsSuccessful);
 		}
 
 
 		// ============================================================================
 		[TestMethod]
-		public void Run_UnmanagedImportOfInstalledSolution_NeverUsesHolding()
+		public void Run_UnmanagedImportOfInstalledSolution_IsNotAnUpgrade()
 		{
 			var request = CreateImportRequest(SolutionA);
 			request.ShouldImportManaged = false;
@@ -102,7 +107,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			Run(request, _target);
 
 			var options = _target.ImportedOptions.Single();
-			Assert.IsFalse(options.IsHolding);
+			Assert.IsFalse(options.IsUpgrade);
 			Assert.IsFalse(options.IsManaged);
 			Assert.IsFalse(_target.Calls.Any(call => call.StartsWith("DeleteAndPromote")));
 		}
@@ -131,6 +136,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 						new[] { _target },
 						_sink,
 						_gitClient.Create,
+						NoPollSleep,
 						cancellation.Token);
 			}
 
@@ -271,6 +277,56 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 
 		// ============================================================================
+		[TestMethod]
+		public void Run_ImportOperationFails_LogsTheServerMessageAndFailsTheSolution()
+		{
+			var request = CreateImportRequest(SolutionA);
+			_target.OperationStates.Enqueue(CreateFailedState(ServerFailureMessage));
+
+			var result = Run(request, _target);
+
+			Assert.AreEqual(1, ImportedNames(_target).Length);
+			Assert.IsTrue(_sink.Lines.Any(line => line.Contains(ServerFailureMessage)));
+			Assert.IsFalse(result.StepOutcomes.Single().IsSuccessful);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_ImportOperationFailsWithAnotherImportRunning_ResubmitsAndSucceeds()
+		{
+			var request = CreateImportRequest(SolutionA);
+			_target.OperationStates.Enqueue(CreateFailedState(RetryRunner.ImportAlreadyRunningFaultText));
+
+			var result = Run(request, _target);
+
+			CollectionAssert.AreEqual(new[] { SolutionA, SolutionA }, ImportedNames(_target));
+			Assert.IsTrue(result.StepOutcomes.Single().IsSuccessful);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_ImportOperationTrackingLost_FailsTheSolutionWithoutResubmitting()
+		{
+			var request = CreateImportRequest(SolutionA);
+			request.ShouldContinueOnError = true;
+
+			// One failed read more than the retry count tolerates.
+			for (int i = 0; i <= RetryCount; i++)
+			{
+				_target.OperationStateFaultMessages.Enqueue(PollFailureMessage);
+			}
+
+			var result = Run(request, _target);
+
+			Assert.AreEqual(1, ImportedNames(_target).Length);
+			Assert.IsTrue(_sink.Lines.Any(line => line.Contains(RetryRunner.ImportTrackingLostFaultText)));
+			Assert.IsFalse(result.StepOutcomes.Single().IsSuccessful);
+		}
+
+
+		// ============================================================================
 		/// <summary>
 		/// Runs the request against the test's source, git client and the given targets.
 		/// </summary>
@@ -285,7 +341,30 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 					targets,
 					_sink,
 					_gitClient.Create,
+					NoPollSleep,
 					CancellationToken.None);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The poll sleep of every run in these tests: the next read follows at once.
+		/// </summary>
+		private static void NoPollSleep(
+			int milliseconds)
+		{
+		}
+
+
+		// ============================================================================
+		private static ImportOperationState CreateFailedState(
+			string message)
+		{
+			return new ImportOperationState
+			{
+				Status = ImportOperationStatus.Failed,
+				Message = message,
+			};
 		}
 
 
@@ -360,7 +439,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private static string[] ImportedNames(
 			FakeDataverseGateway target)
 		{
-			var importPrefix = "ImportSolution:" + FakeDataverseGateway.ExportContentPrefix;
+			var importPrefix = "StartImport:" + FakeDataverseGateway.ExportContentPrefix;
 
 			return
 				target.Calls

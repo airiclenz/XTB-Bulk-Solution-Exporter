@@ -233,7 +233,28 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker.Tests
 			var import = report.Steps.Single(step => step.IsImport);
 			Assert.IsFalse(import.IsSuccessful);
 			Assert.AreEqual(TargetName, import.ConnectionName);
-			Assert.IsTrue(_host.Calls.Contains("importSolution:" + (WorkerMethods.SourceTargetIndex + 1)));
+			Assert.IsTrue(_host.Calls.Contains("startImport:" + (WorkerMethods.SourceTargetIndex + 1)));
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The engine polls with the real interval here, so the run takes one
+		/// poll interval before the import operation reports success.
+		/// </summary>
+		[TestMethod]
+		public async Task StartRun_ManagedImport_StartsAndPollsTheImportOperation()
+		{
+			var request = CreateExportRequest();
+			request.ShouldImportManaged = true;
+			var targetIndex = WorkerMethods.SourceTargetIndex + 1;
+
+			var report = await StartRunAsync(request, TargetName);
+
+			var import = report.Steps.Single(step => step.IsImport);
+			Assert.IsTrue(import.IsSuccessful);
+			Assert.IsTrue(_host.Calls.Contains("startImport:" + targetIndex));
+			Assert.IsTrue(_host.Calls.Contains("getImportOperationState:" + targetIndex));
 		}
 
 

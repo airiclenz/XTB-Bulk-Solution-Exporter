@@ -191,10 +191,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// <summary>
 		/// Imports one solution's exported file into a target. A managed file
 		/// whose solution the target already has is, when the request upgrades,
-		/// installed as a holding solution and then promoted: one step, so an
-		/// abort never lands between the two.
+		/// installed as an upgrade in the same single server operation.
 		/// </summary>
-		/// <returns>True when the import (and promote) finished; false when the
+		/// <returns>True when the import finished; false when the
 		/// file is missing or invalid, the import failed or was given up, or an
 		/// abort ended a retry. Never throws for a Dataverse failure.</returns>
 		private bool ImportSolution(
@@ -276,11 +275,13 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Installs the solution file, with retries, and promotes it when it was
-		/// installed as a holding solution.
+		/// Installs the solution file as one server-side import operation
+		/// (an upgrade when the target has the managed solution and the request
+		/// upgrades) and waits for it to end; starting and waiting are retried
+		/// together, so a busy target re-submits the import.
 		/// </summary>
-		/// <returns>True when every call finished; false when a call was given
-		/// up or an abort ended a retry.</returns>
+		/// <returns>True when the operation succeeded; false when it was given
+		/// up, the run lost track of it, or an abort ended a retry.</returns>
 		/// <exception cref="Exception">A non-retryable fault while the request
 		/// does not continue on error.</exception>
 		private bool InstallSolution(
@@ -296,7 +297,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					target,
 					solution.UniqueName);
 
-			var isHolding =
+			var isUpgrade =
 				isManaged &&
 				isInstalledAlready &&
 				_request.ShouldUpgrade;
@@ -304,50 +305,46 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			var options = new ImportOptions
 			{
 				IsManaged = isManaged,
-				IsHolding = isHolding,
+				IsUpgrade = isUpgrade,
 				ShouldPublishWorkflows = _request.ShouldEnableAutomation,
 				ShouldOverwriteUnmanagedCustomizations = _request.ShouldOverwriteCustomizations,
 			};
 
 			var lastDurationString = FormatLastImportDuration(runSolution.Configuration, isManaged);
-			var stepName = isHolding ? "upgrade" : "update";
+			var stepName = isUpgrade ? "upgrade" : "update";
 			var targetSuffix = $"'{solution.FriendlyName}'{Environment.NewLine}[{target.ConnectionName}]...";
 
 			_runLog.Log("Installing the solution " + stepName + "...");
-			_runLog.Log("Start Time: " + DateTime.Now.ToString(StartTimeFormat) + (isHolding ? lastDurationString : null));
+			_runLog.Log("Start Time: " + DateTime.Now.ToString(StartTimeFormat) + (isUpgrade ? lastDurationString : null));
 
 			_sink.Progress(
 				$"Installing {stepName}: {targetSuffix}",
 				lastDurationString,
 				isNewStep: true);
 
-			var isInstalled =
-				ExecuteWithRetries(
-					() => target.ImportSolution(solutionFile, options),
-					$"Retry {{0}}/{{1}}: Installing solution: {targetSuffix}",
-					$"installing solution '{solution.FriendlyName}'");
+			// The poll sleep ignores the abort: a started operation is followed to its end.
+			var waiter =
+				new ImportOperationWaiter(
+					target,
+					_pollSleep,
+					() => DateTime.UtcNow,
+					message => _runLog.Log(message),
+					elapsed => _sink.Progress(
+						$"Installing {stepName}: {targetSuffix} ({FormatDuration(elapsed, isMillisecondsOmitted: true)})",
+						lastDurationString,
+						isNewStep: false));
 
-			if (!isInstalled ||
-				!isHolding)
-			{
-				return isInstalled;
-			}
-
-			_runLog.Log();
-			_runLog.Log("Applying the solution upgrade...");
-			_runLog.Log("Start Time: " + DateTime.Now.ToString(StartTimeFormat));
-
-			// Same step as the holding install: the step timer keeps running.
-			_sink.Progress(
-				$"Applying upgrade: {targetSuffix}",
-				lastDurationString,
-				isNewStep: false);
+			var maxPollFailures = GetMaxRetries();
 
 			return
 				ExecuteWithRetries(
-					() => target.DeleteAndPromote(solution.UniqueName),
-					$"Retry {{0}}/{{1}}: Applying upgrade: {targetSuffix}",
-					$"applying upgrade '{solution.FriendlyName}'");
+					() =>
+					{
+						var asyncOperationId = target.StartImport(solutionFile, options);
+						waiter.WaitForCompletion(asyncOperationId, maxPollFailures);
+					},
+					$"Retry {{0}}/{{1}}: Installing solution: {targetSuffix}",
+					$"installing solution '{solution.FriendlyName}'");
 		}
 
 
@@ -388,10 +385,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			string retryMessageFormat,
 			string operationDescription)
 		{
-			var maxRetries =
-				_request.RetryCount > 0 ?
-				_request.RetryCount :
-				DefaultRetryCount;
+			var maxRetries = GetMaxRetries();
 
 			var retryDelayInSeconds =
 				_request.RetryDelayInSeconds > 0 ?
@@ -417,6 +411,20 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					retryDelayInSeconds,
 					operationDescription,
 					_request.ShouldContinueOnError);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The request's retry count, or <see cref="DefaultRetryCount"/> when it
+		/// is not positive.
+		/// </summary>
+		private int GetMaxRetries()
+		{
+			return
+				_request.RetryCount > 0 ?
+				_request.RetryCount :
+				DefaultRetryCount;
 		}
 
 

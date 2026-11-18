@@ -61,6 +61,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		private readonly IReadOnlyList<IDataverseGateway> _targets;
 		private readonly IRunSink _sink;
 		private readonly Func<string, IGitClient> _createGitClient;
+		private readonly Action<int> _pollSleep;
 		private readonly CancellationToken _cancellationToken;
 		private readonly RunLog _runLog;
 		private readonly List<RunSolution> _solutions;
@@ -79,6 +80,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			IReadOnlyList<IDataverseGateway> targets,
 			IRunSink sink,
 			Func<string, IGitClient> createGitClient,
+			Action<int> pollSleep,
 			CancellationToken cancellationToken)
 		{
 			_request = request;
@@ -86,6 +88,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			_targets = targets;
 			_sink = sink;
 			_createGitClient = createGitClient;
+			_pollSleep = pollSleep;
 			_cancellationToken = cancellationToken;
 
 			_runLog =
@@ -152,12 +155,46 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			Func<string, IGitClient> createGitClient,
 			CancellationToken cancellationToken)
 		{
+			return
+				Run(
+					request,
+					source,
+					targets,
+					sink,
+					createGitClient,
+					Thread.Sleep,
+					cancellationToken);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Runs the steps the request switches on, like
+		/// <see cref="Run(RunRequest, IDataverseGateway, IReadOnlyList{IDataverseGateway}, IRunSink, Func{string, IGitClient}, CancellationToken)"/>,
+		/// with the wait between two reads of an import operation's state
+		/// supplied by the caller.
+		/// </summary>
+		/// <param name="pollSleep">Blocks for the given number of milliseconds
+		/// between two reads of an import operation's state; an abort must not
+		/// end it early (the hosts pass <see cref="Thread.Sleep(int)"/>).</param>
+		/// <exception cref="ArgumentNullException">An argument, or the request's solution list, is null.</exception>
+		/// <exception cref="ArgumentException">A request solution entry or its solution is null.</exception>
+		public static RunResult Run(
+			RunRequest request,
+			IDataverseGateway source,
+			IReadOnlyList<IDataverseGateway> targets,
+			IRunSink sink,
+			Func<string, IGitClient> createGitClient,
+			Action<int> pollSleep,
+			CancellationToken cancellationToken)
+		{
 			ValidateArguments(
 				request,
 				source,
 				targets,
 				sink,
-				createGitClient);
+				createGitClient,
+				pollSleep);
 
 			var engine =
 				new RunEngine(
@@ -166,6 +203,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					targets,
 					sink,
 					createGitClient,
+					pollSleep,
 					cancellationToken);
 
 			return engine.Execute();
@@ -178,7 +216,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			IDataverseGateway source,
 			IReadOnlyList<IDataverseGateway> targets,
 			IRunSink sink,
-			Func<string, IGitClient> createGitClient)
+			Func<string, IGitClient> createGitClient,
+			Action<int> pollSleep)
 		{
 			if (request == null)
 			{
@@ -203,6 +242,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			if (createGitClient == null)
 			{
 				throw new ArgumentNullException(nameof(createGitClient));
+			}
+
+			if (pollSleep == null)
+			{
+				throw new ArgumentNullException(nameof(pollSleep));
 			}
 
 			foreach (var target in targets)

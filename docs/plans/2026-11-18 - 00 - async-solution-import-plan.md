@@ -98,7 +98,11 @@ Bulk Solution Exporter.Core/Run/DataverseOperationException.cs — DataverseOper
 - `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~ImportOperationWaiterTests|FullyQualifiedName~RetryRunnerTests"` exits 0.
 **Commit:** `feat(core): poll async import operations to completion`
 
-## 4. Run imports as one async operation in RunEngine
+## 4. Run imports as one async operation in RunEngine — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): the new public overload is `RunEngine.Run(request, source, targets, sink, createGitClient, Action<int> pollSleep, cancellationToken)`; the existing overloads pass `Thread.Sleep`, so neither host (`WorkerMethods`, the XrmToolBox plugin control) changed. The retry-count helper is `RunEngine.GetMaxRetries()`.
+NOTES (2026-11-18): `Run_UnmanagedImportOfInstalledSolution_NeverUsesHolding` is renamed `Run_UnmanagedImportOfInstalledSolution_IsNotAnUpgrade` and asserts `IsUpgrade` false (the plan's "new" unmanaged test, folded into the existing one); the upgrade test is renamed `Run_ManagedUpgradeOfInstalledSolution_UpgradesInOneOperation`. `ImportOptions.IsHolding` is no longer set by `RunEngine` (item 5 deletes it).
+NOTES (2026-11-18): the worker test `StartRun_ManagedImport_StartsAndPollsTheImportOperation` runs through `WorkerMethods`, which has no poll-sleep seam, so it waits one real poll interval (~5 s).
 
 Depends on items 1, 2 and 3.
 

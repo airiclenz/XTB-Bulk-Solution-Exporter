@@ -137,6 +137,19 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
+		/// Faults thrown by the next <see cref="GetImportOperationState"/> calls,
+		/// one per call, as a <see cref="DataverseOperationException"/> with that
+		/// message, before <see cref="OperationStates"/> is read; an empty queue
+		/// answers from <see cref="OperationStates"/>.
+		/// </summary>
+		public Queue<string> OperationStateFaultMessages
+		{
+			get;
+		} = new Queue<string>();
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
 		/// Runs after each export, with the unique name and the managed flag;
 		/// a test requests its abort here.
 		/// </summary>
@@ -237,6 +250,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			Guid asyncOperationId)
 		{
 			Calls.Add("GetImportOperationState");
+
+			if (OperationStateFaultMessages.Count > 0)
+			{
+				throw new DataverseOperationException(OperationStateFaultMessages.Dequeue());
+			}
 
 			if (OperationStates.Count > 0)
 			{
