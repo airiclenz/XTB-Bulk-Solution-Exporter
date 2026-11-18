@@ -22,6 +22,8 @@ export const DataverseMethod = {
 	ExportSolution: "dataverse/exportSolution",
 	SolutionExists: "dataverse/solutionExists",
 	ImportSolution: "dataverse/importSolution",
+	StartImport: "dataverse/startImport",
+	GetImportOperationState: "dataverse/getImportOperationState",
 	DeleteAndPromote: "dataverse/deleteAndPromote",
 	RetrieveSolutions: "dataverse/retrieveSolutions",
 } as const;
@@ -42,6 +44,31 @@ export interface SolutionRecord {
 	description: string | null;
 }
 
+/**
+ * Where a server-side import operation stands; the worker reads each value as
+ * the name of its core `ImportOperationStatus` member.
+ */
+export const ImportOperationStatus = {
+	Running: "Running",
+	Succeeded: "Succeeded",
+	Failed: "Failed",
+	Canceled: "Canceled",
+} as const;
+
+/** One of the {@link ImportOperationStatus} values. */
+export type ImportOperationStatusName = (typeof ImportOperationStatus)[keyof typeof ImportOperationStatus];
+
+/**
+ * One import operation as `dataverse/getImportOperationState` answers it: the
+ * worker reads it as its core `ImportOperationState`. `message` is the
+ * server's friendly message and message, one per line, empty parts skipped;
+ * it is untrusted text from Dataverse.
+ */
+export interface ImportOperationStateRecord {
+	status: ImportOperationStatusName;
+	message: string;
+}
+
 type CallParameters = Record<string, unknown>;
 
 const SOLUTION_ENTITY_NAME = "solution";
@@ -52,6 +79,18 @@ const ACTION_OPERATION = "action";
 const PUBLISH_ALL_OPERATION = "PublishAllXml";
 const EXPORT_SOLUTION_OPERATION = "ExportSolution";
 const IMPORT_SOLUTION_OPERATION = "ImportSolution";
+const STAGE_AND_UPGRADE_ASYNC_OPERATION = "StageAndUpgradeAsync";
+const IMPORT_SOLUTION_ASYNC_OPERATION = "ImportSolutionAsync";
+const ASYNC_OPERATION_ID_PROPERTY = "AsyncOperationId";
+const ASYNC_OPERATION_ENTITY_SET = "asyncoperations";
+const ASYNC_OPERATION_COLUMNS = "statecode,statuscode,message,friendlymessage";
+const COMPLETED_STATE_CODE = 3;
+const SUCCEEDED_STATUS_CODE = 30;
+const FAILED_STATUS_CODE = 31;
+const CANCELED_STATUS_CODE = 32;
+const MESSAGE_SEPARATOR = "\n";
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MISSING_OPERATION_ID_MESSAGE = "The import start answered no async operation id.";
 const DELETE_AND_PROMOTE_OPERATION = "DeleteAndPromote";
 const ODATA_QUOTE = "'";
 const ODATA_ESCAPED_QUOTE = "''";
@@ -121,6 +160,48 @@ export function createDataverseBridge(connectionSlots: readonly number[]): Recor
 				readSlot(parameters),
 			);
 			return null;
+		},
+
+		[DataverseMethod.StartImport]: async (params) => {
+			const parameters = readParameters(params);
+			const operationName = readBoolean(parameters, "isUpgrade")
+				? STAGE_AND_UPGRADE_ASYNC_OPERATION
+				: IMPORT_SOLUTION_ASYNC_OPERATION;
+			const response = await executeAction(
+				operationName,
+				{
+					CustomizationFile: readString(parameters, "solutionFile"),
+					PublishWorkflows: readBoolean(parameters, "shouldPublishWorkflows"),
+					OverwriteUnmanagedCustomizations: readBoolean(parameters, "shouldOverwriteUnmanagedCustomizations"),
+					ConvertToManaged: readBoolean(parameters, "isManaged"),
+					ImportJobId: crypto.randomUUID(),
+				},
+				readSlot(parameters),
+			);
+			const asyncOperationId = response[ASYNC_OPERATION_ID_PROPERTY];
+
+			if (typeof asyncOperationId !== "string" || asyncOperationId === "") {
+				throw new Error(MISSING_OPERATION_ID_MESSAGE);
+			}
+
+			return asyncOperationId;
+		},
+
+		[DataverseMethod.GetImportOperationState]: async (params) => {
+			const parameters = readParameters(params);
+			const asyncOperationId = readGuid(parameters, "asyncOperationId");
+			const query =
+				`${ASYNC_OPERATION_ENTITY_SET}?$select=${ASYNC_OPERATION_COLUMNS}` +
+				`&$filter=asyncoperationid eq ${asyncOperationId}`;
+			const slot = readSlot(parameters);
+			const result = await callDataverse(() => window.dataverseAPI.queryData(query, slot));
+			const operation = result.value[0];
+
+			if (operation === undefined) {
+				throw new Error(`The import operation ${asyncOperationId} was not found.`);
+			}
+
+			return toImportOperationStateRecord(operation);
 		},
 
 		[DataverseMethod.DeleteAndPromote]: async (params) => {
@@ -212,6 +293,20 @@ function readBoolean(parameters: CallParameters, name: string): boolean {
 }
 
 /**
+ * Reads a required GUID parameter. The value is untrusted: anything but a
+ * plain GUID rejects, so it is safe to place in a query string as is.
+ */
+function readGuid(parameters: CallParameters, name: string): string {
+	const value = readString(parameters, name);
+
+	if (!GUID_PATTERN.test(value)) {
+		throw new Error(`The reverse call's parameter "${name}" must be a GUID.`);
+	}
+
+	return value;
+}
+
+/**
  * Turns untrusted text into a quoted OData string literal that is safe inside
  * a query string: quotes are doubled, URL-reserved characters are escaped.
  */
@@ -230,6 +325,38 @@ function toSolutionRecord(row: Record<string, unknown>): SolutionRecord {
 		isManaged: row.ismanaged === true,
 		description: readOptionalString(row.description),
 	};
+}
+
+/** Converts one `asyncoperations` row of the Web API into the worker's shape. */
+function toImportOperationStateRecord(row: Record<string, unknown>): ImportOperationStateRecord {
+	return {
+		status: toImportOperationStatus(row.statecode, row.statuscode),
+		message: [row.friendlymessage, row.message]
+			.filter((part): part is string => typeof part === "string" && part !== "")
+			.join(MESSAGE_SEPARATOR),
+	};
+}
+
+/**
+ * Maps an async operation's state and status codes: state Completed with
+ * status Succeeded, Failed or Canceled is that final state, anything else is
+ * still running.
+ */
+function toImportOperationStatus(stateCode: unknown, statusCode: unknown): ImportOperationStatusName {
+	if (stateCode !== COMPLETED_STATE_CODE) {
+		return ImportOperationStatus.Running;
+	}
+
+	switch (statusCode) {
+		case SUCCEEDED_STATUS_CODE:
+			return ImportOperationStatus.Succeeded;
+		case FAILED_STATUS_CODE:
+			return ImportOperationStatus.Failed;
+		case CANCELED_STATUS_CODE:
+			return ImportOperationStatus.Canceled;
+		default:
+			return ImportOperationStatus.Running;
+	}
 }
 
 /** Returns the value when it is a string, otherwise `null`. */

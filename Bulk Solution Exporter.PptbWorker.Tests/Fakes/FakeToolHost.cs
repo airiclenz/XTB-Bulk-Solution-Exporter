@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Com.AiricLenz.BulkSolutionExporter.Core.Run;
 using Newtonsoft.Json.Linq;
 using StreamJsonRpc;
 
@@ -55,12 +56,25 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
-		/// When set, every import fails with this message.
+		/// When set, every import (<c>dataverse/startImport</c> and
+		/// <c>dataverse/importSolution</c>) fails with this message.
 		/// </summary>
 		public string ImportFaultMessage
 		{
 			get; set;
 		}
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// The states <c>dataverse/getImportOperationState</c> answers, one per
+		/// call; when it is empty the call answers
+		/// <see cref="ImportOperationStatus.Succeeded"/>.
+		/// </summary>
+		public ConcurrentQueue<ImportOperationState> OperationStates
+		{
+			get;
+		} = new ConcurrentQueue<ImportOperationState>();
 
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -205,6 +219,58 @@ namespace Com.AiricLenz.BulkSolutionExporter.PptbWorker.Tests.Fakes
 			{
 				throw new InvalidOperationException(ImportFaultMessage);
 			}
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Answers a fresh async operation id as a string, or fails with
+		/// <see cref="ImportFaultMessage"/> when it is set.
+		/// </summary>
+		[JsonRpcMethod("dataverse/startImport")]
+		public string StartImport(
+			int target,
+			string solutionFile,
+			bool isManaged,
+			bool isUpgrade,
+			bool shouldPublishWorkflows,
+			bool shouldOverwriteUnmanagedCustomizations)
+		{
+			Calls.Enqueue("startImport:" + target);
+
+			if (ImportFaultMessage != null)
+			{
+				throw new InvalidOperationException(ImportFaultMessage);
+			}
+
+			return Guid.NewGuid().ToString();
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Answers the next scripted state of <see cref="OperationStates"/> as
+		/// <c>{ status, message }</c> with <c>status</c> as the member name, as
+		/// the tool's bridge does.
+		/// </summary>
+		[JsonRpcMethod("dataverse/getImportOperationState")]
+		public object GetImportOperationState(
+			int target,
+			string asyncOperationId)
+		{
+			Calls.Enqueue("getImportOperationState:" + target);
+
+			if (!OperationStates.TryDequeue(out var operationState))
+			{
+				operationState = new ImportOperationState { Status = ImportOperationStatus.Succeeded };
+			}
+
+			return
+				new
+				{
+					status = operationState.Status.ToString(),
+					message = operationState.Message ?? string.Empty
+				};
 		}
 
 

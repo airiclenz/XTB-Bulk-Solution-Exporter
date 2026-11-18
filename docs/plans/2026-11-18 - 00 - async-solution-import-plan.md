@@ -55,7 +55,13 @@ Bulk Solution Exporter/Run/OrganizationServiceGateway.cs — ImportSolution, Tra
 - `dotnet test "Bulk Solution Exporter.Core.Tests"` exits 0.
 **Commit:** `feat(core): add async import start and operation state to the gateway`
 
-## 2. Answer the async-import reverse calls in the PPTB bridge
+## 2. Answer the async-import reverse calls in the PPTB bridge — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): `FakeToolHost.ImportFaultMessage` now also fails `startImport`, but stays on the `importSolution` handler too: `RunEngine` calls `ImportSolution` until item 4, and `StartRun_ImportErrorFromHost_ReachesEngineWithMessage` needs the scripted fault until then; item 5 removes the `importSolution` handler.
+NOTES (2026-11-18): the scriptable state queue is `FakeToolHost.OperationStates` (`ConcurrentQueue<ImportOperationState>`, empty answers Succeeded); `getImportOperationState` answers `{ status, message }` with `status` as the enum member name, as the bridge does.
+NOTES (2026-11-18): the bridge exports `ImportOperationStatus` and `ImportOperationStateRecord` for the answer's shape; `startImport` rejects with "The import start answered no async operation id." on a missing, empty or non-string `AsyncOperationId`.
+NOTES (2026-11-18): `startImport`'s "execute rejects / surfaces the original message text unchanged" case is added alongside the `importSolution` one (which item 5 removes).
+NOTES (2026-11-18): the project configures no Prettier (the untouched file fails `prettier --check` too), so the new TypeScript follows the surrounding style.
 
 Depends on item 1.
 

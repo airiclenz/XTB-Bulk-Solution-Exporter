@@ -10,6 +10,8 @@ const IMPORT_ALREADY_RUNNING_TEXT =
 	"Cannot start another [Import] because there is a previous [Import] running at this moment";
 const SOLUTION_ID = "6f1c3d2a-0000-4000-8000-000000000001";
 const SOLUTION_FILE_BASE64 = "UEsDBBQAAAAIAA==";
+const ASYNC_OPERATION_ID = "0b7e9a44-1c2d-4e5f-8a9b-000000000042";
+const IMPORT_FAILURE_TEXT = "The solution file is invalid.";
 
 interface DataverseMock {
 	execute: ReturnType<typeof vi.fn<DataverseAPI.API["execute"]>>;
@@ -176,6 +178,142 @@ describe("createDataverseBridge", () => {
 					shouldOverwriteUnmanagedCustomizations: false,
 				}),
 			).rejects.toThrow(new Error(IMPORT_ALREADY_RUNNING_TEXT));
+		});
+	});
+
+	describe("startImport", () => {
+		/** The parameters of one `dataverse/startImport` call on the first target. */
+		function startImportParameters(isUpgrade: boolean): Record<string, unknown> {
+			return {
+				target: 1,
+				solutionFile: SOLUTION_FILE_BASE64,
+				isManaged: true,
+				isUpgrade,
+				shouldPublishWorkflows: true,
+				shouldOverwriteUnmanagedCustomizations: false,
+			};
+		}
+
+		it("startImport / upgrade / runs StageAndUpgradeAsync with the import parameters", async () => {
+			dataverse.execute.mockResolvedValue({ AsyncOperationId: ASYNC_OPERATION_ID });
+
+			await call(DataverseMethod.StartImport, startImportParameters(true));
+
+			expect(dataverse.execute).toHaveBeenCalledWith(
+				{
+					operationName: "StageAndUpgradeAsync",
+					operationType: "action",
+					parameters: {
+						CustomizationFile: SOLUTION_FILE_BASE64,
+						PublishWorkflows: true,
+						OverwriteUnmanagedCustomizations: false,
+						ConvertToManaged: true,
+						ImportJobId: expect.any(String),
+					},
+				},
+				FIRST_TARGET_SLOT,
+			);
+		});
+
+		it("startImport / plain import / runs ImportSolutionAsync", async () => {
+			dataverse.execute.mockResolvedValue({ AsyncOperationId: ASYNC_OPERATION_ID });
+
+			await call(DataverseMethod.StartImport, startImportParameters(false));
+
+			const [request, slot] = dataverse.execute.mock.calls[0] ?? [];
+			expect(request?.operationName).toBe("ImportSolutionAsync");
+			expect(slot).toBe(FIRST_TARGET_SLOT);
+		});
+
+		it("startImport / response with an operation id / answers the id as a string", async () => {
+			dataverse.execute.mockResolvedValue({ AsyncOperationId: ASYNC_OPERATION_ID });
+
+			await expect(call(DataverseMethod.StartImport, startImportParameters(true))).resolves.toBe(ASYNC_OPERATION_ID);
+		});
+
+		it("startImport / response without an operation id / rejects with its own message", async () => {
+			await expect(call(DataverseMethod.StartImport, startImportParameters(false))).rejects.toThrow(
+				"no async operation id",
+			);
+		});
+
+		it("startImport / execute rejects / surfaces the original message text unchanged", async () => {
+			dataverse.execute.mockRejectedValue(new Error(IMPORT_ALREADY_RUNNING_TEXT));
+
+			await expect(call(DataverseMethod.StartImport, startImportParameters(true))).rejects.toThrow(
+				new Error(IMPORT_ALREADY_RUNNING_TEXT),
+			);
+		});
+	});
+
+	describe("getImportOperationState", () => {
+		it("getImportOperationState / completed and succeeded / queries the operation on the target's slot", async () => {
+			dataverse.queryData.mockResolvedValue({ value: [{ statecode: 3, statuscode: 30 }] });
+
+			const answer = await call(DataverseMethod.GetImportOperationState, {
+				target: 2,
+				asyncOperationId: ASYNC_OPERATION_ID,
+			});
+
+			expect(answer).toEqual({ status: "Succeeded", message: "" });
+			expect(dataverse.queryData).toHaveBeenCalledWith(
+				"asyncoperations?$select=statecode,statuscode,message,friendlymessage" +
+					`&$filter=asyncoperationid eq ${ASYNC_OPERATION_ID}`,
+				SECOND_TARGET_SLOT,
+			);
+		});
+
+		it("getImportOperationState / completed and failed / answers Failed and keeps both messages", async () => {
+			dataverse.queryData.mockResolvedValue({
+				value: [
+					{
+						statecode: 3,
+						statuscode: 31,
+						friendlymessage: IMPORT_FAILURE_TEXT,
+						message: IMPORT_ALREADY_RUNNING_TEXT,
+					},
+				],
+			});
+
+			await expect(
+				call(DataverseMethod.GetImportOperationState, { target: 1, asyncOperationId: ASYNC_OPERATION_ID }),
+			).resolves.toEqual({
+				status: "Failed",
+				message: `${IMPORT_FAILURE_TEXT}\n${IMPORT_ALREADY_RUNNING_TEXT}`,
+			});
+		});
+
+		it("getImportOperationState / completed and canceled / answers Canceled", async () => {
+			dataverse.queryData.mockResolvedValue({ value: [{ statecode: 3, statuscode: 32, message: null }] });
+
+			await expect(
+				call(DataverseMethod.GetImportOperationState, { target: 1, asyncOperationId: ASYNC_OPERATION_ID }),
+			).resolves.toEqual({ status: "Canceled", message: "" });
+		});
+
+		it("getImportOperationState / not yet started / answers Running", async () => {
+			dataverse.queryData.mockResolvedValue({ value: [{ statecode: 0, statuscode: 0 }] });
+
+			await expect(
+				call(DataverseMethod.GetImportOperationState, { target: 1, asyncOperationId: ASYNC_OPERATION_ID }),
+			).resolves.toEqual({ status: "Running", message: "" });
+		});
+
+		it("getImportOperationState / id that is not a GUID / rejects without calling Dataverse", async () => {
+			await expect(
+				call(DataverseMethod.GetImportOperationState, {
+					target: 1,
+					asyncOperationId: `${ASYNC_OPERATION_ID} or statecode eq 0`,
+				}),
+			).rejects.toThrow('"asyncOperationId" must be a GUID');
+
+			expect(dataverse.queryData).not.toHaveBeenCalled();
+		});
+
+		it("getImportOperationState / no row / rejects naming the operation", async () => {
+			await expect(
+				call(DataverseMethod.GetImportOperationState, { target: 1, asyncOperationId: ASYNC_OPERATION_ID }),
+			).rejects.toThrow(`The import operation ${ASYNC_OPERATION_ID} was not found.`);
 		});
 	});
 
