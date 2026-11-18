@@ -145,7 +145,11 @@ Bulk Solution Exporter.Core/Run/RunEngine.cs — RunEngine class summary
 - `capcom check` reports no problem in `.capcom/knowledge/`.
 **Commit:** `refactor: remove the synchronous holding import path`
 
-## 6. Apply a pending _Upgrade before installing an upgrade
+## 6. Apply a pending _Upgrade before installing an upgrade — ✅ DONE (2026-11-18)
+
+NOTES (2026-11-18): the apply lives in a new private `RunEngine.ApplyPendingUpgrade`, called from `InstallSolution` before the install log lines; an abort requested during the apply skips the install ("abort between steps"), since `RetryRunner` does not check the abort before a first attempt.
+NOTES (2026-11-18): the Note's line 11 no longer mentions a holding install (item 5 rewrote it); the grep for `_Upgrade|apply-upgrade|holding` matched only line 14, which was rewritten.
+NOTES (2026-11-18): `capcom check` reports nothing in `.capcom/knowledge/`; its one finding, "AGENTS.md:1: the capcom block is out of date", exists on the untouched tree too.
 
 Depends on item 4.
 

@@ -26,6 +26,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		private const int DefaultRetryCount = 3;
 		private const int DefaultRetryDelayInSeconds = 5;
 
+		// Dataverse holds a staged, not yet applied upgrade as "<uniqueName>_Upgrade".
+		private const string HoldingSolutionSuffix = "_Upgrade";
+
 		private const string TargetSeparatorLine =
 			RunLog.ColorTeeth +
 			":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" +
@@ -278,10 +281,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// Installs the solution file as one server-side import operation
 		/// (an upgrade when the target has the managed solution and the request
 		/// upgrades) and waits for it to end; starting and waiting are retried
-		/// together, so a busy target re-submits the import.
+		/// together, so a busy target re-submits the import. An upgrade first
+		/// applies a pending upgrade the target still holds.
 		/// </summary>
-		/// <returns>True when the operation succeeded; false when it was given
-		/// up, the run lost track of it, or an abort ended a retry.</returns>
+		/// <returns>True when the operation succeeded; false when applying a
+		/// pending upgrade failed, the operation was given up, the run lost track
+		/// of it, or an abort ended a retry.</returns>
 		/// <exception cref="Exception">A non-retryable fault while the request
 		/// does not continue on error.</exception>
 		private bool InstallSolution(
@@ -314,6 +319,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			var stepName = isUpgrade ? "upgrade" : "update";
 			var targetSuffix = $"'{solution.FriendlyName}'{Environment.NewLine}[{target.ConnectionName}]...";
 
+			if (isUpgrade &&
+				!ApplyPendingUpgrade(target, solution, targetSuffix))
+			{
+				return false;
+			}
+
 			_runLog.Log("Installing the solution " + stepName + "...");
 			_runLog.Log("Start Time: " + DateTime.Now.ToString(StartTimeFormat) + (isUpgrade ? lastDurationString : null));
 
@@ -345,6 +356,54 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 					},
 					$"Retry {{0}}/{{1}}: Installing solution: {targetSuffix}",
 					$"installing solution '{solution.FriendlyName}'");
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Applies the solution's pending upgrade (<c>&lt;uniqueName&gt;_Upgrade</c>)
+		/// on the target with <c>DeleteAndPromote</c> when the target has one, so
+		/// this run's upgrade can be installed after it.
+		/// </summary>
+		/// <param name="targetSuffix">Names the solution and the target in progress messages.</param>
+		/// <returns>True when no pending upgrade exists or it was applied; false
+		/// when applying it failed or was given up, or the abort was requested.</returns>
+		/// <exception cref="Exception">A non-retryable fault while the request
+		/// does not continue on error.</exception>
+		private bool ApplyPendingUpgrade(
+			IDataverseGateway target,
+			SolutionInfo solution,
+			string targetSuffix)
+		{
+			var pendingUpgradeName = solution.UniqueName + HoldingSolutionSuffix;
+
+			if (!DoesSolutionExist(
+					target,
+					pendingUpgradeName))
+			{
+				return true;
+			}
+
+			_runLog.Log(
+				RunLog.Colorize(
+					RunLog.ColorOrange,
+					$"A pending upgrade '{pendingUpgradeName}' exists on the target; applying it first."));
+
+			_sink.Progress(
+				$"Applying pending upgrade: {targetSuffix}",
+				null,
+				isNewStep: true);
+
+			var isApplied =
+				ExecuteWithRetries(
+					() => target.DeleteAndPromote(solution.UniqueName),
+					$"Retry {{0}}/{{1}}: Applying pending upgrade: {targetSuffix}",
+					$"applying pending upgrade '{pendingUpgradeName}'");
+
+			// The apply is a step of its own: an abort requested during it skips the install.
+			return
+				isApplied &&
+				!IsAbortRequested();
 		}
 
 

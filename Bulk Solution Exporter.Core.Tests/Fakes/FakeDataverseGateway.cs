@@ -102,6 +102,16 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 
 		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 		/// <summary>
+		/// <see cref="DeleteAndPromote"/> throws for this unique name.
+		/// </summary>
+		public string FailDeleteAndPromoteFor
+		{
+			get; set;
+		}
+
+
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
 		/// The options of every <see cref="StartImport"/> call, in order.
 		/// </summary>
 		public List<ImportOptions> ImportedOptions
@@ -257,6 +267,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			string uniqueName)
 		{
 			Calls.Add("DeleteAndPromote:" + uniqueName);
+
+			if (FailDeleteAndPromoteFor == uniqueName)
+			{
+				throw new DataverseOperationException(FailureMessage);
+			}
 		}
 
 

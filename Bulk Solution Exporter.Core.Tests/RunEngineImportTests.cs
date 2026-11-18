@@ -264,6 +264,70 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 
 		// ============================================================================
 		[TestMethod]
+		public void Run_UpgradeWithPendingUpgrade_AppliesItThenInstalls()
+		{
+			var request = CreateImportRequest(SolutionA);
+			request.ShouldUpgrade = true;
+			_target.Solutions.Add(CreateSolution(SolutionA));
+			_target.Solutions.Add(CreateSolution(SolutionA + UpgradeSuffix));
+
+			var result = Run(request, _target);
+
+			var expectedCalls = new[]
+			{
+				"SolutionExists:" + SolutionA,
+				"SolutionExists:" + SolutionA + UpgradeSuffix,
+				"DeleteAndPromote:" + SolutionA,
+				"StartImport:" + FakeDataverseGateway.ExportContentPrefix + SolutionA,
+				"GetImportOperationState",
+			};
+
+			CollectionAssert.AreEqual(expectedCalls, _target.Calls);
+			Assert.IsTrue(_target.ImportedOptions.Single().IsUpgrade);
+			Assert.IsTrue(_sink.Lines.Any(line => line.Contains("A pending upgrade '" + SolutionA + UpgradeSuffix + "' exists")));
+			Assert.IsTrue(result.StepOutcomes.Single().IsSuccessful);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_PendingUpgradeApplyFails_FailsTheSolutionWithoutInstalling()
+		{
+			var request = CreateImportRequest(SolutionA, SolutionB);
+			request.ShouldUpgrade = true;
+			request.ShouldContinueOnError = true;
+			_target.Solutions.Add(CreateSolution(SolutionA));
+			_target.Solutions.Add(CreateSolution(SolutionA + UpgradeSuffix));
+			_target.FailDeleteAndPromoteFor = SolutionA;
+
+			var result = Run(request, _target);
+
+			Assert.IsTrue(_target.Calls.Contains("DeleteAndPromote:" + SolutionA));
+			CollectionAssert.AreEqual(new[] { SolutionB }, ImportedNames(_target));
+			Assert.IsFalse(result.StepOutcomes[0].IsSuccessful);
+			Assert.IsTrue(result.StepOutcomes[1].IsSuccessful);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_PlainImport_NeverChecksForAPendingUpgrade()
+		{
+			var request = CreateImportRequest(SolutionA);
+			_target.Solutions.Add(CreateSolution(SolutionA));
+			_target.Solutions.Add(CreateSolution(SolutionA + UpgradeSuffix));
+
+			var result = Run(request, _target);
+
+			Assert.IsFalse(_target.ImportedOptions.Single().IsUpgrade);
+			Assert.IsFalse(_target.Calls.Contains("SolutionExists:" + SolutionA + UpgradeSuffix));
+			Assert.IsFalse(_target.Calls.Any(call => call.StartsWith("DeleteAndPromote")));
+			Assert.IsTrue(result.StepOutcomes.Single().IsSuccessful);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
 		public void Run_TargetBusyWithAnotherImport_RetriesAndSucceeds()
 		{
 			var request = CreateImportRequest(SolutionA);
