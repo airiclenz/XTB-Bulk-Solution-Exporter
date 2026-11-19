@@ -1124,7 +1124,7 @@ namespace Com.AiricLenz.XTB.Plugin
 			{
 				UpdateGitBranches();
 
-				LogError(errorMessage);
+				LogError(LogMarkup.Escape(errorMessage));
 			}
 		}
 
@@ -1187,7 +1187,7 @@ namespace Com.AiricLenz.XTB.Plugin
 					!FileAndFolderHelper.IsInsideFolder(fileNameUnmanaged, selectedFolder))
 				{
 					LogError(
-						"The default file name for the solution '" + solution.UniqueName +
+						"The default file name for the solution '" + LogMarkup.Escape(solution.UniqueName) +
 						"' resolves outside the selected folder. The file locations were not changed.");
 					continue;
 				}
@@ -1472,7 +1472,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 				if (serviceClient == null)
 				{
-					LogError("The target '" + targetConnection.ConnectionName + "' has no connection and is skipped.");
+					LogError("The target '" + LogMarkup.Escape(targetConnection.ConnectionName) + "' has no connection and is skipped.");
 					continue;
 				}
 
@@ -1764,16 +1764,16 @@ namespace Com.AiricLenz.XTB.Plugin
 					out string message);
 
 			LogDebug();
-			LogDebug(message);
+			LogDebug(LogMarkup.Escape(message));
 			LogDebug();
 
 			if (gitRootPath.IsEmpty())
 			{
-				LogDebug("No Git-Root path determined within: " + filePath);
+				LogDebug("No Git-Root path determined within: " + LogMarkup.Escape(filePath));
 				return;
 			}
 
-			LogDebug("No Git-Root path is: " + gitRootPath);
+			LogDebug("No Git-Root path is: " + LogMarkup.Escape(gitRootPath));
 
 			_gitHelper = new GitHelper(gitRootPath);
 
@@ -1791,7 +1791,7 @@ namespace Com.AiricLenz.XTB.Plugin
 
 			_gitBranches = _gitHelper.GetAllBranches();
 
-			LogDebug("Retrieved Git Branches: " + string.Join(", ", _gitBranches));
+			LogDebug("Retrieved Git Branches: " + LogMarkup.Escape(string.Join(", ", _gitBranches)));
 
 			CodeUpdate = true;
 			comboBox_gitBranches.Items.Clear();
@@ -1883,7 +1883,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 						catch (Exception ex)
 						{
-							LogError(ex.Message);
+							LogError(LogMarkup.Escape(ex.Message));
 							result = null;
 						}
 					}
@@ -1898,7 +1898,7 @@ namespace Com.AiricLenz.XTB.Plugin
 						}
 						catch (Exception ex)
 						{
-							LogError(ex.Message);
+							LogError(LogMarkup.Escape(ex.Message));
 							result = null;
 						}
 					}
@@ -2173,7 +2173,7 @@ namespace Com.AiricLenz.XTB.Plugin
 		{
 			SettingsManager.Instance.Save(GetType(), _settings);
 
-			LogDebug($"Settings have been saved ({caller}): ({_settings.SplitContainerPosition})");
+			LogDebug($"Settings have been saved ({LogMarkup.Escape(caller)}): ({_settings.SplitContainerPosition})");
 		}
 
 

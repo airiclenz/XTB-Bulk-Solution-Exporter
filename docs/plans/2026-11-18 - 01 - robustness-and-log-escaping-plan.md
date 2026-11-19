@@ -224,7 +224,11 @@ Depends on items 6 and 9.
 - `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunEngineImportTests|FullyQualifiedName~FormatterTests"`
 **Commit:** `fix(core): escape Dataverse and git text in import and git log lines`
 
-## 11. Escape untrusted text in the plugin's own log lines
+## 11. Escape untrusted text in the plugin's own log lines — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): escaped sites in BulkSolutionExporter_PluginControl.cs: git SwitchToBranch error message, solution UniqueName in the "resolves outside the selected folder" error, target ConnectionName, the FindRepositoryRootPath debug message (escaped whole), filePath and gitRootPath, the joined branch list, both RetrieveMultiple ex.Message errors, and the CallerMemberName `caller` in PersistSettings (a method name, escaped only so no non-literal string reaches the log unescaped); integer/bool interpolations and the literal `##### Aborted/Done.` lines are unchanged; the forwarding wrappers stay unescaped.
+NOTES (2026-11-19): `capcom check` exits 1 with "AGENTS.md:1: the capcom block is out of date; run capcom agents to refresh it" both with and without this item's changes (verified via git stash); pre-existing, AGENTS.md is outside this item's files.
+NOTES (2026-11-19): no CLOSES heading: the item text says "Part of `escape-log-markdown`"; with items 9-11 done that ticket's escape work is complete and the plan header's `**Closes:**` names it.
 
 Depends on item 6.
 
