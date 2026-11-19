@@ -2,6 +2,10 @@
     Uploads the package that "NuGet Pack.ps1" built for the current nuspec
     version to nuget.org, where the XrmToolBox Tool Library picks it up.
 
+    Manual fallback only: releases are published to nuget.org by the
+    nuget-publish GitHub Actions workflow through Trusted Publishing, which
+    needs no stored API key.
+
       .\NuGet Push.ps1             # push, then wait until nuget.org lists the version
       .\NuGet Push.ps1 -DryRun     # every check, no upload
       .\NuGet Push.ps1 -WaitMinutes 0

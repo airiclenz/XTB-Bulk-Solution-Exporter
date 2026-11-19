@@ -5,9 +5,10 @@ description: >
   master, build, tests), release notes drafted from the commits and closed
   capcom issues since the last Release_v tag, a version the owner confirms,
   local release commits (version bump, package, capcom release issue), then
-  after a dry run and one explicit confirmation pushes master and the tag,
-  creates the GitHub release with the .nupkg and .dll attached, and uploads
-  the package to nuget.org, where the XrmToolBox Tool Library picks it up.
+  after pre-publish checks and one explicit confirmation pushes master and
+  the tag and creates the GitHub release with the .nupkg and .dll attached;
+  the nuget-publish workflow then uploads the package to nuget.org through
+  Trusted Publishing, where the XrmToolBox Tool Library picks it up.
   Use for "cut a release", "publish a release", "release to XrmToolBox",
   "push a new nuget version". Optional argument YYYY.M.D.N proposes the
   version. Not for the PPTB tool (its worker and npm packages ship apart).
@@ -20,32 +21,40 @@ description: >
 Turn everything shipped since the last `Release_v*` tag into a published
 plugin release: notes the owner approved, a version the owner confirmed, a
 GitHub release, and the package on nuget.org. The deterministic work belongs
-to the scripts in `Bulk Solution Exporter/Scripts/`:
+to the scripts in `Bulk Solution Exporter/Scripts/` and one workflow:
 
-| Script | Does |
+| Script / workflow | Does |
 |---|---|
 | `Set Version.ps1 [-Version V] [-WhatIf]` | sets V in the nuspec, `AssemblyVersion` and `AssemblyFileVersion`; no V = today's date + build number + 1; refuses V not above the current one |
 | `NuGet Pack.ps1` | Release rebuild, version and XrmToolBox-dependency checks, packs into `Bulk Solution Exporter.nuget/`, checks the package content |
-| `NuGet Push.ps1 [-DryRun] [-WaitMinutes N]` | pushes that package to nuget.org with `NUGET_API_KEY`, then waits until nuget.org lists it; a version nuget.org already has is skipped and succeeds |
+| `.github/workflows/nuget-publish.yml` | runs when a GitHub release is published (or by hand with `-f tag=<tag>`): downloads the release's `.nupkg`, logs in to nuget.org with Trusted Publishing (`NuGet/login`, OIDC, short-lived key) and pushes it with `--skip-duplicate` |
+| `NuGet Push.ps1 [-DryRun] [-WaitMinutes N]` | manual fallback only, used when the owner asks for it: pushes with a `NUGET_API_KEY` |
 
 This skill does the judgment and the asking. Background:
 `capcom know show versioning-and-release`.
+
+**One-time setup (owner, on nuget.org):** user menu → *Trusted Publishing*
+→ *Create*, signed in as the package owner `AiricLenz`: repository owner
+`airiclenz`, repository `XTB-Bulk-Solution-Exporter`, workflow file
+`nuget-publish.yml`, environment empty. The workflow's `NUGET_USER` must be
+the nuget.org username of the account that created the policy.
 
 In this repository this skill replaces the personal `cut-release` skill.
 
 ## Boundaries
 
 - **Irreversible steps are in step 7 only**: pushing master and the tag,
-  the GitHub release, the nuget.org upload. nuget.org never deletes a
-  version (it can only be unlisted), so a broken release is fixed with a new
-  version, never by reusing one.
+  the GitHub release, and the nuget.org upload the release starts. nuget.org
+  never deletes a version (it can only be unlisted), so a broken release is
+  fixed with a new version, never by reusing one.
 - **Ask with the host's user-question tool** (`AskUserQuestion` or similar)
   at every *Ask* and wait. No answer, or no such tool, means stop.
-- **The API key is the owner's.** Never print, echo, log or write
-  `NUGET_API_KEY`, and never ask the owner to paste it into the chat or run
-  `! setx …` here (that puts the key in the transcript). They set it in their
-  own terminal: `setx NUGET_API_KEY <key>`. `NuGet Push.ps1` also reads the
-  user-level variable, so no restart is needed.
+- **No credentials pass through the agent.** nuget.org auth is Trusted
+  Publishing inside the workflow; the agent needs no API key, Microsoft
+  account or password, and never asks for one. Only if the owner asks for
+  the manual `NuGet Push.ps1` fallback is a `NUGET_API_KEY` involved: never
+  print, echo, log or write it, and never ask the owner to paste it into the
+  chat or run `! setx …` here; they set it in their own terminal.
 - PowerShell 5.1 runs the scripts: call them from the PowerShell tool with
   `& ".\Bulk Solution Exporter\Scripts\<name>.ps1"` from the repo root and
   read `$LASTEXITCODE`.
@@ -166,29 +175,27 @@ version, the proposal first plus a free-text choice; the answer is final.
 Undo, before step 7 only: `git reset --keep HEAD~2`, then delete the new
 `.nupkg` if it is untracked.
 
-## 6 — Dry run, then the one confirmation
-
-```powershell
-& ".\Bulk Solution Exporter\Scripts\NuGet Push.ps1" -DryRun
-```
+## 6 — Pre-publish checks, then the one confirmation
 
 ```bash
+PKG=Com.AiricLenz.XTB.Plugin.BulkSolutionExporter
 git ls-remote --tags origin "Release_vYYYY.MM.DD"     # must be empty
 gh release view "Release_vYYYY.MM.DD" 2>&1 | head -1  # must say release not found
-ls "Bulk Solution Exporter/bin/Release/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll"
+ls "Bulk Solution Exporter/bin/Release/$PKG.dll"
+ls "Bulk Solution Exporter/Bulk Solution Exporter.nuget/$PKG.<V>.nupkg"
+git cat-file -e HEAD:.github/workflows/nuget-publish.yml   # the tag must carry the workflow
+curl -s "https://api.nuget.org/v3-flatcontainer/$(echo $PKG | tr A-Z a-z)/index.json" \
+  | grep -c '"<V>"'                                    # must print 0: not on nuget.org yet
 ```
 
-`NUGET_API_KEY is not set` → tell the owner how to create a key
-(nuget.org → API keys → Create, scope *Push new packages and package
-versions*, glob `Com.AiricLenz.XTB.Plugin.BulkSolutionExporter`) and to run
-`setx NUGET_API_KEY <key>` **in their own terminal**; wait, then re-run the
-dry run. Never continue without a passing dry run.
+Any check failing → stop and relay it. The Trusted Publishing policy cannot
+be checked from here; the first real check is the workflow's login step.
 
-Show the dry-run output and the plan, then *Ask* exactly once:
-"Publish YYYY.MM.DD.N? This pushes master and tag Release_vYYYY.MM.DD,
-creates the GitHub release with the package attached and uploads it to
-nuget.org. It cannot be undone." — options *publish* and *abort*. Anything
-but *publish* is abort (see step 5's undo).
+Show the checks and the plan, then *Ask* exactly once:
+"Publish YYYY.MM.DD.N? This pushes master and tag Release_vYYYY.MM.DD and
+creates the GitHub release with the package attached, which starts the
+workflow that uploads it to nuget.org. It cannot be undone." — options
+*publish* and *abort*. Anything but *publish* is abort (see step 5's undo).
 
 ## 7 — Publish
 
@@ -207,21 +214,48 @@ gh release view "Release_vYYYY.MM.DD" >/dev/null 2>&1 || \
     "Bulk Solution Exporter/bin/Release/Com.AiricLenz.XTB.Plugin.BulkSolutionExporter.dll"
 ```
 
-```powershell
-& ".\Bulk Solution Exporter\Scripts\NuGet Push.ps1"
+Publishing the release starts `nuget-publish.yml`. Watch it:
+
+```bash
+# the run takes a few seconds to appear; match it to the tagged commit
+for i in $(seq 1 12); do
+  RUN=$(gh run list --workflow nuget-publish.yml --event release \
+    --commit "$(git rev-parse HEAD)" --limit 1 --json databaseId --jq '.[0].databaseId')
+  [ -n "$RUN" ] && break; sleep 5
+done; echo "RUN=$RUN"
+gh run watch "$RUN" --exit-status
+gh run view "$RUN" --log-failed | tail -20   # only when it failed
 ```
 
-The push waits up to 20 minutes for nuget.org to list the version; give the
-call a long timeout or run it in the background. A WARNING that it is not
-listed yet is not a failure: nuget.org is still validating.
+Then wait (up to 20 minutes, polling every 30 s; run it in the background
+or with a long timeout) until nuget.org lists the version:
+
+```bash
+curl -s "https://api.nuget.org/v3-flatcontainer/com.airiclenz.xtb.plugin.bulksolutionexporter/index.json" | grep -c '"<V>"'
+```
+
+Not listed after 20 minutes is not a failure: nuget.org is still
+validating; say so in the report.
+
+A failed run:
+
+- `Token exchange failed (HTTP 401) … No matching trust policy` → the
+  Trusted Publishing policy is missing, or was created by an account whose
+  username is not the workflow's `NUGET_USER`. The owner fixes it on
+  nuget.org (see *One-time setup*); then `gh run rerun "$RUN"`.
+- anything else → relay the failing log lines; after the cause is fixed,
+  `gh run rerun "$RUN"`, or `gh workflow run nuget-publish.yml -f
+  tag=Release_vYYYY.MM.DD` if the workflow file itself had to change (a
+  manual run uses the workflow from `master`). `--skip-duplicate` makes
+  every re-run safe.
 
 Never move or re-create a pushed tag, and never `--force` anything.
 
 ## Report
 
 - version, tag, GitHub release URL, nuget.org package URL;
-- each step's outcome: master pushed, tag pushed, release created, nuget.org
-  pushed and listed (or still validating);
+- each step's outcome: master pushed, tag pushed, release created, workflow
+  run (URL and result), nuget.org listed (or still validating);
 - XrmToolBox Tool Library: it reads nuget.org on its own schedule, so the
   update can take a while to appear; if it has not after a day, the owner
   checks the plugin on the XrmToolBox portal;
