@@ -403,7 +403,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		private void PublishAll(
 			IDataverseGateway gateway)
 		{
-			_runLog.Log("##### Publishing All now (" + RunLog.Colorize(RunLog.ColorConnection, gateway.ConnectionName) + ")");
+			_runLog.Log("##### Publishing All now (" + RunLog.Colorize(RunLog.ColorConnection, LogMarkup.Escape(gateway.ConnectionName)) + ")");
 			_runLog.IncreaseIndent();
 
 			_runLog.Log("Start Time: " + DateTime.Now.ToString(StartTimeFormat));
@@ -417,7 +417,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			{
 				// A failed publish leaves the solutions as they are, so the
 				// remaining steps still make sense.
-				_runLog.LogError(ex.Message);
+				_runLog.LogError(LogMarkup.Escape(ex.Message));
 				_runLog.DecreaseIndent();
 				return;
 			}
@@ -679,7 +679,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			// never write outside a rooted, valid file path.
 			if (!FileAndFolderHelper.IsValidSolutionFilePath(filePath))
 			{
-				_runLog.LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
+				_runLog.LogError("The file path '" + LogMarkup.Escape(filePath) + "' is not a valid absolute file path. The file is skipped.");
 				_runLog.DecreaseIndent();
 				AddSkippedOutcome(solution, _source, isManaged, isImport: false);
 				return -1;
@@ -812,14 +812,14 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 				_runLog.Log(
 					RunLog.Colorize(
 						RunLog.ColorOrange,
-						"The version file '" + jsonFilePath + "' is no readable version file; a fresh version record is written."));
+						"The version file '" + LogMarkup.Escape(jsonFilePath) + "' is no readable version file; a fresh version record is written."));
 			}
 			else if (isRepaired)
 			{
 				_runLog.Log(
 					RunLog.Colorize(
 						RunLog.ColorOrange,
-						"The version file '" + jsonFilePath + "' held empty lists or entries; they are dropped and the readable entries are kept."));
+						"The version file '" + LogMarkup.Escape(jsonFilePath) + "' held empty lists or entries; they are dropped and the readable entries are kept."));
 			}
 
 			return exportedSolutions;
@@ -848,10 +848,14 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 
 		// ============================================================================
+		/// <summary>
+		/// Formats the solution's name for the log, escaped: callers never
+		/// escape its output again.
+		/// </summary>
 		private static string FormatSolutionName(
 			SolutionInfo solution)
 		{
-			return RunLog.Colorize(RunLog.ColorSolution, "'" + solution.FriendlyName + "'");
+			return RunLog.Colorize(RunLog.ColorSolution, "'" + LogMarkup.Escape(solution.FriendlyName) + "'");
 		}
 
 

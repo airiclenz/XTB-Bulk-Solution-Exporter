@@ -185,7 +185,10 @@ Depends on item 6 (mirrors its rules).
 - `cd pptb && npx tsc --noEmit`
 **Commit:** `fix(pptb): tag-safe log truncation and escape rendering`
 
-## 9. Escape untrusted text in RunEngine.cs log lines
+## 9. Escape untrusted text in RunEngine.cs log lines — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): escaped sites in RunEngine.cs: connection name (PublishAll), publish exception message, invalid file path, version-file path (both warnings), and the friendly name inside FormatSolutionName (now documented as the single escape point); version strings (Version.ToString, digits and dots), FormatDuration and DateTime output left unescaped as numbers.
+NOTES (2026-11-19): the full Core suite has one failure outside this item, `Commit_MessageWithQuotesOrNonAscii_IsStoredVerbatim ("Lösung ä")` (non-ASCII mojibake in the git commit test); it fails identically with this item's changes stashed, so it predates this item.
 
 Depends on item 6.
 

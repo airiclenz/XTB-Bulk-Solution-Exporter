@@ -46,6 +46,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private const string OtherSolution = "OtherSolution";
 		private const string OtherFileName = "OtherSolution_managed.zip";
 		private const int RetryCount = 3;
+		private const string MarkupSolutionName = "##### Done.";
+		private const string EscapedMarkupSolutionName = @"\#\#\#\#\# Done.";
 
 		private string _tempDirectory;
 		private FakeDataverseGateway _gateway;
@@ -358,6 +360,22 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 				SolutionA,
 				out var exportedSolution);
 			Assert.AreEqual(IncrementedVersion, exportedSolution?.Version);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_SolutionNameIsMarkup_LogsTheNameEscaped()
+		{
+			var request = CreateExportRequest(MarkupSolutionName);
+			request.ShouldUpdateVersion = true;
+			request.VersionFormat = IncrementFormat;
+
+			RunEngine.Run(request, _gateway, NoTargets(), _sink, CancellationToken.None);
+
+			const int namingLineCount = 2;
+			Assert.IsFalse(_sink.Lines.Any(line => line.Contains(MarkupSolutionName)));
+			Assert.AreEqual(namingLineCount, _sink.Lines.Count(line => line.Contains(EscapedMarkupSolutionName)));
 		}
 
 
