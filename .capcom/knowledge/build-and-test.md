@@ -11,9 +11,11 @@ The plugin and its test project are SDK-style .NET Framework 4.8 (`net48`) proje
 dotnet build "Bulk Solution Exporter.sln" -c Debug
 ```
 
-Outputs stay in `Bulk Solution Exporter/bin/Debug/` and `bin/Release/` (no `net48` subfolder). A Debug build also copies the plugin DLL, its pdb and the core DLL to `bin/Debug/Plugins`, and `bin/Debug` holds the XrmToolBox debug host (`XrmToolBox.exe /overridepath:.`, started by `Properties/launchSettings.json` in VS and `.vscode/launch.json` in VS Code).
+Outputs stay in `Bulk Solution Exporter/bin/Debug/` and `bin/Release/` (no `net48` subfolder). A Debug build also copies the plugin DLL, its pdb, the core DLL and `System.Resources.Extensions.dll` to `bin/Debug/Plugins` (removing the latter from `bin/Debug`, as in a real install), and `bin/Debug` holds the XrmToolBox debug host (`XrmToolBox.exe /overridepath:.`, started by `Properties/launchSettings.json` in VS and `.vscode/launch.json` in VS Code).
 
-The `.resx` resources are embedded preserialized (`GenerateResourceUsePreserializedResources`), so `System.Resources.Extensions.dll` must sit next to the plugin DLL at run time (nuspec, `Deploy Locally.bat` and the `build-solution` task ship it).
+The XrmToolBoxPackage ships `XrmToolBox.exe` without its `.config`, so the debug host would have none of a real install's binding redirects (without them `System.Resources.Extensions` 8.0 fails on its `System.Memory` 4.0.1.2 reference). Debug builds therefore generate redirects from the plugin's dependency graph (`AutoGenerateBindingRedirects`) and install them as `bin/Debug/XrmToolBox.exe.config`.
+
+The `.resx` resources are embedded preserialized (`GenerateResourceUsePreserializedResources`), so `System.Resources.Extensions.dll` must sit next to the plugin DLL at run time (nuspec, `Deploy Locally.bat` and the `build-solution` task ship it). The preserialized resources ask for version 4.0.0.0, which XrmToolBox does not redirect, so `BulkSolutionExporter_Plugin` registers an `AssemblyResolve` handler that loads the copy next to the plugin DLL whatever version is asked for.
 
 Tests are an MSTest net48 project (`Bulk Solution Exporter.Tests`), run on Windows:
 

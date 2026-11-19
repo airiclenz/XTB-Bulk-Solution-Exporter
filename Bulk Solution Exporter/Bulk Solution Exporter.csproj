@@ -21,6 +21,14 @@
 		<DebugType>portable</DebugType>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<!-- The XrmToolBoxPackage ships XrmToolBox.exe without its .config, so the bin\Debug host has none of the
+		     binding redirects a real install has. Generate them from the plugin's own dependency graph; the
+		     CopyPluginToDebugPlugins target installs the result as bin\Debug\XrmToolBox.exe.config. -->
+		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+		<GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<!-- Release builds have always defined DEBUG: LogDebug output stays available behind the debug-mode setting. -->
 		<DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
@@ -155,9 +163,14 @@
 	<Import Project="..\XTB Components\XTB Components.projitems" Label="Shared" />
 
 	<!-- F5 in VS starts bin\Debug\XrmToolBox.exe (Properties\launchSettings.json), which loads the plugin and the
-	     core library it references from bin\Debug\Plugins. -->
+	     core library it references from bin\Debug\Plugins.
+	     System.Resources.Extensions moves to Plugins as well, as in a real install: the preserialized resources ask
+	     for version 4.0.0.0, and a copy in the host's own folder (bin\Debug) is found by probing and rejected
+	     as a version mismatch before the plugin's AssemblyResolve handler gets the chance to load it. -->
 	<Target Name="CopyPluginToDebugPlugins" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-		<Copy SourceFiles="$(TargetPath);$(OutDir)$(TargetName).pdb;$(OutDir)Com.AiricLenz.BulkSolutionExporter.Core.dll" DestinationFolder="$(OutDir)Plugins" />
+		<Copy SourceFiles="$(TargetPath);$(OutDir)$(TargetName).pdb;$(OutDir)Com.AiricLenz.BulkSolutionExporter.Core.dll;$(OutDir)System.Resources.Extensions.dll" DestinationFolder="$(OutDir)Plugins" />
+		<Delete Files="$(OutDir)System.Resources.Extensions.dll" />
+		<Copy SourceFiles="$(TargetPath).config" DestinationFiles="$(OutDir)XrmToolBox.exe.config" Condition="Exists('$(TargetPath).config')" />
 	</Target>
 
 </Project>

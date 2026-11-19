@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
@@ -37,6 +36,22 @@ namespace Com.AiricLenz.XTB.Plugin
 	public class BulkSolutionExporter_Plugin : PluginBase
 	{
 
+		private const string ResourcesExtensionsAssemblyName = "System.Resources.Extensions";
+		private const string AssemblyFileExtension = ".dll";
+
+
+		// ============================================================================
+		/// <summary>
+		/// The preserialized .resx resources name System.Resources.Extensions 4.0.0.0, while the plugin ships
+		/// a newer version next to its DLL and XrmToolBox.exe has no binding redirect for it, so the plugin
+		/// resolves that one assembly itself. A static constructor registers the handler only once.
+		/// </summary>
+		static BulkSolutionExporter_Plugin()
+		{
+			AppDomain.CurrentDomain.AssemblyResolve += ResolveResourcesExtensions;
+		}
+
+
 		// ============================================================================
 		public override IXrmToolBoxPluginControl GetControl()
 		{
@@ -46,58 +61,42 @@ namespace Com.AiricLenz.XTB.Plugin
 
 		// ============================================================================
 		/// <summary>
-		/// Constructor 
+		/// Resolves System.Resources.Extensions, whatever version is asked for, to an already loaded copy or
+		/// to the copy next to the plugin DLL. Returns null for every other assembly, so other handlers and
+		/// the host's own resolution stay untouched.
 		/// </summary>
-		public BulkSolutionExporter_Plugin()
+		private static Assembly ResolveResourcesExtensions(
+			object sender,
+			ResolveEventArgs args)
 		{
-			// If you have external assemblies that you need to load, uncomment the following to 
-			// hook into the event that will fire when an Assembly fails to resolve
-			// AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolveEventHandler);
-		}
+			var requestedName = new AssemblyName(args.Name).Name;
 
-
-		// ============================================================================
-		/// <summary>
-		/// Event fired by CLR when an assembly reference fails to load
-		/// Assumes that related assemblies will be loaded from a subfolder named the same as the Plugin
-		/// For example, a folder named Sample.XrmToolBox.MyPlugin 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="args"></param>
-		/// <returns></returns>
-		private Assembly AssemblyResolveEventHandler(object sender, ResolveEventArgs args)
-		{
-			Assembly loadAssembly = null;
-			Assembly currAssembly = Assembly.GetExecutingAssembly();
-
-			// base name of the assembly that failed to resolve
-			var argName = args.Name.Substring(0, args.Name.IndexOf(","));
-
-			// check to see if the failing assembly is one that we reference.
-			List<AssemblyName> refAssemblies = currAssembly.GetReferencedAssemblies().ToList();
-			var refAssembly = refAssemblies.Where(a => a.Name == argName).FirstOrDefault();
-
-			// if the current unresolved assembly is referenced by our plugin, attempt to load
-			if (refAssembly != null)
+			if (!string.Equals(requestedName, ResourcesExtensionsAssemblyName, StringComparison.OrdinalIgnoreCase))
 			{
-				// load from the path to this plugin assembly, not host executable
-				string dir = Path.GetDirectoryName(currAssembly.Location).ToLower();
-				string folder = Path.GetFileNameWithoutExtension(currAssembly.Location);
-				dir = Path.Combine(dir, folder);
-
-				var assmbPath = Path.Combine(dir, $"{argName}.dll");
-
-				if (File.Exists(assmbPath))
-				{
-					loadAssembly = Assembly.LoadFrom(assmbPath);
-				}
-				else
-				{
-					throw new FileNotFoundException($"Unable to locate dependency: {assmbPath}");
-				}
+				return null;
 			}
 
-			return loadAssembly;
+			var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+				.FirstOrDefault(assembly => string.Equals(
+					assembly.GetName().Name,
+					ResourcesExtensionsAssemblyName,
+					StringComparison.OrdinalIgnoreCase));
+
+			if (loadedAssembly != null)
+			{
+				return loadedAssembly;
+			}
+
+			var pluginDirectory = Path.GetDirectoryName(typeof(BulkSolutionExporter_Plugin).Assembly.Location);
+
+			if (string.IsNullOrEmpty(pluginDirectory))
+			{
+				return null;
+			}
+
+			var assemblyPath = Path.Combine(pluginDirectory, ResourcesExtensionsAssemblyName + AssemblyFileExtension);
+
+			return File.Exists(assemblyPath) ? Assembly.LoadFrom(assemblyPath) : null;
 		}
 	}
 }
