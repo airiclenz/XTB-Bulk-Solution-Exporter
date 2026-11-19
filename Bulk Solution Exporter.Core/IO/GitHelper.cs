@@ -44,9 +44,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		// Separates the quoted arguments of a .NET Framework command line.
 		private const string ArgumentSeparator = " ";
 
-		// Commit messages travel on stdin: git stores them byte for byte, so
-		// they must be UTF-8 and must not start with a byte order mark.
-		private static readonly Encoding StandardInputEncoding = new UTF8Encoding(false);
+		// Git reads and writes UTF-8 whatever the console code page is. Commit
+		// messages travel on stdin and git stores them byte for byte, so they
+		// must not start with a byte order mark; the output streams are decoded
+		// with the same encoding so non-ASCII text comes back unchanged.
+		private static readonly Encoding ProcessTextEncoding = new UTF8Encoding(false);
 
 		// Exit code reported when the standard input could not be written but
 		// the process itself exited with 0; no process exit code is negative.
@@ -135,8 +137,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 		/// speaks JSON-RPC on it). A process that exits before reading all of
 		/// it fails the run: see the return value.
 		/// </param>
+		/// <param name="standardOutput">
+		/// Everything the process wrote to standard output, decoded as UTF-8.
+		/// </param>
 		/// <param name="standardError">
-		/// Everything the process wrote to standard error, followed by a line
+		/// Everything the process wrote to standard error, decoded as UTF-8,
+		/// followed by a line
 		/// saying the input could not be written when that write failed.
 		/// </param>
 		/// <returns>
@@ -168,6 +174,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 				RedirectStandardInput = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
+				StandardOutputEncoding = ProcessTextEncoding,
+				StandardErrorEncoding = ProcessTextEncoding,
 				UseShellExecute = false,
 				CreateNoWindow = true,
 				WorkingDirectory = workingDirectory
@@ -454,7 +462,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.IO
 
 			try
 			{
-				byte[] bytes = StandardInputEncoding.GetBytes(text);
+				byte[] bytes = ProcessTextEncoding.GetBytes(text);
 				inputStream.Write(bytes, 0, bytes.Length);
 				inputStream.Flush();
 			}
