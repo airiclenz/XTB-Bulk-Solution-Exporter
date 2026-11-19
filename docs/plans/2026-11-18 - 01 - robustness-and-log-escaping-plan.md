@@ -146,7 +146,10 @@ NOTES (2026-11-19): retry fix — with a color token still open, `TruncateLine` 
 - `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~LogMarkupTests|FullyQualifiedName~RunLogTests"`
 **Commit:** `fix(core): truncate log lines without splitting tags; add the markup escape`
 
-## 7. Plugin MarkdownParser: shared truncation and escape rendering
+## 7. Plugin MarkdownParser: shared truncation and escape rendering — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): `LogMarkup.IsEscape` (Core, not in the item's Files) was made public with a `IsEscape_CharacterAtIndex_TellsEscapeFromLiteral` test in `LogMarkupTests.cs`, so the parser asks LogMarkup, the single C# owner of the markup rules, which characters are escapable instead of keeping a second copy of the escape set.
+NOTES (2026-11-19): `FindNextMarker` is now one escape-aware left-to-right walk with an anchored (`\G`) color-token regex, and marker/end-tag searches compare ordinally (the old `string.IndexOf(string, int)` calls were culture-sensitive); text at `MaxNestingDepth` is appended with its escapes resolved.
 
 Depends on item 6.
 

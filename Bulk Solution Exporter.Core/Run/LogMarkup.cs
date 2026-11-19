@@ -166,10 +166,13 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Returns true when the character at <paramref name="index"/> is an
-		/// <see cref="EscapeCharacter"/> followed by an escapable character.
+		/// Returns true when the character at <paramref name="index"/> is a
+		/// backslash followed by an escapable character, so the two render as
+		/// that character alone. Log renderers scanning a line left to right
+		/// call it at each position to tell an escape from markup.
 		/// </summary>
-		private static bool IsEscape(
+		/// <param name="index">A position within <paramref name="text"/>.</param>
+		public static bool IsEscape(
 			string text,
 			int index)
 		{

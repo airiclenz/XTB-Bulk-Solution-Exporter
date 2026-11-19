@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using Com.AiricLenz.BulkSolutionExporter.Core.Run;
 
 
 // ============================================================================
@@ -19,19 +21,24 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 	{
 		// Longest log line rendered; longer lines are cut to this length and
 		// end with TruncationMarker, so one huge message cannot stall the UI thread.
-		internal const int MaxLogLineLength = 10000;
+		internal const int MaxLogLineLength = LogMarkup.MaxLineLength;
 
 		// Appended to a line cut at MaxLogLineLength.
-		internal const string TruncationMarker = " … [truncated]";
+		internal const string TruncationMarker = LogMarkup.TruncationMarker;
 
 		// Deepest nesting of headings and format markers parsed; text below
-		// this depth is appended literally. Bounds the recursion so a line
-		// such as "# # # ..." cannot overflow the stack.
+		// this depth is appended with only its escapes resolved. Bounds the
+		// recursion so a line such as "# # # ..." cannot overflow the stack.
 		internal const int MaxNestingDepth = 10;
 
-		// Closes a color token; re-appended to a cut line whose color token
-		// would otherwise lose its end tag.
-		private const string ColorEndTag = "</color>";
+		// Closes a color token.
+		private const string ColorEndTag = RunLog.ColorEndTag;
+
+		// Starts an escape; see LogMarkup for the escape rule.
+		private const char EscapeCharacter = '\\';
+
+		// Length of an escape: the EscapeCharacter plus the character it escapes.
+		private const int EscapeLength = 2;
 
 
 		// ============================================================================
@@ -89,7 +96,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				new FormatMarker("<color=", "</color>", FontStyle.Regular, null, true)
 			};
 
-			_colorTokenRegex = new Regex(@"<color=#([0-9A-Fa-f]{6})>");
+			// Anchored, so a match is tried only at the given position.
+			_colorTokenRegex = new Regex(@"\G<color=#([0-9A-Fa-f]{6})>");
 		}
 
 
@@ -102,8 +110,11 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		/// - # Heading (rest of line in bold, bigger font)
 		/// - <color=#000066>colored</color> text
 		/// - Regular text
-		/// Lines longer than <see cref="MaxLogLineLength"/> are truncated and
-		/// end with <see cref="TruncationMarker"/>; markers nested deeper than
+		/// A backslash before a backslash, #, *, backtick or &lt; renders that
+		/// character literally, never as markup; any other backslash is literal.
+		/// Lines longer than <see cref="MaxLogLineLength"/> are truncated by
+		/// <see cref="LogMarkup.TruncateLine"/> and end with
+		/// <see cref="TruncationMarker"/>; markers nested deeper than
 		/// <see cref="MaxNestingDepth"/> are rendered as plain text.
 		/// </summary>
 		/// <param name="message"></param>
@@ -123,7 +134,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 			foreach (string line in lines)
 			{
 				ProcessFormattedText(
-					TruncateLine(line.TrimEnd()),
+					LogMarkup.TruncateLine(line.TrimEnd()),
 					Array.Empty<FontStyle>(),
 					_richTextBox.Font.Size,
 					0);
@@ -138,51 +149,11 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 		// ============================================================================
 		/// <summary>
-		/// Cuts a line longer than <see cref="MaxLogLineLength"/> and appends
-		/// <see cref="TruncationMarker"/>. A color token left open by the cut
-		/// is closed before the marker, so the kept text keeps its color.
-		/// </summary>
-		private string TruncateLine(string line)
-		{
-			if (line.Length <= MaxLogLineLength)
-			{
-				return line;
-			}
-
-			string keptText = line.Substring(0, MaxLogLineLength);
-
-			if (HasUnclosedColorToken(keptText))
-			{
-				keptText += ColorEndTag;
-			}
-
-			return keptText + TruncationMarker;
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Returns true when a color token follows the last end tag; the parser
-		/// pairs every token with the next end tag, so that token is unclosed.
-		/// </summary>
-		private bool HasUnclosedColorToken(string text)
-		{
-			int lastEndTagIndex = text.LastIndexOf(ColorEndTag, StringComparison.Ordinal);
-
-			int searchStart =
-				lastEndTagIndex < 0
-					? 0
-					: lastEndTagIndex + ColorEndTag.Length;
-
-			return _colorTokenRegex.IsMatch(text, searchStart);
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Appends the text with its headings and format markers applied.
-		/// Every heading or marker parses its content one level deeper; at
-		/// <see cref="MaxNestingDepth"/> the text is appended literally.
+		/// Appends the text with its headings, format markers and escapes
+		/// applied. Every heading or marker parses its content one level
+		/// deeper; at <see cref="MaxNestingDepth"/> the text is appended with
+		/// only its escapes resolved. Positions inside an escape are never
+		/// markup, and every content range parsed starts and ends outside one.
 		/// </summary>
 		private void ProcessFormattedText(
 			string text,
@@ -194,7 +165,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 		{
 			if (depth >= MaxNestingDepth)
 			{
-				AppendWithStyles(text, currentStyles, fontSize, textColor);
+				AppendWithStyles(RemoveEscapes(text), currentStyles, fontSize, textColor);
 				return;
 			}
 
@@ -205,7 +176,8 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 				// -----------------------------------------------------------
 				// 1) Check if there's a heading (#) at the current position
-				//    (e.g. "### heading text")
+				//    (e.g. "### heading text"); currentPos is never inside
+				//    an escape, so an escaped "\#" is no heading
 				// -----------------------------------------------------------
 				if (text[currentPos] == '#')
 				{
@@ -266,9 +238,9 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 				if (!nextMarker.found)
 				{
-					// No more markers => append remainder as-is
+					// No more markers => append remainder with its escapes resolved
 					AppendWithStyles(
-						text.Substring(currentPos),
+						RemoveEscapes(text.Substring(currentPos)),
 						currentStyles,
 						fontSize,
 						textColor);
@@ -280,7 +252,7 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 				if (nextMarker.position > currentPos)
 				{
 					AppendWithStyles(
-						text.Substring(currentPos, nextMarker.position - currentPos),
+						RemoveEscapes(text.Substring(currentPos, nextMarker.position - currentPos)),
 						currentStyles,
 						fontSize,
 						textColor);
@@ -298,13 +270,13 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 						Color tokenColor = ColorTranslator.FromHtml("#" + colorHex);
 
 						int contentStartInner = match.Index + match.Length;
-						int endPosInner = text.IndexOf("</color>", contentStartInner);
+						int endPosInner = IndexOfUnescaped(text, ColorEndTag, contentStartInner);
 
 						if (endPosInner != -1)
 						{
 							string contentInner = text.Substring(contentStartInner, endPosInner - contentStartInner);
 							ProcessFormattedText(contentInner, currentStyles, fontSize, depth + 1, tokenColor);
-							currentPos = endPosInner + "</color>".Length;
+							currentPos = endPosInner + ColorEndTag.Length;
 							continue;
 						}
 					}
@@ -349,68 +321,204 @@ namespace Com.AiricLenz.XTB.Plugin.Helpers
 
 
 		// ============================================================================
+		/// <summary>
+		/// Finds the first format marker or color token at or after
+		/// <paramref name="startPos"/> that is not inside an escape.
+		/// </summary>
+		/// <param name="startPos">A position outside any escape.</param>
 		private (bool found, int position, FormatMarker marker) FindNextMarker(string text, int startPos)
 		{
-			int nearestPos = int.MaxValue;
-			FormatMarker nearestMarker = null;
+			int index = startPos;
 
-			// Check for color token first
-			var colorMatch = _colorTokenRegex.Match(text, startPos);
-			if (colorMatch.Success && colorMatch.Index < nearestPos)
+			while (index < text.Length)
 			{
-				nearestPos = colorMatch.Index;
-				nearestMarker = _formatMarkers.First(m => m.IsColorToken);
-			}
-
-			// Check for other markers
-			foreach (var marker in _formatMarkers.Where(m => !m.IsColorToken))
-			{
-				int pos = text.IndexOf(marker.Start, startPos);
-				if (pos != -1 && pos < nearestPos)
+				if (LogMarkup.IsEscape(text, index))
 				{
-					nearestPos = pos;
-					nearestMarker = marker;
+					index += EscapeLength;
+					continue;
 				}
+
+				FormatMarker marker = FindMarkerAt(text, index);
+
+				if (marker != null)
+				{
+					return (true, index, marker);
+				}
+
+				index++;
 			}
 
-			return (nearestMarker != null, nearestPos, nearestMarker);
+			return (false, -1, null);
 		}
 
 
 		// ============================================================================
+		/// <summary>
+		/// Returns the format marker or color token starting at
+		/// <paramref name="index"/>, or null. The markers are tried in list
+		/// order, which puts "**" before "*", so "**" is bold, not two italics.
+		/// </summary>
+		private FormatMarker FindMarkerAt(string text, int index)
+		{
+			foreach (var marker in _formatMarkers)
+			{
+				bool isMarkerAtIndex =
+					marker.IsColorToken
+						? _colorTokenRegex.IsMatch(text, index)
+						: IsAt(text, index, marker.Start);
+
+				if (isMarkerAtIndex)
+				{
+					return marker;
+				}
+			}
+
+			return null;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns the position of the first end marker in the text that is
+		/// not inside an escape and does not end a longer start marker, or -1.
+		/// </summary>
+		/// <param name="text">The text after the start marker.</param>
 		private int FindMatchingEnd(string text, string endMarker)
 		{
-			int pos = 0;
-			while (pos < text.Length)
+			bool isAfterEscape = false;
+			int index = 0;
+
+			while (index < text.Length)
 			{
-				int endPos = text.IndexOf(endMarker, pos);
-				if (endPos == -1)
-					return -1;
-
-				// Check if this is a valid end marker (not part of another token)
-				bool isValid = true;
-				foreach (var marker in _formatMarkers)
+				if (LogMarkup.IsEscape(text, index))
 				{
-					if (marker.Start.Length > endMarker.Length)
-					{
-						int checkPos = endPos + endMarker.Length - marker.Start.Length;
-						if (checkPos >= 0 && text.IndexOf(marker.Start, checkPos) == checkPos)
-						{
-							isValid = false;
-							break;
-						}
-					}
+					isAfterEscape = true;
+					index += EscapeLength;
+					continue;
 				}
 
-				if (isValid)
+				// A longer start marker ending here would cover the escaped
+				// character just before, so after an escape there is none.
+				if (IsAt(text, index, endMarker) &&
+					(isAfterEscape || !EndsLongerStartMarker(text, index, endMarker)))
 				{
-					return endPos;
+					return index;
 				}
 
-				pos = endPos + 1;
+				isAfterEscape = false;
+				index++;
 			}
 
 			return -1;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns true when the end marker at <paramref name="endPos"/> is the
+		/// tail of a longer start marker (e.g. the second "*" of "**"), so it
+		/// is no end marker.
+		/// </summary>
+		private bool EndsLongerStartMarker(
+			string text,
+			int endPos,
+			string endMarker)
+		{
+			foreach (var marker in _formatMarkers)
+			{
+				if (marker.Start.Length <= endMarker.Length)
+				{
+					continue;
+				}
+
+				int checkPos = endPos + endMarker.Length - marker.Start.Length;
+
+				if (checkPos >= 0 && IsAt(text, checkPos, marker.Start))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns the position of the first <paramref name="value"/> at or
+		/// after <paramref name="startPos"/> that is not inside an escape, or -1.
+		/// </summary>
+		/// <param name="startPos">A position outside any escape.</param>
+		private static int IndexOfUnescaped(
+			string text,
+			string value,
+			int startPos)
+		{
+			int index = startPos;
+
+			while (index < text.Length)
+			{
+				if (LogMarkup.IsEscape(text, index))
+				{
+					index += EscapeLength;
+					continue;
+				}
+
+				if (IsAt(text, index, value))
+				{
+					return index;
+				}
+
+				index++;
+			}
+
+			return -1;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Returns true when <paramref name="value"/> occurs in the text
+		/// exactly at <paramref name="index"/> (ordinal comparison).
+		/// </summary>
+		private static bool IsAt(
+			string text,
+			int index,
+			string value)
+		{
+			return string.CompareOrdinal(text, index, value, 0, value.Length) == 0;
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// Replaces each escape in the text with the character it escapes; a
+		/// backslash that escapes nothing is kept.
+		/// </summary>
+		/// <param name="text">Text that starts outside any escape.</param>
+		private static string RemoveEscapes(string text)
+		{
+			if (text.IndexOf(EscapeCharacter) < 0)
+			{
+				return text;
+			}
+
+			var unescapedText = new StringBuilder(text.Length);
+			int index = 0;
+
+			while (index < text.Length)
+			{
+				if (LogMarkup.IsEscape(text, index))
+				{
+					// Skip the backslash; the escaped character is kept below.
+					index++;
+				}
+
+				unescapedText.Append(text[index]);
+				index++;
+			}
+
+			return unescapedText.ToString();
 		}
 
 

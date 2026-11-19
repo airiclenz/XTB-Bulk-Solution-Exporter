@@ -260,5 +260,29 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 			Assert.AreEqual(string.Empty, result);
 		}
 
+
+		// ============================================================================
+		[DataTestMethod]
+		[DataRow("\\\\", 0, true)]
+		[DataRow("\\#", 0, true)]
+		[DataRow("\\*", 0, true)]
+		[DataRow("\\`", 0, true)]
+		[DataRow("\\<", 0, true)]
+		[DataRow("a\\*", 1, true)]
+		[DataRow("\\a", 0, false)]
+		[DataRow("\\", 0, false)]
+		[DataRow("#", 0, false)]
+		public void IsEscape_CharacterAtIndex_TellsEscapeFromLiteral(
+			string text,
+			int index,
+			bool expectedIsEscape)
+		{
+			// Act
+			bool isEscape = LogMarkup.IsEscape(text, index);
+
+			// Assert
+			Assert.AreEqual(expectedIsEscape, isEscape);
+		}
+
 	}
 }
