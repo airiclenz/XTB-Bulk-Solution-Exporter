@@ -36,7 +36,8 @@ This skill does the judgment and the asking. Background:
 **One-time setup (owner, on nuget.org):** user menu → *Trusted Publishing*
 → *Create*, signed in as the package owner `AiricLenz`: repository owner
 `airiclenz`, repository `XTB-Bulk-Solution-Exporter`, workflow file
-`nuget-publish.yml`, environment empty. The workflow's `NUGET_USER` must be
+`nuget-publish.yml`, environment empty, glob patterns and packages
+`Com.AiricLenz.XTB.Plugin.BulkSolutionExporter`. The workflow's `NUGET_USER` must be
 the nuget.org username of the account that created the policy.
 
 In this repository this skill replaces the personal `cut-release` skill.
