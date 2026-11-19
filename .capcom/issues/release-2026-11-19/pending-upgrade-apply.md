@@ -3,7 +3,7 @@ title: A pending _Upgrade holding solution fails the import
 status: done
 type: bug
 priority: 2
-labels: [import]
+labels: [import, release-2026-11-19]
 deps: [import-async-upgrade]
 created: 2026-11-18T15:07:25Z
 closed: 2026-11-18T16:31:36Z

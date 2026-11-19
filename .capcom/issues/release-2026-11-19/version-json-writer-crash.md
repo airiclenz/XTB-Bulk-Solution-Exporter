@@ -3,7 +3,7 @@ title: SaveVersionJson throws on a malformed exported_versions.json
 status: done
 type: bug
 priority: 2
-labels: [audit-followup]
+labels: [audit-followup, release-2026-11-19]
 created: 2026-10-11T20:15:00Z
 closed: 2026-11-19T15:56:37Z
 reason: "Resolved by the robustness and log escaping plan (2026-11-18 - 01), archived in 526aa56: item 2 starts a fresh version record with a warning on malformed or null exported_versions.json; tested."

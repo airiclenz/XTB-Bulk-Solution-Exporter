@@ -3,7 +3,7 @@ title: Managed upgrades can stay unapplied as holding solutions
 status: done
 type: bug
 priority: 1
-labels: [import, pptb]
+labels: [import, pptb, release-2026-11-19]
 created: 2026-11-18T15:07:25Z
 closed: 2026-11-18T16:31:36Z
 reason: "Resolved by the async-solution-import plan (archived in a6703aa): imports run as one StageAndUpgradeAsync/ImportSolutionAsync operation polled to completion on both hosts."

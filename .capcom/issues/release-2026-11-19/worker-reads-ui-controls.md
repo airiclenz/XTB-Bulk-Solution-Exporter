@@ -3,7 +3,7 @@ title: Execution worker reads flip-switch state across threads
 status: done
 type: bug
 priority: 3
-labels: [audit-followup]
+labels: [audit-followup, release-2026-11-19]
 created: 2026-10-11T20:15:00Z
 closed: 2026-10-23T16:27:34Z
 reason: "Resolved by plan '2026-10-20 - 00 - pptb-port-plan' item 9 (archived in 5f4ae2e): run options are captured on the UI thread into a RunRequest (replacing ExecutionSettingsSnapshot) and the worker body ExecuteRunOnWorker reads no control."
