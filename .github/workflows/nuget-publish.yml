@@ -1,0 +1,58 @@
+# Pushes the XrmToolBox plugin package attached to a GitHub release to
+# nuget.org, where the XrmToolBox Tool Library picks it up. Authentication is
+# nuget.org Trusted Publishing: NuGet/login trades the job's OIDC token for a
+# short-lived API key, so no key is stored in the repository or its secrets.
+# The nuget.org trusted-publishing policy must name this repository and this
+# workflow file (nuget-publish.yml).
+
+name: Publish to nuget.org
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag whose .nupkg to push (e.g. Release_v2026.11.19)
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PACKAGE_ID: Com.AiricLenz.XTB.Plugin.BulkSolutionExporter
+  NUGET_USER: AiricLenz
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the release package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "$PACKAGE_ID.*.nupkg" --dir package
+          count=$(find package -name '*.nupkg' | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected exactly one $PACKAGE_ID .nupkg on release $RELEASE_TAG, found $count."
+            exit 1
+          fi
+
+      - name: Log in to nuget.org (Trusted Publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ env.NUGET_USER }}
+
+      - name: Push to nuget.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push package/*.nupkg \
+            --api-key "$NUGET_API_KEY" \
+            --source "$NUGET_SOURCE" \
+            --skip-duplicate
