@@ -36,7 +36,7 @@ import {
 } from "@fluentui/react-components";
 import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 
-import { parseLogMarkup, type LogSpan } from "../logMarkup";
+import { escape, parseLogMarkup, type LogSpan } from "../logMarkup";
 import type { SettingsStore } from "../settingsStore";
 import type { RunProgress, RunRequest, RunSolution, ToolSettings } from "../types";
 import { isValidVersionFormat } from "../versionFormat";
@@ -342,10 +342,10 @@ function findMissingFiles(settings: Readonly<ToolSettings>, solutions: readonly 
 	});
 }
 
-/** An error log line. */
+/** An error log line; the error's message is escaped, so it renders literally. */
 function formatError(context: string, error: unknown): string {
 	const message = error instanceof Error ? error.message : String(error);
-	return `${COLOR_ERROR}${context}: ${message}${COLOR_END_TAG}`;
+	return `${COLOR_ERROR}${context}: ${escape(message)}${COLOR_END_TAG}`;
 }
 
 /** The properties of `LogView`. */

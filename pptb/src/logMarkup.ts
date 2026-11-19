@@ -5,10 +5,15 @@
  *   of the line is the heading, bold)
  * - `**bold**`, `*italic*` and `` `code` ``
  * - `<color=#RRGGBB>colored</color>`; any other colour form stays plain text
+ * - `\x`, a backslash before a backslash, `#`, `*`, backtick or `<`, renders
+ *   that character literally: it never acts as markup (`escape` writes it, as
+ *   the core `LogMarkup.Escape`); any other backslash is literal itself
  *
  * Lines longer than `MAX_LOG_LINE_LENGTH` are cut and end with
- * `TRUNCATION_MARKER`; headings and markers nested deeper than
- * `MAX_NESTING_DEPTH` stay plain text. The spans carry text only: a caller
+ * `TRUNCATION_MARKER`; the cut never splits a colour token, end tag or escape,
+ * and a colour token it leaves open is closed (the core `LogMarkup.TruncateLine`
+ * rules). Headings and markers nested deeper than `MAX_NESTING_DEPTH` stay
+ * plain text. The spans carry text only: a caller
  * renders them as text nodes, so markup-like or hostile text (`<script>`) is
  * shown, never interpreted.
  */
@@ -53,9 +58,20 @@ const HEADING_CHARACTER = "#";
 const HEADING_SEPARATOR = " ";
 const COLOR_END_TAG = "</color>";
 const LINE_SEPARATOR = /\r\n|\n/;
+const TAG_START = "<";
+const ESCAPE_CHARACTER = "\\";
 
-/** A colour token; `lastIndex` sets where a search starts. */
-const COLOR_TOKEN_PATTERN = /<color=#([0-9A-Fa-f]{6})>/g;
+/** Every character an `ESCAPE_CHARACTER` before it makes literal. */
+const ESCAPABLE_CHARACTERS = "\\#*`<";
+
+/** The length of an escape: the `ESCAPE_CHARACTER` plus the character it escapes. */
+const ESCAPE_LENGTH = 2;
+
+/** A colour token starting exactly at `lastIndex`. */
+const COLOR_TOKEN_PATTERN = /<color=#([0-9A-Fa-f]{6})>/y;
+
+/** What a truncation scan steps over in one go: an escape, a colour token, an end tag or one character. */
+type MarkupElementKind = "escape" | "colorToken" | "endTag" | "character";
 
 const PLAIN_STYLE: SpanStyle = {
 	isBold: false,
@@ -90,40 +106,157 @@ export function parseLogMarkup(markup: string): LogLine[] {
 	});
 }
 
-/** Cuts an over-long line and closes a colour token the cut left open. */
+/**
+ * Escapes a text so every character of it renders literally: each backslash,
+ * `#`, `*`, backtick and `<` gets a backslash before it; every other
+ * character is kept. Mirrors the core `LogMarkup.Escape`.
+ *
+ * @returns An empty string for `null` or `undefined`.
+ */
+export function escape(text: string | null | undefined): string {
+	return Array.from(text ?? "", (character) =>
+		isEscapable(character) ? ESCAPE_CHARACTER + character : character,
+	).join("");
+}
+
+/**
+ * Cuts a line longer than `MAX_LOG_LINE_LENGTH` and appends
+ * `TRUNCATION_MARKER`, as the core `LogMarkup.TruncateLine`. The cut moves
+ * back before a colour token, end tag or escape it would split, so the kept
+ * text never ends on a partial tag or on a backslash escaping the cut-off
+ * character. A colour token left open is closed before the marker; the cut
+ * then also moves back before a trailing literal backslash, which would
+ * otherwise escape the appended end tag. An escaped token or end tag is
+ * plain text, never a tag.
+ */
 function truncateLine(line: string): string {
 	if (line.length <= MAX_LOG_LINE_LENGTH) {
 		return line;
 	}
 
-	const keptText = line.slice(0, MAX_LOG_LINE_LENGTH);
-	const closedText = hasUnclosedColorToken(keptText) ? keptText + COLOR_END_TAG : keptText;
+	let cutIndex = MAX_LOG_LINE_LENGTH;
+	let isColorTokenOpen = false;
+	let lastElementIndex = -1;
+	let index = 0;
+
+	while (index < cutIndex) {
+		const element = readMarkupElement(line, index);
+
+		if (index + element.length > cutIndex) {
+			cutIndex = index;
+			break;
+		}
+
+		if (element.kind === "colorToken") {
+			isColorTokenOpen = true;
+		} else if (element.kind === "endTag") {
+			isColorTokenOpen = false;
+		}
+
+		lastElementIndex = index;
+		index += element.length;
+	}
+
+	if (isColorTokenOpen && isLoneEscapeCharacter(line, lastElementIndex, cutIndex)) {
+		cutIndex = lastElementIndex;
+	}
+
+	const keptText = line.slice(0, cutIndex);
+	const closedText = isColorTokenOpen ? keptText + COLOR_END_TAG : keptText;
 
 	return closedText + TRUNCATION_MARKER;
 }
 
-/** Whether a colour token follows the last end tag; tokens pair with the next end tag. */
-function hasUnclosedColorToken(text: string): boolean {
-	const lastEndTagIndex = text.lastIndexOf(COLOR_END_TAG);
-	const searchStart = lastEndTagIndex < 0 ? 0 : lastEndTagIndex + COLOR_END_TAG.length;
+/** The markup element starting at a position outside any escape. */
+function readMarkupElement(text: string, index: number): { kind: MarkupElementKind; length: number } {
+	if (isEscape(text, index)) {
+		return { kind: "escape", length: ESCAPE_LENGTH };
+	}
 
-	return findColorToken(text, searchStart) !== null;
+	if (text[index] === TAG_START) {
+		const colorToken = matchColorToken(text, index);
+
+		if (colorToken !== null) {
+			return { kind: "colorToken", length: colorToken[0].length };
+		}
+
+		if (text.startsWith(COLOR_END_TAG, index)) {
+			return { kind: "endTag", length: COLOR_END_TAG.length };
+		}
+	}
+
+	return { kind: "character", length: 1 };
 }
 
-/** The first colour token at or after a position, or `null`. */
-function findColorToken(text: string, position: number): RegExpExecArray | null {
+/** Whether the element from `elementIndex` to `elementEnd` is a lone backslash that escapes nothing. */
+function isLoneEscapeCharacter(text: string, elementIndex: number, elementEnd: number): boolean {
+	return elementIndex >= 0 && elementEnd - elementIndex === 1 && text[elementIndex] === ESCAPE_CHARACTER;
+}
+
+/** Whether the character at a position is a backslash before an escapable character; the two render as that character. */
+function isEscape(text: string, index: number): boolean {
+	return text[index] === ESCAPE_CHARACTER && index + 1 < text.length && isEscapable(text[index + 1]);
+}
+
+/** Whether an `ESCAPE_CHARACTER` before the character makes it literal. */
+function isEscapable(character: string): boolean {
+	return ESCAPABLE_CHARACTERS.includes(character);
+}
+
+/** Replaces each escape in a text that starts outside any escape with the character it escapes. */
+function removeEscapes(text: string): string {
+	if (!text.includes(ESCAPE_CHARACTER)) {
+		return text;
+	}
+
+	let unescapedText = "";
+	let index = 0;
+
+	while (index < text.length) {
+		const characterIndex = isEscape(text, index) ? index + 1 : index;
+		unescapedText += text[characterIndex];
+		index = characterIndex + 1;
+	}
+
+	return unescapedText;
+}
+
+/** The colour token starting exactly at a position, or `null`. */
+function matchColorToken(text: string, position: number): RegExpExecArray | null {
 	COLOR_TOKEN_PATTERN.lastIndex = position;
 	return COLOR_TOKEN_PATTERN.exec(text);
+}
+
+/** The first `value` at or after a position outside any escape that is not inside an escape, or -1. */
+function indexOfUnescaped(text: string, value: string, position: number): number {
+	let index = position;
+
+	while (index < text.length) {
+		if (isEscape(text, index)) {
+			index += ESCAPE_LENGTH;
+			continue;
+		}
+
+		if (text.startsWith(value, index)) {
+			return index;
+		}
+
+		index++;
+	}
+
+	return -1;
 }
 
 /**
  * Appends the spans of a text with its headings and markers applied. Every
  * heading or marker parses its content one level deeper; at
- * `MAX_NESTING_DEPTH` the text is appended literally.
+ * `MAX_NESTING_DEPTH` the text is appended with only its escapes resolved.
+ * Positions inside an escape are never markup, and every content range
+ * parsed starts and ends outside one.
  */
 function parseText(text: string, style: SpanStyle, depth: number, spans: LogSpan[]): void {
 	if (depth >= MAX_NESTING_DEPTH) {
-		appendSpan(text, style, spans);
+		appendSpan(removeEscapes(text), style, spans);
 		return;
 	}
 
@@ -141,11 +274,11 @@ function parseText(text: string, style: SpanStyle, depth: number, spans: LogSpan
 		const next = findNextMarker(text, position);
 
 		if (next === null) {
-			appendSpan(text.slice(position), style, spans);
+			appendSpan(removeEscapes(text.slice(position)), style, spans);
 			return;
 		}
 
-		appendSpan(text.slice(position, next.position), style, spans);
+		appendSpan(removeEscapes(text.slice(position, next.position)), style, spans);
 		position = next.marker.isColorToken
 			? parseColorToken(text, next.position, style, depth, spans)
 			: parseTextMarker(text, next.position, next.marker, style, depth, spans);
@@ -154,7 +287,8 @@ function parseText(text: string, style: SpanStyle, depth: number, spans: LogSpan
 
 /**
  * A heading starting at a position: one to six `#` followed by a space or
- * the end. Its content starts after one space; it runs to the line end.
+ * the end. Its content starts after one space; it runs to the line end. The
+ * position is outside any escape, so an escaped `\#` is no heading.
  */
 function readHeading(text: string, position: number): { level: number; contentStart: number } | null {
 	let scan = position;
@@ -173,24 +307,35 @@ function readHeading(text: string, position: number): { level: number; contentSt
 	return { level, contentStart: scan < text.length ? scan + HEADING_SEPARATOR.length : scan };
 }
 
-/** The nearest marker at or after a position; a colour token is looked for first. */
+/** The nearest marker at or after a position outside any escape that is not inside an escape. */
 function findNextMarker(text: string, position: number): { position: number; marker: FormatMarker } | null {
-	let nearest: { position: number; marker: FormatMarker } | null = null;
-	const colorToken = findColorToken(text, position);
+	let index = position;
 
-	if (colorToken !== null) {
-		nearest = { position: colorToken.index, marker: COLOR_MARKER };
-	}
-
-	for (const marker of TEXT_MARKERS) {
-		const markerPosition = text.indexOf(marker.start, position);
-
-		if (markerPosition !== -1 && (nearest === null || markerPosition < nearest.position)) {
-			nearest = { position: markerPosition, marker };
+	while (index < text.length) {
+		if (isEscape(text, index)) {
+			index += ESCAPE_LENGTH;
+			continue;
 		}
+
+		const marker = findMarkerAt(text, index);
+
+		if (marker !== null) {
+			return { position: index, marker };
+		}
+
+		index++;
 	}
 
-	return nearest;
+	return null;
+}
+
+/** The colour token or text marker starting at a position, text markers in `TEXT_MARKERS` order, or `null`. */
+function findMarkerAt(text: string, index: number): FormatMarker | null {
+	if (matchColorToken(text, index) !== null) {
+		return COLOR_MARKER;
+	}
+
+	return TEXT_MARKERS.find((marker) => text.startsWith(marker.start, index)) ?? null;
 }
 
 /**
@@ -198,11 +343,11 @@ function findNextMarker(text: string, position: number): { position: number; mar
  * text. Returns the position after what was consumed.
  */
 function parseColorToken(text: string, position: number, style: SpanStyle, depth: number, spans: LogSpan[]): number {
-	const token = findColorToken(text, position);
+	const token = matchColorToken(text, position);
 
-	if (token !== null && token.index === position) {
+	if (token !== null) {
 		const contentStart = position + token[0].length;
-		const endTagIndex = text.indexOf(COLOR_END_TAG, contentStart);
+		const endTagIndex = indexOfUnescaped(text, COLOR_END_TAG, contentStart);
 
 		if (endTagIndex !== -1) {
 			const color = `#${token[1].toUpperCase()}`;
@@ -240,30 +385,39 @@ function parseTextMarker(
 	return contentStart + endIndex + marker.end.length;
 }
 
-/** The index of the end marker that is not the tail of a longer marker's start, or -1. */
+/**
+ * The index of the first end marker that is not inside an escape and not the
+ * tail of a longer marker's start, or -1. A longer start marker ending right
+ * after an escape would cover the escaped character, so there is none.
+ */
 function findMatchingEnd(text: string, endMarker: string): number {
-	let position = 0;
+	let isAfterEscape = false;
+	let index = 0;
 
-	while (position < text.length) {
-		const endIndex = text.indexOf(endMarker, position);
-
-		if (endIndex === -1) {
-			return -1;
+	while (index < text.length) {
+		if (isEscape(text, index)) {
+			isAfterEscape = true;
+			index += ESCAPE_LENGTH;
+			continue;
 		}
 
-		const isPartOfLongerMarker = ALL_MARKERS.some((marker) => {
-			const checkIndex = endIndex + endMarker.length - marker.start.length;
-			return marker.start.length > endMarker.length && checkIndex >= 0 && text.startsWith(marker.start, checkIndex);
-		});
-
-		if (!isPartOfLongerMarker) {
-			return endIndex;
+		if (text.startsWith(endMarker, index) && (isAfterEscape || !endsLongerStartMarker(text, index, endMarker))) {
+			return index;
 		}
 
-		position = endIndex + 1;
+		isAfterEscape = false;
+		index++;
 	}
 
 	return -1;
+}
+
+/** Whether the end marker at a position is the tail of a longer marker's start (the second `*` of `**`). */
+function endsLongerStartMarker(text: string, endIndex: number, endMarker: string): boolean {
+	return ALL_MARKERS.some((marker) => {
+		const checkIndex = endIndex + endMarker.length - marker.start.length;
+		return marker.start.length > endMarker.length && checkIndex >= 0 && text.startsWith(marker.start, checkIndex);
+	});
 }
 
 /** Appends a span unless its text is empty. */

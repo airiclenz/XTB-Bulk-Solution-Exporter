@@ -166,7 +166,9 @@ Depends on item 6.
 - Windows: `dotnet test "Bulk Solution Exporter.Tests" --filter "FullyQualifiedName~MarkdownParserTests"`
 **Commit:** `fix(log): share tag-safe truncation and render escapes in the plugin log`
 
-## 8. PPTB logMarkup.ts: tag-safe truncation and escape rendering
+## 8. PPTB logMarkup.ts: tag-safe truncation and escape rendering — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): `truncateLine` mirrors item 6's retry fix too (with a colour token still open, the cut moves back before a trailing literal backslash), covered by an extra `logMarkup.test.ts` case; the colour-token regex is now sticky (`/y`, anchored like the C# `\G`), `hasUnclosedColorToken`/`findColorToken` were replaced by the element scan and `matchColorToken`, and `escape` accepts `null`/`undefined` (returning an empty string) to mirror `LogMarkup.Escape`'s null case.
 
 Depends on item 6 (mirrors its rules).
 

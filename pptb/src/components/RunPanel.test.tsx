@@ -267,5 +267,18 @@ describe("RunPanel", () => {
 			const span = within(screen.getByRole("log")).getByText("Done.");
 			expect([span.style.fontWeight !== "", span.style.color !== ""]).toEqual([true, true]);
 		});
+
+		it("log / worker error naming a UNC path / renders both backslashes", async () => {
+			const fake = createWorker();
+			fake.startRun.mockRejectedValueOnce(new Error("Cannot reach \\\\server\\share"));
+			const store = await loadStore({ exportManaged: true });
+			renderPanel(fake.worker, store);
+
+			fireEvent.click(screen.getByRole("button", { name: "Execute" }));
+
+			await waitFor(() =>
+				expect(screen.getByRole("log").textContent).toContain("The run failed: Cannot reach \\\\server\\share"),
+			);
+		});
 	});
 });
