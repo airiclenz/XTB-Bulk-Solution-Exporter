@@ -3,7 +3,7 @@ title: Plugin references a vulnerable System.Security.Cryptography.Pkcs 9.0.5
 status: done
 type: bug
 priority: 3
-labels: [security, build]
+labels: [security, build, release-20261119-31]
 created: 2026-11-19T17:21:02Z
 closed: 2026-11-19T17:32:44Z
 reason: Crypto mirror packages raised to 9.0.23; NU1902/NU1903 gone, tests pass, package content unchanged.
