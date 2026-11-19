@@ -128,7 +128,11 @@ NOTES (2026-11-19): `capcom check` reports a pre-existing, unrelated finding: "A
 **Closes:** pptb-solutions-paging
 **Commit:** `fix(pptb): page through every solution in retrieveSolutions`
 
-## 6. Core LogMarkup: tag-safe truncation and Escape
+## 6. Core LogMarkup: tag-safe truncation and Escape — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): `RunLogTests.cs` needed no change (its existing truncation tests pass unchanged), so it is not in FILES; `LogMarkup` uses `RunLog.ColorEndTag` as the single owner of the end tag string, and `RunLog`'s now-unused `ColorTokenRegex` was removed with the moved methods.
+NOTES (2026-11-19): `LogMarkup.TruncateLine(null)` returns an empty string (a guard the plan did not specify; `RunLog` never passes null).
+NOTES (2026-11-19): retry fix — with a color token still open, `TruncateLine` now moves the cut back before a trailing literal backslash so the appended end tag is not escaped; covered by `TruncateLine_OpenColorTokenAndCutRightAfterLiteralBackslash_CutsBeforeBackslashAndClosesToken`.
 
 **What:** Fix (part of `log-truncation-splits-tags`): `RunLog`'s line truncation can cut inside a `<color=#RRGGBB>` or `</color>` tag. Adds the ratified backslash escape to the markup contract. New `public static class LogMarkup` in `Bulk Solution Exporter.Core/Run/LogMarkup.cs` owns `public const` `MaxLineLength` and `TruncationMarker`, `TruncateLine(string)` and `Escape(string)`; `RunLog` delegates to it and keeps its public constants defined from `LogMarkup`'s. `RunLog`'s contract summary documents the escape.
 **Regression guard.** An escaped end tag `\</color>` is no end tag for the unclosed-token check, just as an escaped `\<color=…>` is no token. `LogMarkup` and its constants are public because the plugin assembly calls them and Core declares no `InternalsVisibleTo`.

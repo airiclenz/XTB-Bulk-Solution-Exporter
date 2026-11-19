@@ -19,8 +19,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 	/// - <c># Heading</c> (one to six <c>#</c>, rest of the line is the heading)
 	/// - <c>**bold**</c>, <c>*italic*</c> and <c>`code`</c>
 	/// - <c>&lt;color=#RRGGBB&gt;colored&lt;/color&gt;</c>
+	/// - <c>\</c> before a backslash, <c>#</c>, <c>*</c>, backtick or <c>&lt;</c>
+	///   renders that character literally, so it never acts as markup; any other
+	///   backslash is literal. <see cref="LogMarkup.Escape"/> escapes untrusted text.
 	/// A line is prefixed with the current indent and every rendered line of it
-	/// is capped at <see cref="MaxLineLength"/> characters.
+	/// is capped at <see cref="MaxLineLength"/> characters by
+	/// <see cref="LogMarkup.TruncateLine"/>.
 	/// </summary>
 	public class RunLog
 	{
@@ -37,12 +41,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		// Prefix of one indent level: a light vertical bar plus padding.
 		public const string IndentUnit = ColorIndent + "|" + ColorEndTag + "   ";
 
-		// Longest rendered line kept in full; same limit as the plugin's MarkdownParser,
-		// so one huge message cannot stall a log view.
-		public const int MaxLineLength = 10000;
+		// Longest rendered line kept in full; owned by LogMarkup.
+		public const int MaxLineLength = LogMarkup.MaxLineLength;
 
-		// Appended to a line cut at MaxLineLength.
-		public const string TruncationMarker = " … [truncated]";
+		// Appended to a line cut at MaxLineLength; owned by LogMarkup.
+		public const string TruncationMarker = LogMarkup.TruncationMarker;
 
 		private const int MinHeadingLevel = 1;
 		private const int MaxHeadingLevel = 6;
@@ -50,8 +53,6 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// Splits a message into lines, keeping the separators so they survive unchanged.
 		private static readonly Regex LineSeparatorRegex = new Regex(@"(\r\n|\n)");
-
-		private static readonly Regex ColorTokenRegex = new Regex(@"<color=#([0-9A-Fa-f]{6})>");
 
 		private readonly Action<string> _sink;
 		private readonly bool _isDebugEnabled;
@@ -206,8 +207,9 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 		// ============================================================================
 		/// <summary>
-		/// Caps every line of the text at <see cref="MaxLineLength"/>; lines
-		/// within the limit and the line separators are kept unchanged.
+		/// Caps every line of the text at <see cref="MaxLineLength"/> with
+		/// <see cref="LogMarkup.TruncateLine"/>; lines within the limit and the
+		/// line separators are kept unchanged.
 		/// </summary>
 		private static string TruncateLines(string text)
 		{
@@ -215,62 +217,17 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 			if (parts.Length == 1)
 			{
-				return TruncateLine(text);
+				return LogMarkup.TruncateLine(text);
 			}
 
 			var result = new StringBuilder(text.Length);
 
 			foreach (string part in parts)
 			{
-				result.Append(TruncateLine(part));
+				result.Append(LogMarkup.TruncateLine(part));
 			}
 
 			return result.ToString();
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Cuts a line longer than <see cref="MaxLineLength"/> (trailing
-		/// whitespace not counted) and appends <see cref="TruncationMarker"/>.
-		/// A color token left open by the cut is closed before the marker, so
-		/// the kept text keeps its color.
-		/// </summary>
-		private static string TruncateLine(string line)
-		{
-			string trimmedLine = line.TrimEnd();
-
-			if (trimmedLine.Length <= MaxLineLength)
-			{
-				return line;
-			}
-
-			string keptText = trimmedLine.Substring(0, MaxLineLength);
-
-			if (HasUnclosedColorToken(keptText))
-			{
-				keptText += ColorEndTag;
-			}
-
-			return keptText + TruncationMarker;
-		}
-
-
-		// ============================================================================
-		/// <summary>
-		/// Returns true when a color token follows the last end tag; a parser
-		/// pairs every token with the next end tag, so that token is unclosed.
-		/// </summary>
-		private static bool HasUnclosedColorToken(string text)
-		{
-			int lastEndTagIndex = text.LastIndexOf(ColorEndTag, StringComparison.Ordinal);
-
-			int searchStart =
-				lastEndTagIndex < 0
-					? 0
-					: lastEndTagIndex + ColorEndTag.Length;
-
-			return ColorTokenRegex.IsMatch(text, searchStart);
 		}
 
 	}
