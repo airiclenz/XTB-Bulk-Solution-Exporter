@@ -15,7 +15,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 	/// An in-memory git client for <see cref="RunEngine"/> tests. Pass
 	/// <see cref="Create"/> as the engine's client factory: it records the
 	/// repository root the engine derived, and every git call is recorded in
-	/// <see cref="Calls"/>. Every call succeeds.
+	/// <see cref="Calls"/>. Every call succeeds unless
+	/// <see cref="FailureMessage"/> is set.
 	/// </summary>
 	public sealed class FakeGitClient : IGitClient
 	{
@@ -41,6 +42,17 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 		} = new List<string>();
 
 
+		// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+		/// <summary>
+		/// When set, every git call fails and reports this text as its error
+		/// message; null (the default) lets every call succeed.
+		/// </summary>
+		public string FailureMessage
+		{
+			get; set;
+		}
+
+
 		// ============================================================================
 		/// <summary>
 		/// The engine's client factory: records the repository root and returns this client.
@@ -59,8 +71,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			out string errorMessage)
 		{
 			Calls.Add("AddFile:" + absolutePath);
-			errorMessage = string.Empty;
-			return true;
+			return IsSuccessful(out errorMessage);
 		}
 
 
@@ -70,8 +81,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			out string errorMessage)
 		{
 			Calls.Add("Commit:" + message);
-			errorMessage = string.Empty;
-			return true;
+			return IsSuccessful(out errorMessage);
 		}
 
 
@@ -80,8 +90,20 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests.Fakes
 			out string errorMessage)
 		{
 			Calls.Add("Push");
-			errorMessage = string.Empty;
-			return true;
+			return IsSuccessful(out errorMessage);
+		}
+
+
+		// ============================================================================
+		/// <summary>
+		/// The outcome of a git call: false with <see cref="FailureMessage"/> as
+		/// the error message when it is set, otherwise true with an empty one.
+		/// </summary>
+		private bool IsSuccessful(
+			out string errorMessage)
+		{
+			errorMessage = FailureMessage ?? string.Empty;
+			return FailureMessage == null;
 		}
 
 	}

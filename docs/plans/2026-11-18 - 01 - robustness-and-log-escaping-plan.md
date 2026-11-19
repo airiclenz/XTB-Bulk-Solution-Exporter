@@ -204,7 +204,10 @@ Depends on item 6.
 - `dotnet test "Bulk Solution Exporter.Core.Tests" --filter "FullyQualifiedName~RunEngineExportTests"`
 **Commit:** `fix(core): escape Dataverse text in export log lines`
 
-## 10. Escape untrusted text in import and git log lines
+## 10. Escape untrusted text in import and git log lines — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-19): escaped sites in RunEngine.Import.cs: target connection name (HandleTargets), invalid/missing file path, pending-upgrade name, SolutionExists exception message, and the ImportOperationWaiter and RetryRunner log/logError lambdas (messages escaped whole, so operationDescription and targetSuffix stay raw); FormatSolutionName output is not re-escaped. RunEngine.Git.cs: staging/commit/push error messages and the commit message. Formatter.FormatErrorStringWithXml escapes on all four return paths (over-limit, no match, XML parse fallback, reformatted), before the lead-in line breaks insert currentIndent.
+NOTES (2026-11-19): the full Core suite still has the one failure item 9 recorded, `Commit_MessageWithQuotesOrNonAscii_IsStoredVerbatim ("Lösung ä")`, outside this item's files; it predates this item.
 
 Depends on items 6 and 9.
 

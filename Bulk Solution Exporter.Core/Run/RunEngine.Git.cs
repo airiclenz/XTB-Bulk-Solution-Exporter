@@ -117,7 +117,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			{
 				if (!gitClient.AddFile(file, out errorMessage))
 				{
-					_runLog.LogError("Error staging: *" + errorMessage + "*");
+					_runLog.LogError("Error staging: *" + LogMarkup.Escape(errorMessage) + "*");
 				}
 			}
 
@@ -125,11 +125,11 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 			if (!gitClient.Commit(message, out errorMessage))
 			{
-				_runLog.LogError("Error commiting: *" + errorMessage + "*");
+				_runLog.LogError("Error commiting: *" + LogMarkup.Escape(errorMessage) + "*");
 				return;
 			}
 
-			_runLog.Log(_sessionFiles.Count + " File(s) was/weres commited: " + message);
+			_runLog.Log(_sessionFiles.Count + " File(s) was/weres commited: " + LogMarkup.Escape(message));
 		}
 
 
@@ -139,7 +139,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		{
 			if (!gitClient.Push(out string errorMessage))
 			{
-				_runLog.LogError("Error pushing: *" + errorMessage + "*");
+				_runLog.LogError("Error pushing: *" + LogMarkup.Escape(errorMessage) + "*");
 				return;
 			}
 

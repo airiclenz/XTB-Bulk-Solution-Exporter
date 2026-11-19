@@ -50,7 +50,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 				}
 
 				_runLog.Log(TargetSeparatorLine);
-				_runLog.Log("##### Handling Target *" + RunLog.Colorize(RunLog.ColorConnection, target.ConnectionName) + "*:");
+				_runLog.Log("##### Handling Target *" + RunLog.Colorize(RunLog.ColorConnection, LogMarkup.Escape(target.ConnectionName)) + "*:");
 				_runLog.Log(TargetSeparatorLine);
 				_runLog.Log();
 
@@ -218,7 +218,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			// never read outside a rooted, valid file path.
 			if (!FileAndFolderHelper.IsValidSolutionFilePath(filePath))
 			{
-				_runLog.LogError("The file path '" + filePath + "' is not a valid absolute file path. The file is skipped.");
+				_runLog.LogError("The file path '" + LogMarkup.Escape(filePath) + "' is not a valid absolute file path. The file is skipped.");
 				_runLog.DecreaseIndent();
 				AddSkippedOutcome(solution, target, isManaged, isImport: true);
 				return false;
@@ -226,7 +226,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 
 			if (!File.Exists(filePath))
 			{
-				_runLog.LogError("The file '" + filePath + "' does not exist.");
+				_runLog.LogError("The file '" + LogMarkup.Escape(filePath) + "' does not exist.");
 				_runLog.DecreaseIndent();
 				AddSkippedOutcome(solution, target, isManaged, isImport: true);
 				return false;
@@ -334,12 +334,13 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 				isNewStep: true);
 
 			// The poll sleep ignores the abort: a started operation is followed to its end.
+			// Its messages carry server text and no markup: each is escaped whole.
 			var waiter =
 				new ImportOperationWaiter(
 					target,
 					_pollSleep,
 					() => DateTime.UtcNow,
-					message => _runLog.Log(message),
+					message => _runLog.Log(LogMarkup.Escape(message)),
 					elapsed => _sink.Progress(
 						$"Installing {stepName}: {targetSuffix} ({FormatDuration(elapsed, isMillisecondsOmitted: true)})",
 						lastDurationString,
@@ -387,7 +388,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			_runLog.Log(
 				RunLog.Colorize(
 					RunLog.ColorOrange,
-					$"A pending upgrade '{pendingUpgradeName}' exists on the target; applying it first."));
+					$"A pending upgrade '{LogMarkup.Escape(pendingUpgradeName)}' exists on the target; applying it first."));
 
 			_sink.Progress(
 				$"Applying pending upgrade: {targetSuffix}",
@@ -435,7 +436,8 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 		/// retry wait ends at once on abort.
 		/// </summary>
 		/// <param name="retryMessageFormat">The progress message of a retry; {0} is the retry, {1} the maximum.</param>
-		/// <param name="operationDescription">Names the call in log lines.</param>
+		/// <param name="operationDescription">Names the call in log lines; raw
+		/// text, since every <see cref="RetryRunner"/> message is escaped whole.</param>
 		/// <returns>True only when the call completed.</returns>
 		/// <exception cref="Exception">A non-retryable fault while the request
 		/// does not continue on error.</exception>
@@ -451,11 +453,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 				_request.RetryDelayInSeconds :
 				DefaultRetryDelayInSeconds;
 
+			// RetryRunner messages carry exception text and no markup: each is escaped whole.
 			var retryRunner =
 				new RetryRunner(
 					IsAbortRequested,
-					message => _runLog.Log(message),
-					message => _runLog.LogError(message),
+					message => _runLog.Log(LogMarkup.Escape(message)),
+					message => _runLog.LogError(LogMarkup.Escape(message)),
 					(currentRetry, maxRetryCount) => _sink.Progress(
 						string.Format(retryMessageFormat, currentRetry, maxRetryCount),
 						null,
@@ -508,7 +511,7 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Run
 			}
 			catch (Exception ex)
 			{
-				_runLog.LogError($"Error checking if solution exists in target: {ex.Message}");
+				_runLog.LogError($"Error checking if solution exists in target: {LogMarkup.Escape(ex.Message)}");
 				return false;
 			}
 		}

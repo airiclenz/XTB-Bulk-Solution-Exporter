@@ -35,6 +35,12 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 		private const string UpgradeSuffix = "_Upgrade";
 		private const string ServerFailureMessage = "Fake server-side import failure";
 		private const string PollFailureMessage = "Fake poll failure";
+		private const string MarkupSolutionName = "##### Done.";
+		private const string EscapedMarkupSolutionName = @"\#\#\#\#\# Done.";
+		private const string MarkupFailureMessage = "Fake failure: **x**";
+		private const string EscapedMarkupFailureMessage = @"Fake failure: \*\*x\*\*";
+		private const string MarkupGitErrorMessage = "# x";
+		private const string EscapedMarkupGitErrorMessage = @"\# x";
 
 		// Retries in these tests wait the shortest delay the engine accepts.
 		private const int RetryCount = 1;
@@ -175,6 +181,45 @@ namespace Com.AiricLenz.BulkSolutionExporter.Core.Tests
 					"Push",
 				},
 				_gitClient.Calls);
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_GitFailsWithMarkupInTheErrorMessage_LogsTheMessageEscaped()
+		{
+			var repository = CreateRepository("repository");
+			var request = CreateImportRequest(SolutionA);
+			request.ShouldImportManaged = false;
+			request.ShouldExportManaged = true;
+			request.ShouldCommitToGit = true;
+			request.ShouldPushCommit = true;
+			request.CommitMessage = CommitMessage;
+			request.Solutions[0].Configuration.FileNameManaged = Path.Combine(repository, "A.zip");
+			_gitClient.FailureMessage = MarkupGitErrorMessage;
+
+			Run(request);
+
+			// The log wraps a git error message in italics: "*<message>*".
+			const int errorLineCount = 3;
+			Assert.IsFalse(_sink.Lines.Any(line => line.Contains("*" + MarkupGitErrorMessage + "*")));
+			Assert.AreEqual(errorLineCount, _sink.Lines.Count(line => line.Contains("*" + EscapedMarkupGitErrorMessage + "*")));
+		}
+
+
+		// ============================================================================
+		[TestMethod]
+		public void Run_ImportFailsWithMarkupInTheNameAndMessage_LogsBothEscaped()
+		{
+			var request = CreateImportRequest(MarkupSolutionName);
+			_target.OperationStates.Enqueue(CreateFailedState(MarkupFailureMessage));
+
+			var result = Run(request, _target);
+
+			Assert.IsFalse(result.StepOutcomes.Single().IsSuccessful);
+			Assert.IsFalse(_sink.Lines.Any(line => line.Contains(MarkupSolutionName) || line.Contains(MarkupFailureMessage)));
+			Assert.IsTrue(_sink.Lines.Any(line => line.Contains(EscapedMarkupSolutionName)));
+			Assert.IsTrue(_sink.Lines.Any(line => line.Contains(EscapedMarkupFailureMessage)));
 		}
 
 
