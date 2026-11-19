@@ -1,10 +1,12 @@
 ---
 title: Remove the dead RetryRunner.IsRunAborted
-status: open
+status: done
 type: task
 priority: 4
 labels: [pptb-port-followup]
 created: 2026-10-23T16:25:48Z
+closed: 2026-11-19T15:56:37Z
+reason: "Resolved by the robustness and log escaping plan (2026-11-18 - 01), archived in 526aa56: item 4 removes RetryRunner.IsRunAborted, its test and cref."
 ---
 
 `RetryRunner.IsRunAborted` (`Bulk Solution Exporter.Core/Run/RetryRunner.cs:178`) has no production caller since plan item 9: the plugin now uses `_runResult?.IsAborted ?? _runCancellation.IsCancellationRequested`. Only its test calls it (`Bulk Solution Exporter.Core.Tests/RetryRunnerTests.cs:321`, cref at `:18`). The coding-standards delete-dead-code rule applies.

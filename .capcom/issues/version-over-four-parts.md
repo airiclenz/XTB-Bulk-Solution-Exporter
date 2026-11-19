@@ -1,10 +1,12 @@
 ---
 title: Version(string) throws on versions with more than four parts
-status: open
+status: done
 type: bug
 priority: 2
 labels: [audit-followup]
 created: 2026-10-11T20:15:00Z
+closed: 2026-11-19T15:56:37Z
+reason: "Resolved by the robustness and log escaping plan (2026-11-18 - 01), archived in 526aa56: item 1 ignores version parts beyond the fourth; covered in VersionTests."
 ---
 
 `Schema/Version.cs` `Version(string)` loops over every dot-separated part of the source version and indexes a fixed four-slot array, so a source version with more than four parts throws `IndexOutOfRangeException`.

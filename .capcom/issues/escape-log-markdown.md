@@ -1,10 +1,12 @@
 ---
 title: Escape Dataverse text before markdown log rendering
-status: open
+status: done
 type: bug
 priority: 3
-labels: [security,audit-followup]
+labels: [security, audit-followup]
 created: 2026-10-11T20:15:00Z
+closed: 2026-11-19T15:56:37Z
+reason: "Resolved by the robustness and log escaping plan (2026-11-18 - 01), archived in 526aa56: items 6-11 add LogMarkup.Escape, backslash-escape rendering in both renderers, and escape untrusted text at every log call site."
 ---
 
 Dataverse-controlled text (solution friendly/logical names, connection names, import error XML) is concatenated into `Log(...)` and rendered by `Helpers/MarkdownParser.cs` unescaped. A hostile environment can forge status lines such as `##### Done.` or spoof rich text in the log. Display-only (the log is never persisted); the crash/DoS half was fixed in plan item 12.
