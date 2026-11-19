@@ -106,7 +106,13 @@ NOTES (2026-11-18): the existing GitHelperTests.Commit_MessageWithQuotesOrNonAsc
 **Closes:** remove-isrunaborted
 **Commit:** `refactor(core): remove the unused RetryRunner.IsRunAborted`
 
-## 5. PPTB retrieveSolutions returns every page
+## 5. PPTB retrieveSolutions returns every page — ✅ DONE (2026-11-19)
+
+NOTES (2026-11-18): the paging loop lives in a new private helper `querySolutionPages` in `pptb/src/dataverseBridge.ts`; a full page whose last row has no string `uniquename` rejects with an error instead of silently stopping (the next page cannot be keyed); a test covers it.
+NOTES (2026-11-18): the `pptb-solutions-paging` ticket's Acceptance was amended in place to the ratified keyset paging (it previously required following `@odata.nextLink`).
+NOTES (2026-11-19): the plan's single two-page test is split into two tests (all rows returned; second query carries the quote-escaped `uniquename gt` filter); the interrupted attempt's work was reviewed and kept, with one spacing fix in the test constants.
+NOTES (2026-11-19): Node/npm is not installed on this host and `pptb/node_modules` is absent, so `npx vitest run src/dataverseBridge.test.ts` and `npx tsc --noEmit` could not be run by the implementer; the verifier must run both.
+NOTES (2026-11-19): `capcom check` reports a pre-existing, unrelated finding: "AGENTS.md:1: the capcom block is out of date; run capcom agents to refresh it".
 
 **What:** Fix: the PPTB `dataverse/retrieveSolutions` handler reads only the first page of solutions (ticket `pptb-solutions-paging`). Keyset paging per the ratified call.
 **Regression guard.** The two existing filter tests pin the full query string with `toHaveBeenCalledWith`, so they are updated to the new string (filter, then `$orderby=uniquename`, then `$top=5000`, in that order). The ratified keyset call supersedes the Acceptance of `.capcom/issues/pptb-solutions-paging.md` ("follows `@odata.nextLink`"): amend that Acceptance, or `capcom log` the substitution on the ticket, before closing it.

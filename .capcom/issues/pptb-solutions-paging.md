@@ -11,4 +11,4 @@ The PPTB `dataverseBridge` `retrieveSolutions` handler (`pptb/src/dataverseBridg
 
 ## Acceptance
 
-- `retrieveSolutions` follows `@odata.nextLink` until the last page and returns every row; a test covers a two-page answer.
+- `retrieveSolutions` pages through every visible solution with keyset paging on `uniquename` (`$orderby=uniquename`, `$top=5000`, the next page filtered on `uniquename gt '<last>'`) until a page comes back short, and returns every row; a test covers a two-page answer. Keyset paging replaces following `@odata.nextLink` (decision of 2026-11-18, robustness and log escaping plan).

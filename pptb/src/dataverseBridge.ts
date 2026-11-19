@@ -73,6 +73,9 @@ type CallParameters = Record<string, unknown>;
 const SOLUTION_ENTITY_NAME = "solution";
 const SOLUTION_ENTITY_SET = "solutions";
 const SOLUTION_COLUMNS = "solutionid,uniquename,friendlyname,version,ismanaged,description";
+const SOLUTION_PAGE_KEY = "uniquename";
+const SOLUTION_PAGE_SIZE = 5000;
+const MISSING_PAGE_KEY_MESSAGE = "A full page of solutions ended in a row without a unique name.";
 const EXPORT_FILE_PROPERTY = "ExportSolutionFile";
 const ACTION_OPERATION = "action";
 const PUBLISH_ALL_OPERATION = "PublishAllXml";
@@ -198,12 +201,45 @@ export function createDataverseBridge(connectionSlots: readonly number[]): Recor
 		[DataverseMethod.RetrieveSolutions]: async (params) => {
 			const parameters = readParameters(params);
 			const managedFilter = readBoolean(parameters, "includeManaged") ? "" : " and ismanaged eq false";
-			const query = `${SOLUTION_ENTITY_SET}?$select=${SOLUTION_COLUMNS}&$filter=isvisible eq true${managedFilter}`;
-			const slot = readSlot(parameters);
-			const result = await callDataverse(() => window.dataverseAPI.queryData(query, slot));
-			return result.value.map(toSolutionRecord);
+			const rows = await querySolutionPages(`isvisible eq true${managedFilter}`, readSlot(parameters));
+			return rows.map(toSolutionRecord);
 		},
 	};
+}
+
+/**
+ * Reads every `solutions` row matching the filter, one page at a time, with
+ * keyset paging on `uniquename`: each page is ordered by it and the next page
+ * asks only for names after the last one read. A page shorter than
+ * {@link SOLUTION_PAGE_SIZE} is the last. A full page whose last row carries no
+ * unique name rejects, since the next page could not be asked for.
+ *
+ * @param filter - The OData `$filter` expression every page shares.
+ * @param slot - The PPTB connection slot to query.
+ */
+async function querySolutionPages(filter: string, slot: number): Promise<Record<string, unknown>[]> {
+	const rows: Record<string, unknown>[] = [];
+	let pageFilter = filter;
+
+	for (;;) {
+		const query =
+			`${SOLUTION_ENTITY_SET}?$select=${SOLUTION_COLUMNS}&$filter=${pageFilter}` +
+			`&$orderby=${SOLUTION_PAGE_KEY}&$top=${SOLUTION_PAGE_SIZE}`;
+		const result = await callDataverse(() => window.dataverseAPI.queryData(query, slot));
+		rows.push(...result.value);
+
+		if (result.value.length < SOLUTION_PAGE_SIZE) {
+			return rows;
+		}
+
+		const lastUniqueName = result.value[result.value.length - 1]?.[SOLUTION_PAGE_KEY];
+
+		if (typeof lastUniqueName !== "string") {
+			throw new Error(MISSING_PAGE_KEY_MESSAGE);
+		}
+
+		pageFilter = `${filter} and ${SOLUTION_PAGE_KEY} gt ${toODataLiteral(lastUniqueName)}`;
+	}
 }
 
 /** Runs one unbound Dataverse action on a connection slot. */

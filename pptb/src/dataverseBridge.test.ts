@@ -12,6 +12,10 @@ const SOLUTION_ID = "6f1c3d2a-0000-4000-8000-000000000001";
 const SOLUTION_FILE_BASE64 = "UEsDBBQAAAAIAA==";
 const ASYNC_OPERATION_ID = "0b7e9a44-1c2d-4e5f-8a9b-000000000042";
 const IMPORT_FAILURE_TEXT = "The solution file is invalid.";
+const SOLUTION_PAGE_SIZE = 5000;
+const SOLUTIONS_QUERY_PREFIX = "solutions?$select=solutionid,uniquename,friendlyname,version,ismanaged,description";
+const SOLUTION_INDEX_DIGITS = 4;
+const SOLUTIONS_QUERY_PAGING = `&$orderby=uniquename&$top=${SOLUTION_PAGE_SIZE}`;
 
 interface DataverseMock {
 	execute: ReturnType<typeof vi.fn<DataverseAPI.API["execute"]>>;
@@ -31,6 +35,18 @@ function call(method: string, params: Record<string, unknown>): Promise<unknown>
 	}
 
 	return handler(params);
+}
+
+/** Builds `count` unmanaged `solutions` rows whose unique names start with `prefix`, in ascending order. */
+function createSolutionRows(prefix: string, count: number): Record<string, unknown>[] {
+	return Array.from({ length: count }, (_, index) => ({
+		solutionid: SOLUTION_ID,
+		uniquename: `${prefix}${String(index).padStart(SOLUTION_INDEX_DIGITS, "0")}`,
+		friendlyname: null,
+		version: "1.0.0.0",
+		ismanaged: false,
+		description: null,
+	}));
 }
 
 beforeEach(() => {
@@ -295,8 +311,7 @@ describe("createDataverseBridge", () => {
 			const answer = await call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: false });
 
 			expect(dataverse.queryData).toHaveBeenCalledWith(
-				"solutions?$select=solutionid,uniquename,friendlyname,version,ismanaged,description" +
-					"&$filter=isvisible eq true and ismanaged eq false",
+				`${SOLUTIONS_QUERY_PREFIX}&$filter=isvisible eq true and ismanaged eq false${SOLUTIONS_QUERY_PAGING}`,
 				SOURCE_SLOT,
 			);
 			expect(answer).toEqual([
@@ -315,9 +330,51 @@ describe("createDataverseBridge", () => {
 			await call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: true });
 
 			expect(dataverse.queryData).toHaveBeenCalledWith(
-				"solutions?$select=solutionid,uniquename,friendlyname,version,ismanaged,description" +
-					"&$filter=isvisible eq true",
+				`${SOLUTIONS_QUERY_PREFIX}&$filter=isvisible eq true${SOLUTIONS_QUERY_PAGING}`,
 				SOURCE_SLOT,
+			);
+		});
+
+		it("retrieveSolutions / single short page / issues one query", async () => {
+			dataverse.queryData.mockResolvedValue({ value: createSolutionRows("Contoso", 1) });
+
+			await call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: true });
+
+			expect(dataverse.queryData).toHaveBeenCalledTimes(1);
+		});
+
+		it("retrieveSolutions / full first page / returns the rows of every page", async () => {
+			const firstPage = createSolutionRows("Contoso", SOLUTION_PAGE_SIZE);
+			const secondPage = createSolutionRows("Fabrikam", 2);
+			dataverse.queryData.mockResolvedValueOnce({ value: firstPage }).mockResolvedValueOnce({ value: secondPage });
+
+			const answer = await call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: true });
+
+			expect(answer).toHaveLength(SOLUTION_PAGE_SIZE + secondPage.length);
+		});
+
+		it("retrieveSolutions / full first page / asks the next page after the last unique name", async () => {
+			const firstPage = createSolutionRows("Contoso", SOLUTION_PAGE_SIZE);
+			firstPage[SOLUTION_PAGE_SIZE - 1] = { ...firstPage[SOLUTION_PAGE_SIZE - 1], uniquename: "O'Brien" };
+			dataverse.queryData.mockResolvedValueOnce({ value: firstPage });
+
+			await call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: false });
+
+			expect(dataverse.queryData).toHaveBeenNthCalledWith(
+				2,
+				`${SOLUTIONS_QUERY_PREFIX}&$filter=isvisible eq true and ismanaged eq false` +
+					` and uniquename gt 'O''Brien'${SOLUTIONS_QUERY_PAGING}`,
+				SOURCE_SLOT,
+			);
+		});
+
+		it("retrieveSolutions / full page without a last unique name / rejects", async () => {
+			const firstPage = createSolutionRows("Contoso", SOLUTION_PAGE_SIZE);
+			firstPage[SOLUTION_PAGE_SIZE - 1] = { ...firstPage[SOLUTION_PAGE_SIZE - 1], uniquename: null };
+			dataverse.queryData.mockResolvedValueOnce({ value: firstPage });
+
+			await expect(call(DataverseMethod.RetrieveSolutions, { target: 0, includeManaged: true })).rejects.toThrow(
+				"without a unique name",
 			);
 		});
 	});
